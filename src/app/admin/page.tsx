@@ -1,8 +1,9 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { useSession } from "next-auth/react";
+import { useSession, signIn } from "next-auth/react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import Image from "next/image";
 import { 
   LayoutDashboard, 
@@ -23,6 +24,10 @@ import {
   Mail,
   ExternalLink,
   ShieldCheck,
+  ShieldAlert,
+  Lock,
+  Eye,
+  EyeOff,
   Award,
   Sparkles,
   UserPlus,
@@ -149,12 +154,42 @@ export default function AdminDashboardPage() {
     }
   };
 
-  // Redirigir si no es admin
+  // Estados de Login para Administrador
+  const [adminEmail, setAdminEmail] = useState("");
+  const [adminPassword, setAdminPassword] = useState("");
+  const [showAdminPassword, setShowAdminPassword] = useState(false);
+  const [adminAuthLoading, setAdminAuthLoading] = useState(false);
+  const [adminAuthError, setAdminAuthError] = useState<string | null>(null);
+
+  const handleAdminLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setAdminAuthError(null);
+    setAdminAuthLoading(true);
+
+    try {
+      const res = await signIn("credentials", {
+        redirect: false,
+        email: adminEmail.trim().toLowerCase(),
+        password: adminPassword,
+        callbackUrl: "/admin",
+      });
+
+      if (res?.error) {
+        setAdminAuthError("Correo o clave de administrador incorrecta.");
+        setAdminAuthLoading(false);
+      } else {
+        window.location.reload();
+      }
+    } catch (err: any) {
+      setAdminAuthError("Error al conectar con el servidor.");
+      setAdminAuthLoading(false);
+    }
+  };
+
+  // Cargar datos solo si es ADMIN
   useEffect(() => {
-    if (status === "unauthenticated") {
-      window.location.href = "/login?callbackUrl=/admin";
-    } else if (status === "authenticated" && (session?.user as any)?.role !== "ADMIN") {
-      window.location.href = "/portal";
+    if (status === "authenticated" && (session?.user as any)?.role === "ADMIN") {
+      loadData();
     }
   }, [status, session]);
 
@@ -528,9 +563,138 @@ export default function AdminDashboardPage() {
     ? Math.round((verifiedIpsEmployeesCount / totalEmployeesCount) * 100) 
     : 0;
 
-  if (status === "loading" || isLoading) {
+  if (status === "loading") {
     return (
-      <div className="min-h-screen bg-slate-900 py-16 flex items-center justify-center text-white">
+      <div className="min-h-screen bg-slate-950 py-16 flex items-center justify-center text-white">
+        <div className="text-center space-y-3">
+          <div className="w-10 h-10 border-4 border-electric-500 border-t-transparent rounded-full animate-spin mx-auto" />
+          <p className="text-sm font-bold text-slate-300">Cargando Panel Administrativo...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Si no está autenticado como administrador, mostrar el formulario de acceso exclusivo
+  if (status === "unauthenticated" || (session?.user as any)?.role !== "ADMIN") {
+    return (
+      <div className="min-h-screen bg-slate-950 flex flex-col justify-center py-12 px-4 sm:px-6 lg:px-8 relative overflow-hidden">
+        <div className="absolute -top-32 -left-32 w-96 h-96 bg-electric-500/10 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute -bottom-32 -right-32 w-96 h-96 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none" />
+
+        <div className="sm:mx-auto sm:w-full sm:max-w-md relative z-10">
+          <div className="text-center mb-6">
+            <Link href="/" className="inline-block">
+              <div className="relative h-12 w-48 mx-auto">
+                <Image
+                  src="/images/logo.jpeg"
+                  alt="Aquí Estamos Limpieza"
+                  fill
+                  className="object-contain"
+                  priority
+                />
+              </div>
+            </Link>
+            <div className="inline-flex items-center gap-2 mt-4 px-3 py-1 bg-amber-500/10 border border-amber-500/30 rounded-full text-amber-400 text-xs font-bold">
+              <ShieldAlert className="w-3.5 h-3.5" />
+              <span>Área Restringida</span>
+            </div>
+            <h1 className="mt-2 text-2xl font-black text-white tracking-tight">
+              Panel de Administración
+            </h1>
+            <p className="mt-1 text-xs text-slate-400">
+              Ingreso exclusivo para administradores y supervisores autorizados.
+            </p>
+          </div>
+
+          <div className="bg-slate-900/90 backdrop-blur-xl p-6 sm:p-8 rounded-3xl border border-slate-800 shadow-2xl space-y-5">
+            {adminAuthError && (
+              <div className="p-3.5 bg-rose-500/10 border border-rose-500/30 text-rose-400 text-xs rounded-2xl flex items-center gap-2.5">
+                <AlertCircle className="w-4 h-4 shrink-0 text-rose-400" />
+                <span>{adminAuthError}</span>
+              </div>
+            )}
+
+            <form onSubmit={handleAdminLogin} className="space-y-4">
+              <div>
+                <label className="block text-xs font-bold text-slate-300 mb-1.5">
+                  Correo o Usuario de Administrador
+                </label>
+                <div className="relative">
+                  <Mail className="w-4 h-4 text-slate-400 absolute left-3.5 top-3.5" />
+                  <input
+                    type="text"
+                    required
+                    autoCapitalize="none"
+                    autoCorrect="off"
+                    spellCheck="false"
+                    value={adminEmail}
+                    onChange={(e) => setAdminEmail(e.target.value)}
+                    placeholder="juanas89@gmail.com"
+                    className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-slate-800/80 border border-slate-700 text-xs text-white placeholder:text-slate-500 focus:ring-2 focus:ring-electric-500 focus:border-electric-500 focus:outline-none transition-all"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-300 mb-1.5">
+                  Contraseña de Administrador
+                </label>
+                <div className="relative">
+                  <Lock className="w-4 h-4 text-slate-400 absolute left-3.5 top-3.5" />
+                  <input
+                    type={showAdminPassword ? "text" : "password"}
+                    required
+                    autoCapitalize="none"
+                    autoCorrect="off"
+                    spellCheck="false"
+                    value={adminPassword}
+                    onChange={(e) => setAdminPassword(e.target.value)}
+                    placeholder="••••••••"
+                    className="w-full pl-10 pr-10 py-2.5 rounded-xl bg-slate-800/80 border border-slate-700 text-xs text-white placeholder:text-slate-500 focus:ring-2 focus:ring-electric-500 focus:border-electric-500 focus:outline-none transition-all"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowAdminPassword(!showAdminPassword)}
+                    className="absolute right-3.5 top-3 text-slate-400 hover:text-slate-200 p-0.5"
+                  >
+                    {showAdminPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                </div>
+              </div>
+
+              <button
+                type="submit"
+                disabled={adminAuthLoading}
+                className="w-full py-3 bg-electric-600 hover:bg-electric-500 text-white font-bold text-xs rounded-xl shadow-lg shadow-electric-600/30 transition-all active:scale-[0.98] disabled:opacity-50 flex items-center justify-center gap-2"
+              >
+                {adminAuthLoading ? (
+                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                ) : (
+                  <>
+                    <ShieldCheck className="w-4 h-4" />
+                    <span>Ingresar al Panel de Control</span>
+                  </>
+                )}
+              </button>
+            </form>
+
+            <div className="text-center pt-2 border-t border-slate-800/80">
+              <Link
+                href="/portal"
+                className="text-xs text-slate-400 hover:text-slate-200 font-medium"
+              >
+                ← Volver al Portal de Clientes
+              </Link>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-slate-950 py-16 flex items-center justify-center text-white">
         <div className="text-center space-y-3">
           <div className="w-10 h-10 border-4 border-electric-500 border-t-transparent rounded-full animate-spin mx-auto" />
           <p className="text-sm font-bold text-slate-300">Cargando Panel Administrativo...</p>

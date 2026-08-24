@@ -14,39 +14,55 @@ import {
   ShieldCheck, 
   ArrowRight, 
   CheckCircle2, 
-  KeyRound,
-  User as UserIcon
+  User as UserIcon,
+  Phone,
+  UserPlus,
+  LogIn
 } from "lucide-react";
 import GoogleSignInButton from "@/components/auth/GoogleSignInButton";
 
 function LoginContent() {
   const searchParams = useSearchParams();
   const callbackUrl = searchParams.get("callbackUrl") || "/portal";
+  const defaultTab = searchParams.get("tab") === "register" ? "REGISTER" : "LOGIN";
   const wasRegistered = searchParams.get("registered") === "true";
 
-  const [authRoleTab, setAuthRoleTab] = useState<"CUSTOMER" | "ADMIN">("CUSTOMER");
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [showPassword, setShowPassword] = useState(false);
+  const [activeTab, setActiveTab] = useState<"LOGIN" | "REGISTER">(defaultTab);
+
+  // Estados para Iniciar Sesión
+  const [loginEmail, setLoginEmail] = useState("");
+  const [loginPassword, setLoginPassword] = useState("");
+  const [showLoginPassword, setShowLoginPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(true);
+
+  // Estados para Registro de Nuevos Clientes
+  const [regName, setRegName] = useState("");
+  const [regEmail, setRegEmail] = useState("");
+  const [regPhone, setRegPhone] = useState("");
+  const [regPassword, setRegPassword] = useState("");
+  const [showRegPassword, setShowRegPassword] = useState(false);
+
   const [isLoading, setIsLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [successMsg, setSuccessMsg] = useState<string | null>(
+    wasRegistered ? "¡Cuenta creada con éxito! Ingresa con tus credenciales a continuación." : null
+  );
 
-  // Manejo de Inicio de Sesión Seguro
-  const handleSubmit = async (e: React.FormEvent) => {
+  // Manejo de Inicio de Sesión
+  const handleLoginSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMsg(null);
+    setSuccessMsg(null);
     setIsLoading(true);
 
     try {
-      const targetEmail = email.trim().toLowerCase();
-      const targetUrl = authRoleTab === "ADMIN" ? "/admin" : callbackUrl;
+      const targetEmail = loginEmail.trim().toLowerCase();
 
       const res = await signIn("credentials", {
         redirect: false,
         email: targetEmail,
-        password: password,
-        callbackUrl: targetUrl,
+        password: loginPassword,
+        callbackUrl,
       });
 
       if (res?.error) {
@@ -57,10 +73,72 @@ function LoginContent() {
         }
         setIsLoading(false);
       } else {
-        window.location.href = targetUrl;
+        // Redirigir a panel de administración si es admin, o al portal del cliente
+        if (targetEmail === "juanas89@gmail.com" || targetEmail === "admin@aquiestamos.com") {
+          window.location.href = "/admin";
+        } else {
+          window.location.href = callbackUrl;
+        }
       }
     } catch (err: any) {
       setErrorMsg(err.message || "Ocurrió un error al conectar con el servidor.");
+      setIsLoading(false);
+    }
+  };
+
+  // Manejo de Registro de Nuevo Cliente
+  const handleRegisterSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setErrorMsg(null);
+    setSuccessMsg(null);
+
+    if (!regName.trim() || !regEmail.trim() || !regPhone.trim() || !regPassword) {
+      setErrorMsg("Por favor completa todos los campos del registro.");
+      return;
+    }
+
+    if (regPassword.length < 6) {
+      setErrorMsg("La contraseña debe tener al menos 6 caracteres.");
+      return;
+    }
+
+    setIsLoading(true);
+
+    try {
+      const res = await fetch("/api/auth/register", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: regName.trim(),
+          email: regEmail.trim().toLowerCase(),
+          phone: regPhone.trim(),
+          password: regPassword,
+        }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error || "Error al crear la cuenta.");
+      }
+
+      // Iniciar sesión automáticamente tras el registro exitoso
+      const loginRes = await signIn("credentials", {
+        redirect: false,
+        email: regEmail.trim().toLowerCase(),
+        password: regPassword,
+        callbackUrl,
+      });
+
+      if (loginRes?.ok) {
+        window.location.href = callbackUrl;
+      } else {
+        setSuccessMsg("¡Cuenta creada con éxito! Por favor inicia sesión con tu contraseña.");
+        setActiveTab("LOGIN");
+        setLoginEmail(regEmail.trim().toLowerCase());
+        setIsLoading(false);
+      }
+    } catch (err: any) {
+      setErrorMsg(err.message || "Error al registrar cliente.");
       setIsLoading(false);
     }
   };
@@ -89,26 +167,27 @@ function LoginContent() {
             </div>
           </Link>
           <h1 className="mt-3 text-2xl sm:text-3xl font-extrabold text-neutral-900 tracking-tight">
-            {authRoleTab === "ADMIN" ? "Acceso de Administración" : "Iniciar Sesión"}
+            {activeTab === "LOGIN" ? "Iniciar Sesión" : "Crear Cuenta de Cliente"}
           </h1>
           <p className="mt-1 text-xs text-neutral-500 max-w-sm mx-auto">
-            {authRoleTab === "ADMIN"
-              ? "Ingreso exclusivo para administradores y supervisores autorizados."
-              : "Ingresa a tu cuenta para gestionar tus reservas y ver a tu personal asignado."}
+            {activeTab === "LOGIN"
+              ? "Ingresa a tu cuenta para gestionar tus reservas y ver a tu personal asignado."
+              : "Regístrate en menos de 1 minuto para agendar y administrar tus servicios de limpieza."}
           </p>
         </div>
 
-        {/* Tarjeta Principal de Login */}
-        <div className="bg-white/90 backdrop-blur-xl p-6 sm:p-8 rounded-3xl border border-neutral-200/90 shadow-xl shadow-neutral-200/50 space-y-6">
+        {/* Tarjeta Principal */}
+        <div className="bg-white/95 backdrop-blur-xl p-6 sm:p-8 rounded-3xl border border-neutral-200/90 shadow-xl shadow-neutral-200/50 space-y-5">
           
-          {/* Alertas y Mensajes */}
-          {wasRegistered && (
+          {/* Mensaje de Éxito */}
+          {successMsg && (
             <div className="p-3.5 bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs rounded-2xl flex items-center gap-2.5 animate-in fade-in">
               <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
-              <span>¡Cuenta creada con éxito! Ingresa con tus credenciales a continuación.</span>
+              <span>{successMsg}</span>
             </div>
           )}
 
+          {/* Mensaje de Error */}
           {errorMsg && (
             <div className="p-3.5 bg-rose-50 border border-rose-200 text-rose-700 text-xs rounded-2xl flex items-center gap-2.5 animate-in fade-in">
               <AlertCircle className="w-4 h-4 shrink-0 text-rose-500" />
@@ -116,175 +195,252 @@ function LoginContent() {
             </div>
           )}
 
-          {/* Selector de Pestaña: Clientes vs Administrador */}
+          {/* Selector de Pestaña: Iniciar Sesión vs Regístrate */}
           <div className="flex bg-neutral-100 p-1 rounded-2xl border border-neutral-200">
             <button
               type="button"
               onClick={() => {
-                setAuthRoleTab("CUSTOMER");
+                setActiveTab("LOGIN");
                 setErrorMsg(null);
-                setEmail("");
-                setPassword("");
               }}
-              className={`flex-1 py-2 text-xs font-bold rounded-xl transition-all flex items-center justify-center gap-1.5 ${
-                authRoleTab === "CUSTOMER"
+              className={`flex-1 py-2.5 text-xs font-bold rounded-xl transition-all flex items-center justify-center gap-1.5 ${
+                activeTab === "LOGIN"
                   ? "bg-white text-neutral-900 shadow-xs"
                   : "text-neutral-500 hover:text-neutral-900"
               }`}
             >
-              <UserIcon className="w-3.5 h-3.5" />
-              <span>Clientes</span>
+              <LogIn className="w-3.5 h-3.5" />
+              <span>Iniciar Sesión</span>
             </button>
 
             <button
               type="button"
               onClick={() => {
-                setAuthRoleTab("ADMIN");
+                setActiveTab("REGISTER");
                 setErrorMsg(null);
-                setEmail("");
-                setPassword("");
               }}
-              className={`flex-1 py-2 text-xs font-bold rounded-xl transition-all flex items-center justify-center gap-1.5 ${
-                authRoleTab === "ADMIN"
-                  ? "bg-slate-900 text-white shadow-xs"
+              className={`flex-1 py-2.5 text-xs font-bold rounded-xl transition-all flex items-center justify-center gap-1.5 ${
+                activeTab === "REGISTER"
+                  ? "bg-white text-neutral-900 shadow-xs"
                   : "text-neutral-500 hover:text-neutral-900"
               }`}
             >
-              <ShieldCheck className="w-3.5 h-3.5 text-electric-400" />
-              <span>Administrador</span>
+              <UserPlus className="w-3.5 h-3.5" />
+              <span>Registrarme</span>
             </button>
           </div>
 
-          {/* Si es Pestaña Clientes, muestra opción Google */}
-          {authRoleTab === "CUSTOMER" && (
-            <div className="space-y-3">
-              <div className="flex justify-center">
-                <GoogleSignInButton
-                  callbackUrl={callbackUrl}
-                  onError={(err) => setErrorMsg(err)}
-                  text="Continuar con Google"
-                />
-              </div>
-
-              <div className="relative flex items-center justify-center">
-                <div className="border-t border-neutral-200 w-full" />
-                <span className="bg-white px-3 text-[11px] font-bold text-neutral-400 uppercase tracking-wider">
-                  o con tu correo
-                </span>
-                <div className="border-t border-neutral-200 w-full" />
-              </div>
-            </div>
-          )}
-
-          {/* Formulario de Login Seguro (Común para Cliente y Admin) */}
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div>
-              <label className="block text-xs font-bold text-neutral-700 mb-1.5">
-                {authRoleTab === "ADMIN" ? "Correo o Usuario de Administrador" : "Correo Electrónico"}
-              </label>
-              <div className="relative">
-                <Mail className="w-4 h-4 text-neutral-400 absolute left-3.5 top-3.5" />
-                <input
-                  type={authRoleTab === "ADMIN" ? "text" : "email"}
-                  required
-                  autoCapitalize="none"
-                  autoCorrect="off"
-                  spellCheck="false"
-                  autoComplete="username"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="tu@correo.com"
-                  className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-neutral-300 text-xs text-neutral-900 placeholder:text-neutral-400 focus:ring-2 focus:ring-electric-600 focus:border-electric-600 focus:outline-none transition-all"
-                />
-              </div>
+          {/* Botón de Google en 1 Clic */}
+          <div className="space-y-3">
+            <div className="flex justify-center">
+              <GoogleSignInButton
+                callbackUrl={callbackUrl}
+                onError={(err) => setErrorMsg(err)}
+                text={activeTab === "LOGIN" ? "Continuar con Google" : "Registrarme con Google"}
+              />
             </div>
 
-            <div>
-              <div className="flex items-center justify-between mb-1.5">
-                <label className="block text-xs font-bold text-neutral-700">
-                  Contraseña
+            <div className="relative flex items-center justify-center">
+              <div className="border-t border-neutral-200 w-full" />
+              <span className="bg-white px-3 text-[11px] font-bold text-neutral-400 uppercase tracking-wider">
+                o con tu correo
+              </span>
+              <div className="border-t border-neutral-200 w-full" />
+            </div>
+          </div>
+
+          {/* PESTAÑA 1: Formulario de Iniciar Sesión */}
+          {activeTab === "LOGIN" && (
+            <form onSubmit={handleLoginSubmit} className="space-y-4 animate-in fade-in">
+              <div>
+                <label className="block text-xs font-bold text-neutral-700 mb-1.5">
+                  Correo Electrónico
                 </label>
-                {authRoleTab === "CUSTOMER" && (
-                  <a
-                    href="https://wa.me/595984320528?text=Hola,%20necesito%20ayuda%20para%20recuperar%20mi%20contrase%C3%B1a"
-                    target="_blank"
-                    rel="noopener noreferrer"
+                <div className="relative">
+                  <Mail className="w-4 h-4 text-neutral-400 absolute left-3.5 top-3.5" />
+                  <input
+                    type="email"
+                    required
+                    autoCapitalize="none"
+                    autoCorrect="off"
+                    spellCheck="false"
+                    autoComplete="username"
+                    value={loginEmail}
+                    onChange={(e) => setLoginEmail(e.target.value)}
+                    placeholder="tu@correo.com"
+                    className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-neutral-300 text-xs text-neutral-900 placeholder:text-neutral-400 focus:ring-2 focus:ring-electric-600 focus:border-electric-600 focus:outline-none transition-all"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <div className="flex items-center justify-between mb-1.5">
+                  <label className="block text-xs font-bold text-neutral-700">
+                    Contraseña
+                  </label>
+                  <Link
+                    href="/recuperar-password"
                     className="text-[11px] font-semibold text-electric-600 hover:text-electric-700 hover:underline"
                   >
-                    ¿Olvidaste tu clave?
-                  </a>
-                )}
+                    ¿Olvidaste tu contraseña?
+                  </Link>
+                </div>
+                <div className="relative">
+                  <Lock className="w-4 h-4 text-neutral-400 absolute left-3.5 top-3.5" />
+                  <input
+                    type={showLoginPassword ? "text" : "password"}
+                    required
+                    autoCapitalize="none"
+                    autoCorrect="off"
+                    spellCheck="false"
+                    autoComplete="current-password"
+                    value={loginPassword}
+                    onChange={(e) => setLoginPassword(e.target.value)}
+                    placeholder="••••••••"
+                    className="w-full pl-10 pr-10 py-2.5 rounded-xl border border-neutral-300 text-xs text-neutral-900 placeholder:text-neutral-400 focus:ring-2 focus:ring-electric-600 focus:border-electric-600 focus:outline-none transition-all"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowLoginPassword(!showLoginPassword)}
+                    className="absolute right-3.5 top-3 text-neutral-400 hover:text-neutral-600 p-0.5"
+                    title={showLoginPassword ? "Ocultar" : "Mostrar"}
+                  >
+                    {showLoginPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                </div>
               </div>
-              <div className="relative">
-                <Lock className="w-4 h-4 text-neutral-400 absolute left-3.5 top-3.5" />
-                <input
-                  type={showPassword ? "text" : "password"}
-                  required
-                  autoCapitalize="none"
-                  autoCorrect="off"
-                  spellCheck="false"
-                  autoComplete="current-password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder="••••••••"
-                  className="w-full pl-10 pr-10 py-2.5 rounded-xl border border-neutral-300 text-xs text-neutral-900 placeholder:text-neutral-400 focus:ring-2 focus:ring-electric-600 focus:border-electric-600 focus:outline-none transition-all"
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3.5 top-3 text-neutral-400 hover:text-neutral-600 p-0.5"
-                  title={showPassword ? "Ocultar" : "Mostrar"}
-                >
-                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                </button>
+
+              <div className="flex items-center justify-between pt-0.5">
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={rememberMe}
+                    onChange={(e) => setRememberMe(e.target.checked)}
+                    className="w-4 h-4 text-electric-600 rounded border-neutral-300 focus:ring-electric-500"
+                  />
+                  <span className="text-xs text-neutral-600 font-medium select-none">
+                    Recordar mi sesión
+                  </span>
+                </label>
               </div>
-            </div>
 
-            <div className="flex items-center justify-between pt-0.5">
-              <label className="flex items-center gap-2 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={rememberMe}
-                  onChange={(e) => setRememberMe(e.target.checked)}
-                  className="w-4 h-4 rounded text-electric-600 border-neutral-300 focus:ring-electric-500 cursor-pointer"
-                />
-                <span className="text-xs text-neutral-600 font-medium select-none">
-                  Recordar mi sesión
-                </span>
-              </label>
-            </div>
-
-            <button
-              type="submit"
-              disabled={isLoading}
-              className={`w-full py-3 text-white font-bold text-xs rounded-xl shadow-lg transition-all active:scale-[0.98] disabled:opacity-50 flex items-center justify-center gap-2 ${
-                authRoleTab === "ADMIN"
-                  ? "bg-slate-900 hover:bg-slate-800"
-                  : "bg-electric-600 hover:bg-electric-700 shadow-electric"
-              }`}
-            >
-              {isLoading ? (
-                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-              ) : (
-                <>
-                  {authRoleTab === "ADMIN" ? <KeyRound className="w-4 h-4" /> : <ArrowRight className="w-4 h-4" />}
-                  <span>{authRoleTab === "ADMIN" ? "Ingresar al Panel de Control" : "Ingresar a mi Cuenta"}</span>
-                </>
-              )}
-            </button>
-          </form>
-
-          {/* Enlace de Registro (solo en pestaña de Clientes) */}
-          {authRoleTab === "CUSTOMER" && (
-            <div className="text-center text-xs text-neutral-600 pt-2 border-t border-neutral-100">
-              ¿Aún no tienes cuenta?{" "}
-              <Link
-                href="/register"
-                className="font-bold text-electric-600 hover:text-electric-700 hover:underline"
+              <button
+                type="submit"
+                disabled={isLoading}
+                className="w-full py-3 bg-electric-600 hover:bg-electric-700 text-white font-bold text-xs rounded-xl shadow-electric transition-all active:scale-[0.98] disabled:opacity-50 flex items-center justify-center gap-2"
               >
-                Crear cuenta gratis
-              </Link>
-            </div>
+                {isLoading ? (
+                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                ) : (
+                  <>
+                    <ArrowRight className="w-4 h-4" />
+                    <span>Ingresar a mi Cuenta</span>
+                  </>
+                )}
+              </button>
+            </form>
+          )}
+
+          {/* PESTAÑA 2: Formulario de Registro de Nuevo Cliente */}
+          {activeTab === "REGISTER" && (
+            <form onSubmit={handleRegisterSubmit} className="space-y-3.5 animate-in fade-in">
+              <div>
+                <label className="block text-xs font-bold text-neutral-700 mb-1">
+                  Nombre Completo *
+                </label>
+                <div className="relative">
+                  <UserIcon className="w-4 h-4 text-neutral-400 absolute left-3.5 top-3" />
+                  <input
+                    type="text"
+                    required
+                    value={regName}
+                    onChange={(e) => setRegName(e.target.value)}
+                    placeholder="Ej: María González"
+                    className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-neutral-300 text-xs text-neutral-900 placeholder:text-neutral-400 focus:ring-2 focus:ring-electric-600 focus:border-electric-600 focus:outline-none transition-all"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-neutral-700 mb-1">
+                  Correo Electrónico *
+                </label>
+                <div className="relative">
+                  <Mail className="w-4 h-4 text-neutral-400 absolute left-3.5 top-3" />
+                  <input
+                    type="email"
+                    required
+                    autoCapitalize="none"
+                    autoCorrect="off"
+                    spellCheck="false"
+                    value={regEmail}
+                    onChange={(e) => setRegEmail(e.target.value)}
+                    placeholder="maria@ejemplo.com"
+                    className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-neutral-300 text-xs text-neutral-900 placeholder:text-neutral-400 focus:ring-2 focus:ring-electric-600 focus:border-electric-600 focus:outline-none transition-all"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-neutral-700 mb-1">
+                  WhatsApp / Teléfono *
+                </label>
+                <div className="relative">
+                  <Phone className="w-4 h-4 text-neutral-400 absolute left-3.5 top-3" />
+                  <input
+                    type="tel"
+                    required
+                    value={regPhone}
+                    onChange={(e) => setRegPhone(e.target.value)}
+                    placeholder="0981 123 456"
+                    className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-neutral-300 text-xs text-neutral-900 placeholder:text-neutral-400 focus:ring-2 focus:ring-electric-600 focus:border-electric-600 focus:outline-none transition-all"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-neutral-700 mb-1">
+                  Crear Contraseña (mínimo 6 caracteres) *
+                </label>
+                <div className="relative">
+                  <Lock className="w-4 h-4 text-neutral-400 absolute left-3.5 top-3" />
+                  <input
+                    type={showRegPassword ? "text" : "password"}
+                    required
+                    autoCapitalize="none"
+                    autoCorrect="off"
+                    spellCheck="false"
+                    value={regPassword}
+                    onChange={(e) => setRegPassword(e.target.value)}
+                    placeholder="••••••••"
+                    className="w-full pl-10 pr-10 py-2.5 rounded-xl border border-neutral-300 text-xs text-neutral-900 placeholder:text-neutral-400 focus:ring-2 focus:ring-electric-600 focus:border-electric-600 focus:outline-none transition-all"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowRegPassword(!showRegPassword)}
+                    className="absolute right-3.5 top-2.5 text-neutral-400 hover:text-neutral-600 p-0.5"
+                    title={showRegPassword ? "Ocultar" : "Mostrar"}
+                  >
+                    {showRegPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                </div>
+              </div>
+
+              <button
+                type="submit"
+                disabled={isLoading}
+                className="w-full py-3 bg-electric-600 hover:bg-electric-700 text-white font-bold text-xs rounded-xl shadow-electric transition-all active:scale-[0.98] disabled:opacity-50 flex items-center justify-center gap-2 mt-2"
+              >
+                {isLoading ? (
+                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                ) : (
+                  <>
+                    <UserPlus className="w-4 h-4" />
+                    <span>Crear mi Cuenta Gratis</span>
+                  </>
+                )}
+              </button>
+            </form>
           )}
 
         </div>

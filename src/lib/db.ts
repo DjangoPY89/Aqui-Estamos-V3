@@ -145,6 +145,12 @@ function initSchema(db: Database.Database) {
   try {
     db.exec("ALTER TABLE users ADD COLUMN tax_name TEXT");
   } catch (e) {}
+  try {
+    db.exec("ALTER TABLE users ADD COLUMN reset_token TEXT");
+  } catch (e) {}
+  try {
+    db.exec("ALTER TABLE users ADD COLUMN reset_token_expires DATETIME");
+  } catch (e) {}
 
   isInitialized = true;
   seedInitialData(db);
@@ -281,6 +287,63 @@ export function updateUserProfile(
 
   db.prepare(`UPDATE users SET ${fields.join(", ")} WHERE id = ?`).run(...values);
   return getUserById(userId);
+}
+
+// Genera un token y código numérico de 6 dígitos para recuperación de contraseña
+export function createPasswordResetToken(email: string): {
+  token: string;
+  code: string;
+  email: string;
+  name: string;
+} | null {
+  const db = getDb();
+  const user = getUserByEmail(email);
+  if (!user) return null;
+
+  // Código de 6 dígitos para fácil tipeo en móviles
+  const code = Math.floor(100000 + Math.random() * 900000).toString();
+  // Token criptográfico para URL
+  const token = `rst_${Date.now()}_${Math.random().toString(36).substring(2, 12)}_${Math.random().toString(36).substring(2, 12)}`;
+
+  db.prepare(`
+    UPDATE users 
+    SET reset_token = ?, reset_token_expires = DATETIME('now', '+1 hour'), updated_at = CURRENT_TIMESTAMP
+    WHERE email = ?
+  `).run(`${token}:${code}`, user.email.toLowerCase());
+
+  return {
+    token,
+    code,
+    email: user.email,
+    name: user.name,
+  };
+}
+
+// Valida token o código de 6 dígitos y actualiza la contraseña con hash bcrypt
+export function verifyAndResetPassword(tokenOrCode: string, newPassword: string): boolean {
+  const db = getDb();
+  if (!tokenOrCode || !newPassword || newPassword.length < 6) return false;
+
+  const cleanInput = tokenOrCode.trim();
+
+  // Buscar usuario cuyo token contenga el string o código y no haya expirado
+  const row = db.prepare(`
+    SELECT * FROM users 
+    WHERE (reset_token = ? OR reset_token LIKE '%' || ? || '%' OR reset_token LIKE '%:' || ? OR reset_token = ?)
+      AND (reset_token_expires > CURRENT_TIMESTAMP OR reset_token_expires IS NULL)
+  `).get(cleanInput, cleanInput, cleanInput, cleanInput) as any;
+
+  if (!row) return false;
+
+  const passwordHash = bcrypt.hashSync(newPassword, 10);
+
+  const res = db.prepare(`
+    UPDATE users 
+    SET password_hash = ?, reset_token = NULL, reset_token_expires = NULL, updated_at = CURRENT_TIMESTAMP
+    WHERE id = ?
+  `).run(passwordHash, row.id);
+
+  return res.changes > 0;
 }
 
 export function getAllUsers(): (User & { totalBookings: number; totalSpentGs: number })[] {

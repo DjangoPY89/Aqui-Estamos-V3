@@ -303,3 +303,95 @@ export async function sendBookingConfirmationToCustomer(booking: Booking): Promi
     return false;
   }
 }
+
+/**
+ * Envía un correo con el código y enlace para restablecer la contraseña del cliente.
+ */
+export async function sendPasswordResetEmail({
+  email,
+  name,
+  code,
+  resetUrl,
+}: {
+  email: string;
+  name: string;
+  code: string;
+  resetUrl: string;
+}): Promise<boolean> {
+  const subject = `🔒 Recuperación de Contraseña — Aquí Estamos Limpieza`;
+
+  const htmlContent = `
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: #f8fafc; margin: 0; padding: 20px; color: #1e293b; }
+    .container { max-width: 540px; margin: 0 auto; background-color: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); border: 1px solid #e2e8f0; }
+    .header { background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%); padding: 28px 24px; text-align: center; color: #ffffff; }
+    .header h1 { margin: 0; font-size: 22px; font-weight: 800; }
+    .content { padding: 28px 24px; }
+    .code-box { background-color: #f0f9ff; border: 2px dashed #0284c7; border-radius: 12px; padding: 20px; text-align: center; margin: 24px 0; }
+    .code-number { font-size: 32px; font-weight: 900; letter-spacing: 6px; color: #0369a1; font-family: monospace; }
+    .btn { display: inline-block; background-color: #0284c7; color: #ffffff !important; text-decoration: none; padding: 14px 28px; border-radius: 12px; font-weight: 700; font-size: 14px; margin: 16px 0; }
+    .footer { background-color: #f8fafc; padding: 16px; text-align: center; font-size: 11px; color: #94a3b8; border-top: 1px solid #e2e8f0; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>🔐 Recuperación de Contraseña</h1>
+    </div>
+    
+    <div class="content">
+      <p style="font-size: 15px; margin-top: 0;">Hola <strong>${name || "Cliente"}</strong>,</p>
+      <p style="font-size: 13px; color: #475569; line-height: 1.6;">
+        Hemos recibido una solicitud para restablecer la contraseña de tu cuenta en <strong>Aquí Estamos</strong>.
+      </p>
+
+      <div class="code-box">
+        <p style="margin: 0 0 8px 0; font-size: 11px; font-weight: 700; text-transform: uppercase; color: #64748b;">Tu Código de Verificación</p>
+        <div class="code-number">${code}</div>
+        <p style="margin: 8px 0 0 0; font-size: 11px; color: #64748b;">Válido durante los próximos 60 minutos</p>
+      </div>
+
+      <div style="text-align: center;">
+        <a href="${resetUrl}" class="btn" target="_blank">
+          Restablecer Contraseña Directamente
+        </a>
+      </div>
+
+      <p style="font-size: 12px; color: #94a3b8; line-height: 1.5; margin-top: 24px; border-top: 1px solid #f1f5f9; pt: 16px;">
+        Si no solicitaste este cambio, puedes ignorar este correo con total tranquilidad. Tu contraseña actual seguirá siendo segura.
+      </p>
+    </div>
+
+    <div class="footer">
+      <strong>Aquí Estamos Limpieza Profesional</strong><br>
+      Asunción y Gran Asunción, Paraguay.<br>
+      Tel / WhatsApp: +595 984 320 528
+    </div>
+  </div>
+</body>
+</html>
+  `;
+
+  try {
+    const transporter = getMailTransporter();
+    if (transporter) {
+      const fromSender = process.env.EMAIL_FROM || `Aquí Estamos <${process.env.GMAIL_USER || "juanas89@gmail.com"}>`;
+      await transporter.sendMail({
+        from: fromSender,
+        to: email,
+        subject,
+        html: htmlContent,
+      });
+      console.log(`[Email Reset] Correo de recuperación enviado con éxito a: ${email}`);
+      return true;
+    }
+    return false;
+  } catch (error) {
+    console.error("[Email Reset Error] Error al enviar correo de recuperación:", error);
+    return false;
+  }
+}
