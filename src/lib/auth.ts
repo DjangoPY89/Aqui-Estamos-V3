@@ -11,7 +11,11 @@ const googleClientId = (process.env.GOOGLE_CLIENT_ID || process.env.NEXT_PUBLIC_
 const googleClientSecret = (process.env.GOOGLE_CLIENT_SECRET || "").trim();
 
 if (!process.env.NEXTAUTH_URL) {
-  process.env.NEXTAUTH_URL = "https://aqui-estamos-v3.vercel.app";
+  if (process.env.VERCEL_URL) {
+    process.env.NEXTAUTH_URL = `https://${process.env.VERCEL_URL}`;
+  } else if (process.env.NODE_ENV === "production") {
+    process.env.NEXTAUTH_URL = "https://aqui-estamos-v3.vercel.app";
+  }
 }
 
 export const authOptions: NextAuthOptions = {

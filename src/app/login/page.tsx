@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, Suspense } from "react";
+import React, { useState, useEffect, Suspense } from "react";
 import { signIn } from "next-auth/react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
@@ -17,7 +17,8 @@ import {
   User as UserIcon,
   Phone,
   UserPlus,
-  LogIn
+  LogIn,
+  Sparkles
 } from "lucide-react";
 import GoogleSignInButton from "@/components/auth/GoogleSignInButton";
 
@@ -26,6 +27,7 @@ function LoginContent() {
   const callbackUrl = searchParams.get("callbackUrl") || "/portal";
   const defaultTab = searchParams.get("tab") === "register" ? "REGISTER" : "LOGIN";
   const wasRegistered = searchParams.get("registered") === "true";
+  const authError = searchParams.get("error");
 
   const [activeTab, setActiveTab] = useState<"LOGIN" | "REGISTER">(defaultTab);
 
@@ -47,6 +49,31 @@ function LoginContent() {
   const [successMsg, setSuccessMsg] = useState<string | null>(
     wasRegistered ? "¡Cuenta creada con éxito! Ingresa con tus credenciales a continuación." : null
   );
+
+  // Manejar errores provenientes de redirección NextAuth
+  useEffect(() => {
+    if (authError) {
+      if (authError === "CredentialsSignin") {
+        setErrorMsg("Correo o contraseña incorrectos. Por favor verifica tus datos.");
+      } else if (authError === "OAuthSignin" || authError === "OAuthCallback" || authError === "OAuthCreateAccount") {
+        setErrorMsg("No pudimos vincular el acceso social. Por favor completa el formulario con tu correo.");
+      } else if (authError === "OAuthAccountNotLinked") {
+        setErrorMsg("Este correo ya está registrado con contraseña. Por favor ingresa con tu clave.");
+      } else {
+        setErrorMsg("Ocurrió un inconveniente al validar la sesión. Por favor intenta de nuevo.");
+      }
+    }
+  }, [authError]);
+
+  // Actualizar pestaña si el parámetro de búsqueda cambia
+  useEffect(() => {
+    const tabParam = searchParams.get("tab");
+    if (tabParam === "register") {
+      setActiveTab("REGISTER");
+    } else if (tabParam === "login") {
+      setActiveTab("LOGIN");
+    }
+  }, [searchParams]);
 
   // Manejo de Inicio de Sesión
   const handleLoginSubmit = async (e: React.FormEvent) => {
@@ -92,26 +119,31 @@ function LoginContent() {
     setErrorMsg(null);
     setSuccessMsg(null);
 
-    if (!regName.trim() || !regEmail.trim() || !regPhone.trim() || !regPassword) {
-      setErrorMsg("Por favor completa todos los campos del registro.");
+    const cleanName = regName.trim();
+    const cleanEmail = regEmail.trim().toLowerCase();
+    const cleanPhone = regPhone.trim();
+
+    if (!cleanName || !cleanEmail || !cleanPhone || !regPassword) {
+      setErrorMsg("Por favor completa todos los campos del formulario.");
       return;
     }
 
     if (regPassword.length < 6) {
-      setErrorMsg("La contraseña debe tener al menos 6 caracteres.");
+      setErrorMsg("La contraseña debe tener un mínimo de 6 caracteres.");
       return;
     }
 
     setIsLoading(true);
 
     try {
+      // 1. Crear el usuario en la base de datos
       const res = await fetch("/api/register", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          name: regName.trim(),
-          email: regEmail.trim().toLowerCase(),
-          phone: regPhone.trim(),
+          name: cleanName,
+          email: cleanEmail,
+          phone: cleanPhone,
           password: regPassword,
         }),
       });
@@ -125,23 +157,24 @@ function LoginContent() {
       }
 
       if (!res.ok) {
-        throw new Error(data.error || "Error al crear la cuenta.");
+        throw new Error(data.error || "Error al registrar la cuenta.");
       }
 
-      // Iniciar sesión automáticamente tras el registro exitoso
+      // 2. Iniciar sesión automáticamente tras el registro exitoso
       const loginRes = await signIn("credentials", {
         redirect: false,
-        email: regEmail.trim().toLowerCase(),
+        email: cleanEmail,
         password: regPassword,
         callbackUrl,
       });
 
-      if (loginRes?.ok) {
+      if (loginRes?.ok && !loginRes?.error) {
         window.location.href = callbackUrl;
       } else {
-        setSuccessMsg("¡Cuenta creada con éxito! Por favor inicia sesión con tu contraseña.");
+        // En caso de que el auto-login requiera confirmación manual
+        setSuccessMsg("¡Tu cuenta ha sido creada exitosamente! Ingresa con tu contraseña.");
         setActiveTab("LOGIN");
-        setLoginEmail(regEmail.trim().toLowerCase());
+        setLoginEmail(cleanEmail);
         setIsLoading(false);
       }
     } catch (err: any) {
@@ -188,7 +221,7 @@ function LoginContent() {
           
           {/* Mensaje de Éxito */}
           {successMsg && (
-            <div className="p-3.5 bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs rounded-2xl flex items-center gap-2.5 animate-in fade-in">
+            <div className="p-3.5 bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs rounded-2xl flex items-center gap-2.5 animate-in fade-in duration-200">
               <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
               <span>{successMsg}</span>
             </div>
@@ -196,7 +229,7 @@ function LoginContent() {
 
           {/* Mensaje de Error */}
           {errorMsg && (
-            <div className="p-3.5 bg-rose-50 border border-rose-200 text-rose-700 text-xs rounded-2xl flex items-center gap-2.5 animate-in fade-in">
+            <div className="p-3.5 bg-rose-50 border border-rose-200 text-rose-700 text-xs rounded-2xl flex items-center gap-2.5 animate-in fade-in duration-200">
               <AlertCircle className="w-4 h-4 shrink-0 text-rose-500" />
               <span>{errorMsg}</span>
             </div>
@@ -233,7 +266,7 @@ function LoginContent() {
               }`}
             >
               <UserPlus className="w-3.5 h-3.5" />
-              <span>Registrarme</span>
+              <span>Crear Cuenta</span>
             </button>
           </div>
 
@@ -250,7 +283,7 @@ function LoginContent() {
             <div className="relative flex items-center justify-center">
               <div className="border-t border-neutral-200 w-full" />
               <span className="bg-white px-3 text-[11px] font-bold text-neutral-400 uppercase tracking-wider">
-                o con tu correo
+                o con tus datos
               </span>
               <div className="border-t border-neutral-200 w-full" />
             </div>
@@ -258,7 +291,7 @@ function LoginContent() {
 
           {/* PESTAÑA 1: Formulario de Iniciar Sesión */}
           {activeTab === "LOGIN" && (
-            <form onSubmit={handleLoginSubmit} className="space-y-4 animate-in fade-in">
+            <form onSubmit={handleLoginSubmit} className="space-y-4 animate-in fade-in duration-200">
               <div>
                 <label className="block text-xs font-bold text-neutral-700 mb-1.5">
                   Correo Electrónico
@@ -345,12 +378,29 @@ function LoginContent() {
                   </>
                 )}
               </button>
+
+              {/* Conmutador Inferior: Crear Cuenta */}
+              <div className="text-center text-xs text-neutral-500 pt-3 border-t border-neutral-100 flex flex-col items-center gap-1.5">
+                <span>¿No tienes una cuenta de cliente todavía?</span>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setActiveTab("REGISTER");
+                    setErrorMsg(null);
+                    setSuccessMsg(null);
+                  }}
+                  className="font-bold text-electric-600 hover:text-electric-700 hover:underline flex items-center gap-1 transition-colors"
+                >
+                  <Sparkles className="w-3.5 h-3.5 text-amber-500" />
+                  <span>Crear mi cuenta gratis aquí</span>
+                </button>
+              </div>
             </form>
           )}
 
           {/* PESTAÑA 2: Formulario de Registro de Nuevo Cliente */}
           {activeTab === "REGISTER" && (
-            <form onSubmit={handleRegisterSubmit} className="space-y-3.5 animate-in fade-in">
+            <form onSubmit={handleRegisterSubmit} className="space-y-3.5 animate-in fade-in duration-200">
               <div>
                 <label className="block text-xs font-bold text-neutral-700 mb-1">
                   Nombre Completo *
@@ -447,6 +497,23 @@ function LoginContent() {
                   </>
                 )}
               </button>
+
+              {/* Conmutador Inferior: Iniciar Sesión */}
+              <div className="text-center text-xs text-neutral-500 pt-3 border-t border-neutral-100 flex flex-col items-center gap-1.5">
+                <span>¿Ya tienes una cuenta registrada?</span>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setActiveTab("LOGIN");
+                    setErrorMsg(null);
+                    setSuccessMsg(null);
+                  }}
+                  className="font-bold text-electric-600 hover:text-electric-700 hover:underline flex items-center gap-1 transition-colors"
+                >
+                  <LogIn className="w-3.5 h-3.5" />
+                  <span>Iniciar sesión con mi cuenta</span>
+                </button>
+              </div>
             </form>
           )}
 

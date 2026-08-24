@@ -68,3 +68,48 @@ export async function PATCH(req: Request) {
   }
 }
 
+export async function POST(req: Request) {
+  try {
+    const session = await getServerSession(authOptions);
+
+    if ((session?.user as any)?.role !== "ADMIN") {
+      return NextResponse.json({ error: "No autorizado. Se requieren permisos de administrador." }, { status: 403 });
+    }
+
+    const body = await req.json();
+    const { name, email, phone, address, password, ruc, taxName } = body;
+
+    if (!name || !email) {
+      return NextResponse.json({ error: "El nombre y correo electrónico son obligatorios." }, { status: 400 });
+    }
+
+    const { getUserByEmail, createUser, updateUserProfile } = await import("@/lib/db");
+    const existing = getUserByEmail(email.trim().toLowerCase());
+    if (existing) {
+      return NextResponse.json({ error: "Ya existe un cliente registrado con este correo electrónico." }, { status: 409 });
+    }
+
+    const newUser = createUser({
+      name: name.trim(),
+      email: email.trim().toLowerCase(),
+      phone: phone ? phone.trim() : undefined,
+      address: address ? address.trim() : undefined,
+      password: password && password.length >= 6 ? password : "cliente" + Math.random().toString(36).substring(2, 8),
+      role: "CUSTOMER",
+    });
+
+    if (ruc || taxName) {
+      updateUserProfile(newUser.id, { ruc, taxName });
+    }
+
+    return NextResponse.json({
+      success: true,
+      message: "Cliente creado exitosamente.",
+      user: newUser,
+    }, { status: 201 });
+  } catch (error: any) {
+    console.error("Error al crear cliente desde admin:", error);
+    return NextResponse.json({ error: error.message || "Error al crear cliente." }, { status: 500 });
+  }
+}
+
