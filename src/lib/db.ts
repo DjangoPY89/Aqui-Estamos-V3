@@ -12,14 +12,38 @@ export function getDb(): Database.Database {
     return dbInstance;
   }
 
-  const dbDirectory = path.join(process.cwd(), "data");
-  if (!fs.existsSync(dbDirectory)) {
-    fs.mkdirSync(dbDirectory, { recursive: true });
+  const isVercel = process.env.VERCEL === "1" || process.env.AWS_LAMBDA_FUNCTION_NAME !== undefined;
+  let dbPath: string;
+
+  if (isVercel) {
+    const tmpDir = "/tmp";
+    dbPath = path.join(tmpDir, "aquiestamos.db");
+
+    // En Vercel Serverless, copiar base de datos inicial si existe empaquetada
+    const bundledDbPath = path.join(process.cwd(), "data", "aquiestamos.db");
+    if (!fs.existsSync(dbPath) && fs.existsSync(bundledDbPath)) {
+      try {
+        fs.copyFileSync(bundledDbPath, dbPath);
+      } catch (e) {}
+    }
+  } else {
+    const dbDirectory = path.join(process.cwd(), "data");
+    if (!fs.existsSync(dbDirectory)) {
+      try {
+        fs.mkdirSync(dbDirectory, { recursive: true });
+      } catch (e) {}
+    }
+    dbPath = path.join(dbDirectory, "aquiestamos.db");
   }
 
-  const dbPath = path.join(dbDirectory, "aquiestamos.db");
   dbInstance = new Database(dbPath, { timeout: 10000 });
-  dbInstance.pragma("journal_mode = WAL");
+  try {
+    dbInstance.pragma("journal_mode = WAL");
+  } catch (e) {
+    try {
+      dbInstance.pragma("journal_mode = DELETE");
+    } catch (e2) {}
+  }
   dbInstance.pragma("busy_timeout = 10000");
 
   initSchema(dbInstance);
