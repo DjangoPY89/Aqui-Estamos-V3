@@ -6,7 +6,17 @@ import bcrypt from "bcryptjs";
 import { createOrUpdateOAuthUser, createUser, getUserByEmail, getUserById, seedInitialData } from "./db";
 import { verifyGoogleIdToken } from "./google-auth";
 
+// Auto-detección de URL en Vercel
+if (!process.env.NEXTAUTH_URL) {
+  if (process.env.VERCEL_URL) {
+    process.env.NEXTAUTH_URL = `https://${process.env.VERCEL_URL}`;
+  } else {
+    process.env.NEXTAUTH_URL = "https://aqui-estamos-v3.vercel.app";
+  }
+}
+
 export const authOptions: NextAuthOptions = {
+  secret: process.env.NEXTAUTH_SECRET || "DjangoPY89_Secret_Production_Key_2026_AquiEstamos",
   providers: [
     // Proveedor Google OAuth Oficial (cuando se proporcionan las claves en .env)
     ...(process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET

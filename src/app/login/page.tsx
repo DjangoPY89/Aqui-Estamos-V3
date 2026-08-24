@@ -50,13 +50,17 @@ function LoginContent() {
       });
 
       if (res?.error) {
-        setErrorMsg(res.error);
+        if (res.error === "CredentialsSignin" || res.error.includes("CredentialsSignin")) {
+          setErrorMsg("Correo o contraseña incorrectos. Por favor verifica tus datos.");
+        } else {
+          setErrorMsg(res.error);
+        }
         setIsLoading(false);
       } else {
         window.location.href = targetUrl;
       }
     } catch (err: any) {
-      setErrorMsg("Ocurrió un error al conectar con el servidor.");
+      setErrorMsg(err.message || "Ocurrió un error al conectar con el servidor.");
       setIsLoading(false);
     }
   };
