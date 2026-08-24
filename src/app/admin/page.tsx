@@ -490,7 +490,10 @@ export default function AdminDashboardPage() {
     const raw = (b.customerPhone || "").replace(/\D/g, "");
     const phone = raw.startsWith("595") ? raw : raw.startsWith("0") ? `595${raw.substring(1)}` : `595${raw}`;
     const extrasStr = b.extras && b.extras.length > 0 ? b.extras.join(", ") : "Ninguno";
-    const msg = `¡Hola ${b.customerName}! 🧼 Te saludamos de *Aquí Estamos*. Te confirmamos tu servicio de limpieza agendado:\n\n📅 *Fecha:* ${b.serviceDate}\n⏰ *Hora:* ${b.serviceTime} hs (${b.serviceHours} Horas)\n📍 *Dirección:* ${b.address}\n✨ *Extras:* ${extrasStr}\n💰 *Total:* ${formatGs(b.totalPrice)}\n👤 *Personal:* ${b.assignedCleaner || "Asignación en curso"}\n\n¿Deseas confirmar o tienes alguna consulta?`;
+    const mapsLink = b.latitude && b.longitude
+      ? `https://www.google.com/maps?q=${b.latitude},${b.longitude}`
+      : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(b.address)}`;
+    const msg = `¡Hola ${b.customerName}! 🧼 Te saludamos de *Aquí Estamos*. Te confirmamos tu servicio de limpieza agendado:\n\n📅 *Fecha:* ${b.serviceDate}\n⏰ *Hora:* ${b.serviceTime} hs (${b.serviceHours} Horas)\n📍 *Dirección:* ${b.address}\n🗺️ *Ubicación en Google Maps:* ${mapsLink}\n✨ *Extras:* ${extrasStr}\n💰 *Total:* ${formatGs(b.totalPrice)}\n👤 *Personal:* ${b.assignedCleaner || "Asignación en curso"}\n\n¿Deseas confirmar o tienes alguna consulta?`;
     return `https://wa.me/${phone}?text=${encodeURIComponent(msg)}`;
   };
 
@@ -498,7 +501,10 @@ export default function AdminDashboardPage() {
     const raw = (emp.phone || "").replace(/\D/g, "");
     const phone = raw.startsWith("595") ? raw : raw.startsWith("0") ? `595${raw.substring(1)}` : `595${raw}`;
     const extrasStr = b.extras && b.extras.length > 0 ? b.extras.join(", ") : "Ninguno";
-    const msg = `¡Hola ${emp.name}! 👋 Tienes un nuevo servicio de limpieza asignado:\n\n📅 *Fecha:* ${b.serviceDate}\n⏰ *Hora:* ${b.serviceTime} hs (${b.serviceHours} Horas)\n👤 *Cliente:* ${b.customerName} (Tel: ${b.customerPhone})\n📍 *Dirección:* ${b.address}\n✨ *Extras:* ${extrasStr}\n📝 *Notas:* ${b.notes || "Ninguna"}`;
+    const mapsLink = b.latitude && b.longitude
+      ? `https://www.google.com/maps?q=${b.latitude},${b.longitude}`
+      : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(b.address)}`;
+    const msg = `¡Hola ${emp.name}! 👋 Tienes un nuevo servicio de limpieza asignado:\n\n📅 *Fecha:* ${b.serviceDate}\n⏰ *Hora:* ${b.serviceTime} hs (${b.serviceHours} Horas)\n👤 *Cliente:* ${b.customerName} (Tel: ${b.customerPhone})\n📍 *Dirección:* ${b.address}\n🗺️ *Ubicación en Google Maps:* ${mapsLink}\n✨ *Extras:* ${extrasStr}\n📝 *Notas:* ${b.notes || "Ninguna"}`;
     return `https://wa.me/${phone}?text=${encodeURIComponent(msg)}`;
   };
 
@@ -1442,16 +1448,40 @@ export default function AdminDashboardPage() {
 
                         {/* 17. Enviar Mensaje WhatsApp */}
                         <td className="px-4 py-3 border-r border-slate-800 text-center whitespace-nowrap font-sans">
-                          <a
-                            href={generateWhatsAppCustomerUrl(b)}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-[11px] font-bold shadow-xs transition-all active:scale-95"
-                            title="Enviar WhatsApp de confirmación al cliente"
-                          >
-                            <Send className="w-3 h-3" />
-                            <span>Enviar WhatsApp</span>
-                          </a>
+                          {assignedEmp ? (
+                            <div className="inline-flex items-center gap-1.5 justify-center">
+                              <a
+                                href={generateWhatsAppEmployeeUrl(b, assignedEmp)}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-[11px] font-bold shadow-xs transition-all active:scale-95"
+                                title={`Enviar orden con ubicación en Google Maps a ${assignedEmp.name}`}
+                              >
+                                <Send className="w-3 h-3" />
+                                <span>WhatsApp Empleado</span>
+                              </a>
+                              <a
+                                href={generateWhatsAppCustomerUrl(b)}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="p-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-emerald-400 border border-slate-700 transition-all"
+                                title="Enviar confirmación al cliente"
+                              >
+                                <MessageSquare className="w-3.5 h-3.5" />
+                              </a>
+                            </div>
+                          ) : (
+                            <a
+                              href={generateWhatsAppCustomerUrl(b)}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-emerald-600/80 hover:bg-emerald-600 text-white text-[11px] font-bold shadow-xs transition-all active:scale-95"
+                              title="Enviar WhatsApp al cliente (Personal aún sin asignar)"
+                            >
+                              <Send className="w-3 h-3" />
+                              <span>WhatsApp Cliente</span>
+                            </a>
+                          )}
                         </td>
 
                         {/* 18. Column 1 / Acciones: Crear Evento Google Calendar, Editar, Eliminar */}
