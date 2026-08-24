@@ -50,13 +50,20 @@ function RecuperarPasswordContent() {
     setIsLoading(true);
 
     try {
-      const res = await fetch("/api/auth/forgot-password", {
+      const res = await fetch("/api/forgot-password", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email: email.trim().toLowerCase() }),
       });
 
-      const data = await res.json();
+      let data: any = {};
+      try {
+        const text = await res.text();
+        data = text ? JSON.parse(text) : {};
+      } catch (e) {
+        data = { error: "Error al procesar la solicitud." };
+      }
+
       if (!res.ok) {
         throw new Error(data.error || "Error al enviar solicitud.");
       }
@@ -93,7 +100,7 @@ function RecuperarPasswordContent() {
     setIsLoading(true);
 
     try {
-      const res = await fetch("/api/auth/reset-password", {
+      const res = await fetch("/api/reset-password", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -102,7 +109,14 @@ function RecuperarPasswordContent() {
         }),
       });
 
-      const data = await res.json();
+      let data: any = {};
+      try {
+        const text = await res.text();
+        data = text ? JSON.parse(text) : {};
+      } catch (e) {
+        data = { error: "Error al restablecer contraseña." };
+      }
+
       if (!res.ok) {
         throw new Error(data.error || "Error al restablecer contraseña.");
       }

@@ -31,13 +31,12 @@ export async function POST(req: Request) {
       });
     }
 
-    // Por seguridad, siempre devolvemos mensaje de éxito para no filtrar emails
     return NextResponse.json({
       ok: true,
       message: "Si el correo está registrado, recibirás un enlace y código de recuperación en tu bandeja de entrada.",
     });
   } catch (error: any) {
-    console.error("Error en /api/auth/forgot-password:", error);
+    console.error("Error en /api/forgot-password:", error);
     return NextResponse.json(
       { error: error.message || "Error al procesar la solicitud." },
       { status: 500 }

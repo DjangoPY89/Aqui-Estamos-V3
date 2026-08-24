@@ -36,7 +36,7 @@ export async function POST(req: Request) {
       message: "¡Tu contraseña ha sido actualizada con éxito! Ya puedes iniciar sesión.",
     });
   } catch (error: any) {
-    console.error("Error en /api/auth/reset-password:", error);
+    console.error("Error en /api/reset-password:", error);
     return NextResponse.json(
       { error: error.message || "Error al restablecer contraseña." },
       { status: 500 }

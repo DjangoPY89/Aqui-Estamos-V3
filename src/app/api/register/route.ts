@@ -22,7 +22,7 @@ export async function POST(req: Request) {
       );
     }
 
-    const existingUser = getUserByEmail(email);
+    const existingUser = getUserByEmail(email.trim().toLowerCase());
     if (existingUser) {
       return NextResponse.json(
         { error: "Ya existe una cuenta registrada con este correo electrónico." },
@@ -31,11 +31,11 @@ export async function POST(req: Request) {
     }
 
     const newUser = createUser({
-      name,
-      email,
+      name: name.trim(),
+      email: email.trim().toLowerCase(),
       password,
-      phone,
-      address,
+      phone: phone ? phone.trim() : undefined,
+      address: address ? address.trim() : undefined,
       role: "CUSTOMER",
     });
 
@@ -52,7 +52,7 @@ export async function POST(req: Request) {
       { status: 201 }
     );
   } catch (error: any) {
-    console.error("Error en registro:", error);
+    console.error("Error en registro de cliente:", error);
     return NextResponse.json(
       { error: error.message || "Error al procesar el registro." },
       { status: 500 }
