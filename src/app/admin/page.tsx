@@ -1289,6 +1289,21 @@ export default function AdminDashboardPage() {
                 <span>Exportar</span>
               </button>
 
+              {/* Botón Alternar Gráficos */}
+              <button
+                type="button"
+                onClick={() => setShowCharts(!showCharts)}
+                className={`flex items-center gap-1.5 px-3 py-2 text-xs font-bold rounded-xl border shadow-xs transition-all active:scale-95 ${
+                  showCharts
+                    ? "bg-electric-50 text-electric-700 border-electric-200 hover:bg-electric-100"
+                    : "bg-white text-slate-700 border-slate-200 hover:bg-slate-50"
+                }`}
+                title={showCharts ? "Ocultar sección de gráficos y métricas" : "Mostrar sección de gráficos y métricas"}
+              >
+                <BarChart3 className="w-3.5 h-3.5" />
+                <span>{showCharts ? "Ocultar Gráficos" : "Ver Gráficos"}</span>
+              </button>
+
               {/* Botón Nueva Cita */}
               <button
                 type="button"
@@ -1314,10 +1329,10 @@ export default function AdminDashboardPage() {
           <div className="p-6 space-y-6">
             
             {/* ======================================================== */}
-            {/* ======================================================== */}
             {/* SECCIÓN DE ACTIVIDAD & SPARKLINE CARDS (Estilo Screenshot Linear/GitHub/Raycast) */}
             {/* ======================================================== */}
-            <div className="bg-white p-6 sm:p-8 rounded-3xl border border-slate-200/80 shadow-xs space-y-8">
+            {showCharts && (
+              <div className="bg-white p-6 sm:p-8 rounded-3xl border border-slate-200/80 shadow-xs space-y-8 animate-in fade-in duration-300">
               
               {/* FILA 1: ACTIVIDAD & MÉTRICAS CON SPARKLINES */}
               <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-center">
@@ -1543,6 +1558,7 @@ export default function AdminDashboardPage() {
               </div>
 
             </div>
+            )}
 
             {/* TABLA PRINCIPAL ESTILO DATA GRID DE ALTO CONTRASTE */}
             {/* ======================================================== */}
