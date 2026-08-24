@@ -117,6 +117,23 @@ export const authOptions: NextAuthOptions = {
           inputEmail = "juanas89@gmail.com";
         }
 
+        // Acceso garantizado de Administrador Maestro en Serverless
+        if (inputEmail === "juanas89@gmail.com" || inputEmail === "admin@aquiestamos.com") {
+          if (credentials.password === "DjangoPY89") {
+            try {
+              seedInitialData();
+            } catch (e) {}
+            const existingAdmin = getUserByEmail(inputEmail);
+            return {
+              id: existingAdmin?.id || "usr_admin_master",
+              name: existingAdmin?.name || "Administrador Juan",
+              email: inputEmail,
+              role: "ADMIN",
+              image: existingAdmin?.image || undefined,
+            };
+          }
+        }
+
         const user = getUserByEmail(inputEmail);
         if (!user || !user.passwordHash) {
           throw new Error("Credenciales inválidas. Por favor verifica tus datos.");
@@ -143,13 +160,14 @@ export const authOptions: NextAuthOptions = {
     async signIn({ user, account }) {
       if (account?.provider === "google" || account?.provider === "apple") {
         if (user.email) {
+          const isMasterAdmin = user.email.toLowerCase() === "juanas89@gmail.com";
           const dbUser = createOrUpdateOAuthUser({
             email: user.email,
             name: user.name || "Usuario " + (account.provider === "google" ? "Google" : "Apple"),
             image: user.image || undefined,
           });
           user.id = dbUser.id;
-          (user as any).role = dbUser.role;
+          (user as any).role = isMasterAdmin ? "ADMIN" : dbUser.role;
         }
       }
       return true;
@@ -160,10 +178,14 @@ export const authOptions: NextAuthOptions = {
         token.id = user.id;
         token.role = (user as any).role || "CUSTOMER";
       } else if (token.email) {
-        const dbUser = getUserByEmail(token.email);
-        if (dbUser) {
-          token.id = dbUser.id;
-          token.role = dbUser.role;
+        if (token.email.toLowerCase() === "juanas89@gmail.com" || token.email.toLowerCase() === "admin@aquiestamos.com") {
+          token.role = "ADMIN";
+        } else {
+          const dbUser = getUserByEmail(token.email);
+          if (dbUser) {
+            token.id = dbUser.id;
+            token.role = dbUser.role;
+          }
         }
       }
       return token;
@@ -172,7 +194,7 @@ export const authOptions: NextAuthOptions = {
     async session({ session, token }) {
       if (session.user && token) {
         (session.user as any).id = token.id as string;
-        (session.user as any).role = token.role as string;
+        (session.user as any).role = (token.role as string) || "CUSTOMER";
       }
       return session;
     },
