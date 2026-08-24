@@ -10,12 +10,12 @@ import { verifyGoogleIdToken } from "./google-auth";
 const googleClientId = (process.env.GOOGLE_CLIENT_ID || process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || "").trim();
 const googleClientSecret = (process.env.GOOGLE_CLIENT_SECRET || "").trim();
 
-if (!process.env.NEXTAUTH_URL) {
-  if (process.env.VERCEL_URL) {
-    process.env.NEXTAUTH_URL = `https://${process.env.VERCEL_URL}`;
-  } else {
-    process.env.NEXTAUTH_URL = "https://aqui-estamos-v3.vercel.app";
-  }
+// SIEMPRE forzar la URL canónica en producción para evitar redirect_uri_mismatch con Google OAuth
+// VERCEL_URL cambia en cada preview deployment, por eso se ignora y se usa la URL fija de producción
+if (process.env.VERCEL === "1") {
+  process.env.NEXTAUTH_URL = "https://aqui-estamos-v3.vercel.app";
+} else if (!process.env.NEXTAUTH_URL) {
+  process.env.NEXTAUTH_URL = "http://localhost:3000";
 }
 
 export const authOptions: NextAuthOptions = {
