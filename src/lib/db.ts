@@ -773,6 +773,48 @@ export function seedInitialData(database?: Database.Database) {
       db.prepare("UPDATE users SET password_hash = ? WHERE email = ?").run(carlosHash, "canterodontown@gmail.com");
     }
 
+    // Sembrar usuario Sofia Villalba
+    const sofiaCustomer = db.prepare("SELECT * FROM users WHERE email = ?").get("sofia.villalba@gmail.com") as any;
+    const sofiaHash = bcrypt.hashSync("SofiaPassword123", 10);
+    if (!sofiaCustomer) {
+      const custId3 = `usr_${Date.now()}_sofia`;
+      db.prepare(`
+        INSERT INTO users (id, name, email, password_hash, role, phone, address)
+        VALUES (?, ?, ?, ?, ?, ?, ?)
+      `).run(
+        custId3,
+        "Sofia Villalba",
+        "sofia.villalba@gmail.com",
+        sofiaHash,
+        "CUSTOMER",
+        "0982345678",
+        "Barrio Villa Morra, Asunción"
+      );
+    } else {
+      db.prepare("UPDATE users SET password_hash = ? WHERE email = ?").run(sofiaHash, "sofia.villalba@gmail.com");
+    }
+
+    // Sembrar usuario Rodrigo Martinez
+    const rodrigoCustomer = db.prepare("SELECT * FROM users WHERE email = ?").get("rodrigo.martinez@gmail.com") as any;
+    const rodrigoHash = bcrypt.hashSync("RodrigoPass2026", 10);
+    if (!rodrigoCustomer) {
+      const custId4 = `usr_${Date.now()}_rodrigo`;
+      db.prepare(`
+        INSERT INTO users (id, name, email, password_hash, role, phone, address)
+        VALUES (?, ?, ?, ?, ?, ?, ?)
+      `).run(
+        custId4,
+        "Rodrigo Martinez",
+        "rodrigo.martinez@gmail.com",
+        rodrigoHash,
+        "CUSTOMER",
+        "0971987654",
+        "Barrio Ykua Satî, Asunción"
+      );
+    } else {
+      db.prepare("UPDATE users SET password_hash = ? WHERE email = ?").run(rodrigoHash, "rodrigo.martinez@gmail.com");
+    }
+
     // Reservas de muestra
     const sampleBooking = db.prepare("SELECT * FROM bookings WHERE booking_number = 'AE-2026-0812'").get() as any;
     if (!sampleBooking) {
