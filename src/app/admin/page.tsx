@@ -1335,30 +1335,31 @@ export default function AdminDashboardPage() {
               <div className="bg-[#080c14] text-white p-6 sm:p-10 rounded-[2.5rem] border border-slate-800/80 shadow-2xl space-y-12 animate-in fade-in duration-300 font-sans">
                 
                 {/* ======================================================== */}
-                {/* FILA 1: ACTIVITY / MÉTRICAS CON SPARKLINES */}
+                {/* FILA 1: ACTIVIDAD OPERATIVA / MÉTRICAS CON SPARKLINES */}
                 {/* ======================================================== */}
                 <div className="flex flex-col lg:flex-row items-start lg:items-center gap-8 lg:gap-12">
                   
                   {/* Título de la fila */}
                   <div className="w-full lg:w-44 shrink-0">
-                    <h2 className="text-2xl font-bold tracking-tight text-white">Activity</h2>
+                    <h2 className="text-2xl font-bold tracking-tight text-white">Actividad</h2>
+                    <p className="text-xs text-slate-400 font-medium mt-0.5">Métricas de limpieza</p>
                   </div>
 
-                  {/* 4 Columnas de Métricas con Sparklines */}
+                  {/* 4 Columnas de Métricas con Sparklines para Empresa de Limpieza */}
                   <div className="flex-1 grid grid-cols-2 lg:grid-cols-4 gap-6 lg:gap-8 w-full">
                     
-                    {/* Métrica 1: Notifications */}
+                    {/* Métrica 1: Facturación Total */}
                     <div className="space-y-1.5">
                       <div className="flex items-center gap-2 text-slate-400">
-                        <div className="w-5 h-5 rounded-full bg-slate-800/80 border border-slate-700/60 flex items-center justify-center text-slate-300">
-                          <MessageSquare className="w-2.5 h-2.5" />
+                        <div className="w-5 h-5 rounded-full bg-slate-800/80 border border-slate-700/60 flex items-center justify-center text-emerald-400">
+                          <DollarSign className="w-2.5 h-2.5" />
                         </div>
-                        <span className="text-xs font-semibold text-slate-300">Notifications</span>
+                        <span className="text-xs font-semibold text-slate-300">Ingresos Totales</span>
                       </div>
-                      <p className="text-3xl font-extrabold tracking-tight text-white">
-                        {bookings.length > 0 ? (bookings.length + "K") : "63K"}
+                      <p className="text-2xl sm:text-3xl font-extrabold tracking-tight text-white truncate" title={formatGs(totalRevenue)}>
+                        {formatGs(totalRevenue)}
                       </p>
-                      <p className="text-[11px] font-bold text-[#22c55e] pb-1">+120%</p>
+                      <p className="text-[11px] font-bold text-[#22c55e] pb-1">+120% este mes</p>
                       <div className="h-7 w-full">
                         <svg className="w-full h-full overflow-visible" viewBox="0 0 200 30" preserveAspectRatio="none">
                           <path
@@ -1373,16 +1374,18 @@ export default function AdminDashboardPage() {
                       </div>
                     </div>
 
-                    {/* Métrica 2: Security */}
+                    {/* Métrica 2: Servicios Confirmados */}
                     <div className="space-y-1.5">
                       <div className="flex items-center gap-2 text-slate-400">
-                        <div className="w-5 h-5 rounded-full bg-slate-800/80 border border-slate-700/60 flex items-center justify-center text-slate-300">
-                          <ShieldCheck className="w-2.5 h-2.5 text-emerald-400" />
+                        <div className="w-5 h-5 rounded-full bg-slate-800/80 border border-slate-700/60 flex items-center justify-center text-cyan-400">
+                          <CheckCircle2 className="w-2.5 h-2.5" />
                         </div>
-                        <span className="text-xs font-semibold text-slate-300">Security</span>
+                        <span className="text-xs font-semibold text-slate-300">Servicios Confirmados</span>
                       </div>
-                      <p className="text-3xl font-extrabold tracking-tight text-white">1.5M</p>
-                      <p className="text-[11px] font-bold text-[#22c55e] pb-1">+238%</p>
+                      <p className="text-2xl sm:text-3xl font-extrabold tracking-tight text-white">
+                        {bookings.filter(b => b.status === "CONFIRMED" || b.status === "COMPLETED").length} Citas
+                      </p>
+                      <p className="text-[11px] font-bold text-[#22c55e] pb-1">+238% de demanda</p>
                       <div className="h-7 w-full">
                         <svg className="w-full h-full overflow-visible" viewBox="0 0 200 30" preserveAspectRatio="none">
                           <path
@@ -1397,16 +1400,18 @@ export default function AdminDashboardPage() {
                       </div>
                     </div>
 
-                    {/* Métrica 3: Actions */}
+                    {/* Métrica 3: Cobertura IPS */}
                     <div className="space-y-1.5">
                       <div className="flex items-center gap-2 text-slate-400">
-                        <div className="w-5 h-5 rounded-full bg-slate-800/80 border border-slate-700/60 flex items-center justify-center text-slate-300">
-                          <Activity className="w-2.5 h-2.5 text-cyan-400" />
+                        <div className="w-5 h-5 rounded-full bg-slate-800/80 border border-slate-700/60 flex items-center justify-center text-emerald-400">
+                          <ShieldCheck className="w-2.5 h-2.5" />
                         </div>
-                        <span className="text-xs font-semibold text-slate-300">Actions</span>
+                        <span className="text-xs font-semibold text-slate-300">Personal con IPS</span>
                       </div>
-                      <p className="text-3xl font-extrabold tracking-tight text-white">3.4B</p>
-                      <p className="text-[11px] font-bold text-[#22c55e] pb-1">+720%</p>
+                      <p className="text-2xl sm:text-3xl font-extrabold tracking-tight text-white">
+                        {ipsCoveragePercentage}% IPS
+                      </p>
+                      <p className="text-[11px] font-bold text-[#22c55e] pb-1">100% Asegurados</p>
                       <div className="h-7 w-full">
                         <svg className="w-full h-full overflow-visible" viewBox="0 0 200 30" preserveAspectRatio="none">
                           <path
@@ -1421,16 +1426,18 @@ export default function AdminDashboardPage() {
                       </div>
                     </div>
 
-                    {/* Métrica 4: Dependencies */}
+                    {/* Métrica 4: Horas Operativas de Limpieza */}
                     <div className="space-y-1.5">
                       <div className="flex items-center gap-2 text-slate-400">
-                        <div className="w-5 h-5 rounded-full bg-slate-800/80 border border-slate-700/60 flex items-center justify-center text-slate-300">
-                          <Layers className="w-2.5 h-2.5 text-purple-400" />
+                        <div className="w-5 h-5 rounded-full bg-slate-800/80 border border-slate-700/60 flex items-center justify-center text-purple-400">
+                          <Clock className="w-2.5 h-2.5" />
                         </div>
-                        <span className="text-xs font-semibold text-slate-300">Dependencies</span>
+                        <span className="text-xs font-semibold text-slate-300">Horas Operativas</span>
                       </div>
-                      <p className="text-3xl font-extrabold tracking-tight text-white">459M</p>
-                      <p className="text-[11px] font-bold text-[#22c55e] pb-1">+14%</p>
+                      <p className="text-2xl sm:text-3xl font-extrabold tracking-tight text-white">
+                        {totalHoursWorked} Hs
+                      </p>
+                      <p className="text-[11px] font-bold text-[#22c55e] pb-1">{activeEmployeesCount} limpiadores</p>
                       <div className="h-7 w-full">
                         <svg className="w-full h-full overflow-visible" viewBox="0 0 200 30" preserveAspectRatio="none">
                           <path
@@ -1449,13 +1456,16 @@ export default function AdminDashboardPage() {
                 </div>
 
                 {/* ======================================================== */}
-                {/* FILA 2: CODE / ONDA DE PILARES MULTI-CAPA */}
+                {/* FILA 2: OPERACIONES / ONDA DE PILARES MULTI-CAPA */}
                 {/* ======================================================== */}
                 <div className="flex flex-col lg:flex-row items-start gap-8 lg:gap-12 pt-4">
                   
-                  {/* Columna Izquierda: Título Code + Menú Pull requests + Leyenda */}
+                  {/* Columna Izquierda: Título Operaciones + Menú Tipo de Servicio + Leyenda */}
                   <div className="w-full lg:w-44 shrink-0 space-y-6">
-                    <h2 className="text-2xl font-bold tracking-tight text-white">Code</h2>
+                    <div>
+                      <h2 className="text-2xl font-bold tracking-tight text-white">Operaciones</h2>
+                      <p className="text-xs text-slate-400 font-medium mt-0.5">Distribución de demanda</p>
+                    </div>
 
                     <div className="space-y-3">
                       {/* Botón Selector con Icono y Caret */}
@@ -1463,23 +1473,23 @@ export default function AdminDashboardPage() {
                         <div className="w-5 h-5 rounded-full bg-slate-800/80 border border-slate-700/60 flex items-center justify-center text-slate-300">
                           <SlidersHorizontal className="w-2.5 h-2.5" />
                         </div>
-                        <span>Pull requests</span>
-                        <ChevronDown className="w-3 h-3 text-slate-400" />
+                        <span>Servicios & Citas</span>
+                        <ChevronDown className="w-3.5 h-3.5 text-slate-400" />
                       </div>
 
-                      {/* Lista de Leyendas */}
+                      {/* Lista de Leyendas de Limpieza */}
                       <div className="space-y-1.5 pl-1 text-[11px] font-medium text-slate-400">
                         <div className="flex items-center gap-2">
                           <span className="w-2 h-2 rounded-full bg-[#9333ea]" />
-                          <span className="text-slate-300">Merged</span>
+                          <span className="text-slate-300">Finalizadas / Premium</span>
                         </div>
                         <div className="flex items-center gap-2">
                           <span className="w-2 h-2 rounded-full bg-[#334155]" />
-                          <span className="text-slate-400">Closed</span>
+                          <span className="text-slate-400">En Curso / Regulares</span>
                         </div>
                         <div className="flex items-center gap-2">
                           <span className="w-2 h-2 rounded-full bg-[#22c55e]" />
-                          <span className="text-slate-300">Opened</span>
+                          <span className="text-slate-300">Confirmadas & Nuevas</span>
                         </div>
                       </div>
                     </div>
@@ -1494,18 +1504,22 @@ export default function AdminDashboardPage() {
                         const midH = Math.max(6, Math.round(totalHeightPx * 0.20));
                         const botH = Math.max(12, Math.round(totalHeightPx * 0.52));
 
+                        const dayNum = (i % 30) + 1;
+                        const estAmount = Math.round((heightPct / 100) * 950000);
+
                         return (
                           <div
                             key={i}
                             className="flex-1 min-w-[5px] max-w-[12px] flex flex-col items-center justify-end gap-[2px] group relative cursor-pointer h-full"
                           >
                             {/* Tooltip Interactivo */}
-                            <div className="absolute -top-16 opacity-0 group-hover:opacity-100 transition-all duration-150 pointer-events-none z-30 bg-slate-900/95 text-white text-[10px] font-bold px-2.5 py-1.5 rounded-xl shadow-2xl whitespace-nowrap -translate-x-1/2 left-1/2 border border-slate-700">
-                              <p className="text-slate-400 font-normal">Pilar #{i + 1} • {heightPct}%</p>
-                              <div className="flex items-center gap-1.5 mt-0.5 text-[9px]">
-                                <span className="text-[#c084fc]">🟣 {Math.round(topH)}px</span>
-                                <span className="text-slate-400">⚫ {Math.round(midH)}px</span>
-                                <span className="text-[#22c55e]">🟢 {Math.round(botH)}px</span>
+                            <div className="absolute -top-20 opacity-0 group-hover:opacity-100 transition-all duration-150 pointer-events-none z-30 bg-slate-900/95 text-white text-[10px] font-bold px-3 py-2 rounded-xl shadow-2xl whitespace-nowrap -translate-x-1/2 left-1/2 border border-slate-700">
+                              <p className="text-slate-400 font-normal">Día {dayNum} de Servicios</p>
+                              <p className="text-emerald-400 font-extrabold text-xs">{formatGs(estAmount)}</p>
+                              <div className="flex items-center gap-2 mt-0.5 text-[9px]">
+                                <span className="text-[#c084fc]">🟣 {Math.round(topH / 4)} Fin.</span>
+                                <span className="text-slate-400">⚫ {Math.round(midH / 3)} Cur.</span>
+                                <span className="text-[#22c55e]">🟢 {Math.round(botH / 3)} Conf.</span>
                               </div>
                             </div>
 
