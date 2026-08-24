@@ -2192,11 +2192,13 @@ export default function AdminDashboardPage() {
             )}
 
             {/* ======================================================== */}
-            {/* TAB 5: GOOGLE CALENDAR EN VIVO */}
+            {/* TAB 5: GOOGLE CALENDAR EN VIVO & SINCRONIZACIÓN */}
             {/* ======================================================== */}
             {activeTab === "CALENDAR" && (
-              <div className="bg-white rounded-3xl border border-slate-200 shadow-xs overflow-hidden p-6 sm:p-7 space-y-5 animate-in fade-in duration-200">
-                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 pb-4 border-b border-slate-100">
+              <div className="bg-white rounded-3xl border border-slate-200 shadow-xs overflow-hidden p-6 sm:p-7 space-y-6 animate-in fade-in duration-200">
+                
+                {/* Cabecera y Botones de Sincronización */}
+                <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 pb-5 border-b border-slate-100">
                   <div>
                     <h2 className="text-base font-black text-slate-900 flex items-center gap-2">
                       <CalendarDays className="w-5 h-5 text-electric-600" />
@@ -2208,24 +2210,98 @@ export default function AdminDashboardPage() {
                   </div>
                   
                   <div className="flex flex-wrap items-center gap-2.5">
+                    {/* Botón Suscribir en Google Calendar */}
                     <a
-                      href="https://calendar.google.com/calendar/embed?src=b33804903d47ee99d6e63afab3bdacd8d60e6c4b8d8146e7b538d13f15cd624e%40group.calendar.google.com&ctz=America%2FAsuncion"
+                      href="https://calendar.google.com/calendar/r?cid=https%3A%2F%2Fcalendar.google.com%2Fcalendar%2Fical%2Fb33804903d47ee99d6e63afab3bdacd8d60e6c4b8d8146e7b538d13f15cd624e%40group.calendar.google.com%2Fpublic%2Fbasic.ics"
                       target="_blank"
                       rel="noopener noreferrer"
+                      className="flex items-center gap-1.5 px-3.5 py-2 bg-electric-600 hover:bg-electric-700 text-white font-bold text-xs rounded-xl shadow-xs transition-all active:scale-95"
+                      title="Sincronizar automáticamente en tu cuenta de Google Calendar"
+                    >
+                      <CalendarDays className="w-3.5 h-3.5" />
+                      <span>+ Suscribir en Google Calendar</span>
+                    </a>
+
+                    {/* Botón Apple Calendar / iOS */}
+                    <a
+                      href="webcal://calendar.google.com/calendar/ical/b33804903d47ee99d6e63afab3bdacd8d60e6c4b8d8146e7b538d13f15cd624e%40group.calendar.google.com/public/basic.ics"
+                      className="flex items-center gap-1.5 px-3.5 py-2 bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs rounded-xl shadow-xs transition-all active:scale-95"
+                      title="Sincronizar en iPhone, iPad, Mac o Outlook"
+                    >
+                      <span>🍏 Apple / Outlook</span>
+                    </a>
+
+                    {/* Descargar Archivo iCal */}
+                    <a
+                      href="/api/calendar/feed"
+                      download="aquiestamos-agenda.ics"
                       className="flex items-center gap-1.5 px-3.5 py-2 bg-white hover:bg-slate-50 text-slate-700 font-bold text-xs rounded-xl border border-slate-200 shadow-xs transition-all active:scale-95"
                     >
-                      <ExternalLink className="w-3.5 h-3.5 text-slate-500" />
-                      <span>Abrir en Google Calendar Web</span>
+                      <Download className="w-3.5 h-3.5 text-slate-500" />
+                      <span>Descargar .ics</span>
                     </a>
                     
                     <button
                       type="button"
                       onClick={() => setIsCreatingBooking(true)}
-                      className="flex items-center gap-1.5 px-3.5 py-2 bg-electric-600 hover:bg-electric-700 text-white font-bold text-xs rounded-xl shadow-xs transition-all active:scale-95"
+                      className="flex items-center gap-1.5 px-3.5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl shadow-xs transition-all active:scale-95"
                     >
                       <PlusCircle className="w-3.5 h-3.5" />
                       <span>Nueva Cita</span>
                     </button>
+                  </div>
+                </div>
+
+                {/* Banner Informativo con URLs de Integración iCal */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 p-4 rounded-2xl bg-slate-50 border border-slate-200 text-xs">
+                  <div className="space-y-1">
+                    <p className="font-bold text-slate-800 flex items-center gap-1.5">
+                      <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
+                      <span>Enlace iCal Público (.ics):</span>
+                    </p>
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="text"
+                        readOnly
+                        value="https://calendar.google.com/calendar/ical/b33804903d47ee99d6e63afab3bdacd8d60e6c4b8d8146e7b538d13f15cd624e%40group.calendar.google.com/public/basic.ics"
+                        className="w-full bg-white border border-slate-200 rounded-lg px-2.5 py-1 text-[11px] font-mono text-slate-600 truncate select-all"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => {
+                          navigator.clipboard.writeText("https://calendar.google.com/calendar/ical/b33804903d47ee99d6e63afab3bdacd8d60e6c4b8d8146e7b538d13f15cd624e%40group.calendar.google.com/public/basic.ics");
+                          showNotification("✓ Enlace iCal copiado al portapapeles.");
+                        }}
+                        className="px-2.5 py-1 bg-white hover:bg-slate-100 text-slate-700 font-bold rounded-lg border border-slate-200 text-[11px] shrink-0"
+                      >
+                        Copiar
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="space-y-1">
+                    <p className="font-bold text-slate-800 flex items-center gap-1.5">
+                      <span className="w-2 h-2 rounded-full bg-electric-500"></span>
+                      <span>ID Oficial de Calendario:</span>
+                    </p>
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="text"
+                        readOnly
+                        value="b33804903d47ee99d6e63afab3bdacd8d60e6c4b8d8146e7b538d13f15cd624e@group.calendar.google.com"
+                        className="w-full bg-white border border-slate-200 rounded-lg px-2.5 py-1 text-[11px] font-mono text-slate-600 truncate select-all"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => {
+                          navigator.clipboard.writeText("b33804903d47ee99d6e63afab3bdacd8d60e6c4b8d8146e7b538d13f15cd624e@group.calendar.google.com");
+                          showNotification("✓ ID de Calendario copiado.");
+                        }}
+                        className="px-2.5 py-1 bg-white hover:bg-slate-100 text-slate-700 font-bold rounded-lg border border-slate-200 text-[11px] shrink-0"
+                      >
+                        Copiar
+                      </button>
+                    </div>
                   </div>
                 </div>
 
