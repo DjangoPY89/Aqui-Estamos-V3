@@ -546,7 +546,7 @@ export default function AdminDashboardPage() {
     const title = `Limpieza Aquí Estamos - ${b.customerName} (${b.bookingNumber})`;
     const details = `Servicio de Limpieza (${b.serviceHours} Horas)\nCliente: ${b.customerName}\nTeléfono: ${b.customerPhone}\nEmail: ${b.customerEmail}\nPersonal: ${b.assignedCleaner || "Por confirmar"}\nTotal: ${formatGs(b.totalPrice)}`;
     const location = b.address;
-    const calId = "b33804903d47ee99d6e63afab3bdacd8d60e6c4b8d8146e7b538d13f15cd624e@group.calendar.google.com";
+    const calId = "6995kk35n4bc196tnd07q3onahg0t2lh@import.calendar.google.com";
     
     return `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(title)}&dates=${startIso}/${endIso}&details=${encodeURIComponent(details)}&location=${encodeURIComponent(location)}&src=${encodeURIComponent(calId)}&add=${encodeURIComponent(calId)}&ctz=America/Asuncion`;
   };
@@ -2212,7 +2212,7 @@ export default function AdminDashboardPage() {
                   <div className="flex flex-wrap items-center gap-2.5">
                     {/* Botón Suscribir en Google Calendar */}
                     <a
-                      href="https://calendar.google.com/calendar/r?cid=https%3A%2F%2Fcalendar.google.com%2Fcalendar%2Fical%2Fb33804903d47ee99d6e63afab3bdacd8d60e6c4b8d8146e7b538d13f15cd624e%40group.calendar.google.com%2Fpublic%2Fbasic.ics"
+                      href="https://calendar.google.com/calendar/r?cid=https%3A%2F%2Fcalendar.google.com%2Fcalendar%2Fical%2F6995kk35n4bc196tnd07q3onahg0t2lh%40import.calendar.google.com%2Fpublic%2Fbasic.ics"
                       target="_blank"
                       rel="noopener noreferrer"
                       className="flex items-center gap-1.5 px-3.5 py-2 bg-electric-600 hover:bg-electric-700 text-white font-bold text-xs rounded-xl shadow-xs transition-all active:scale-95"
@@ -2224,7 +2224,7 @@ export default function AdminDashboardPage() {
 
                     {/* Botón Apple Calendar / iOS */}
                     <a
-                      href="webcal://calendar.google.com/calendar/ical/b33804903d47ee99d6e63afab3bdacd8d60e6c4b8d8146e7b538d13f15cd624e%40group.calendar.google.com/public/basic.ics"
+                      href="webcal://calendar.google.com/calendar/ical/6995kk35n4bc196tnd07q3onahg0t2lh%40import.calendar.google.com/public/basic.ics"
                       className="flex items-center gap-1.5 px-3.5 py-2 bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs rounded-xl shadow-xs transition-all active:scale-95"
                       title="Sincronizar en iPhone, iPad, Mac o Outlook"
                     >
@@ -2263,13 +2263,13 @@ export default function AdminDashboardPage() {
                       <input
                         type="text"
                         readOnly
-                        value="https://calendar.google.com/calendar/ical/b33804903d47ee99d6e63afab3bdacd8d60e6c4b8d8146e7b538d13f15cd624e%40group.calendar.google.com/public/basic.ics"
+                        value="https://calendar.google.com/calendar/ical/6995kk35n4bc196tnd07q3onahg0t2lh%40import.calendar.google.com/public/basic.ics"
                         className="w-full bg-white border border-slate-200 rounded-lg px-2.5 py-1 text-[11px] font-mono text-slate-600 truncate select-all"
                       />
                       <button
                         type="button"
                         onClick={() => {
-                          navigator.clipboard.writeText("https://calendar.google.com/calendar/ical/b33804903d47ee99d6e63afab3bdacd8d60e6c4b8d8146e7b538d13f15cd624e%40group.calendar.google.com/public/basic.ics");
+                          navigator.clipboard.writeText("https://calendar.google.com/calendar/ical/6995kk35n4bc196tnd07q3onahg0t2lh%40import.calendar.google.com/public/basic.ics");
                           showNotification("✓ Enlace iCal copiado al portapapeles.");
                         }}
                         className="px-2.5 py-1 bg-white hover:bg-slate-100 text-slate-700 font-bold rounded-lg border border-slate-200 text-[11px] shrink-0"
@@ -2288,13 +2288,13 @@ export default function AdminDashboardPage() {
                       <input
                         type="text"
                         readOnly
-                        value="b33804903d47ee99d6e63afab3bdacd8d60e6c4b8d8146e7b538d13f15cd624e@group.calendar.google.com"
+                        value="6995kk35n4bc196tnd07q3onahg0t2lh@import.calendar.google.com"
                         className="w-full bg-white border border-slate-200 rounded-lg px-2.5 py-1 text-[11px] font-mono text-slate-600 truncate select-all"
                       />
                       <button
                         type="button"
                         onClick={() => {
-                          navigator.clipboard.writeText("b33804903d47ee99d6e63afab3bdacd8d60e6c4b8d8146e7b538d13f15cd624e@group.calendar.google.com");
+                          navigator.clipboard.writeText("6995kk35n4bc196tnd07q3onahg0t2lh@import.calendar.google.com");
                           showNotification("✓ ID de Calendario copiado.");
                         }}
                         className="px-2.5 py-1 bg-white hover:bg-slate-100 text-slate-700 font-bold rounded-lg border border-slate-200 text-[11px] shrink-0"
@@ -2308,7 +2308,7 @@ export default function AdminDashboardPage() {
                 {/* Google Calendar Iframe Embebido */}
                 <div className="w-full h-[650px] sm:h-[750px] rounded-2xl overflow-hidden border border-slate-200 shadow-inner bg-slate-50 relative">
                   <iframe
-                    src="https://calendar.google.com/calendar/embed?src=b33804903d47ee99d6e63afab3bdacd8d60e6c4b8d8146e7b538d13f15cd624e%40group.calendar.google.com&ctz=America%2FAsuncion"
+                    src="https://calendar.google.com/calendar/embed?src=6995kk35n4bc196tnd07q3onahg0t2lh%40import.calendar.google.com&ctz=America%2FAsuncion"
                     style={{ border: 0 }}
                     width="100%"
                     height="100%"
