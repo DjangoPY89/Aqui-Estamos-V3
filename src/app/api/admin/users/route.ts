@@ -4,6 +4,7 @@ import { authOptions } from "@/lib/auth";
 import { getAllUsers } from "@/lib/db";
 
 export const dynamic = "force-dynamic";
+export const revalidate = 0;
 
 export async function GET() {
   try {
@@ -14,7 +15,14 @@ export async function GET() {
     }
 
     const users = getAllUsers();
-    return NextResponse.json({ users });
+    return NextResponse.json(
+      { users },
+      {
+        headers: {
+          "Cache-Control": "no-store, no-cache, must-revalidate, proxy-revalidate",
+        },
+      }
+    );
   } catch (error: any) {
     console.error("Error al obtener usuarios para admin:", error);
     return NextResponse.json({ error: "Error al obtener usuarios." }, { status: 500 });

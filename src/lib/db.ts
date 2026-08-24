@@ -350,11 +350,11 @@ export function getAllUsers(): (User & { totalBookings: number; totalSpentGs: nu
   const db = getDb();
   const rows = db.prepare(`
     SELECT 
-      u.id, u.name, u.email, u.image, u.role, u.phone, u.address, u.created_at,
+      u.id, u.name, u.email, u.image, u.role, u.phone, u.address, u.ruc, u.tax_name, u.created_at,
       COUNT(b.id) as total_bookings,
       COALESCE(SUM(CASE WHEN b.status != 'CANCELLED' THEN b.total_price ELSE 0 END), 0) as total_spent
     FROM users u
-    LEFT JOIN bookings b ON (b.user_id = u.id OR b.customer_email = u.email)
+    LEFT JOIN bookings b ON (b.user_id = u.id OR lower(b.customer_email) = lower(u.email))
     GROUP BY u.id
     ORDER BY u.created_at DESC
   `).all() as any[];
@@ -367,6 +367,8 @@ export function getAllUsers(): (User & { totalBookings: number; totalSpentGs: nu
     role: r.role,
     phone: r.phone,
     address: r.address,
+    ruc: r.ruc,
+    taxName: r.tax_name,
     createdAt: r.created_at,
     totalBookings: r.total_bookings || 0,
     totalSpentGs: r.total_spent || 0,

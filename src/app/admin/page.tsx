@@ -196,12 +196,13 @@ export default function AdminDashboardPage() {
   const loadData = async () => {
     try {
       setIsLoading(true);
+      const t = Date.now();
       const [statsRes, bookingsRes, leadsRes, usersRes, empRes] = await Promise.all([
-        fetch("/api/admin/stats"),
-        fetch("/api/bookings"),
-        fetch("/api/corporate"),
-        fetch("/api/admin/users"),
-        fetch("/api/admin/employees"),
+        fetch(`/api/admin/stats?_t=${t}`, { cache: "no-store", headers: { Pragma: "no-cache" } }),
+        fetch(`/api/bookings?_t=${t}`, { cache: "no-store", headers: { Pragma: "no-cache" } }),
+        fetch(`/api/corporate?_t=${t}`, { cache: "no-store", headers: { Pragma: "no-cache" } }),
+        fetch(`/api/admin/users?_t=${t}`, { cache: "no-store", headers: { Pragma: "no-cache" } }),
+        fetch(`/api/admin/employees?_t=${t}`, { cache: "no-store", headers: { Pragma: "no-cache" } }),
       ]);
 
       if (statsRes.ok) {
@@ -1259,15 +1260,26 @@ export default function AdminDashboardPage() {
                 </p>
               </div>
 
-              <div className="relative w-full sm:w-80">
-                <Search className="w-4 h-4 text-slate-500 absolute left-3.5 top-3.5" />
-                <input
-                  type="text"
-                  value={userSearchTerm}
-                  onChange={(e) => setUserSearchTerm(e.target.value)}
-                  placeholder="Buscar por nombre, email o teléfono..."
-                  className="w-full pl-10 pr-4 py-2.5 bg-slate-800 border border-slate-700 rounded-xl text-white text-xs focus:ring-2 focus:ring-electric-500 focus:outline-none"
-                />
+              <div className="flex items-center gap-3 w-full sm:w-auto">
+                <div className="relative w-full sm:w-80">
+                  <Search className="w-4 h-4 text-slate-500 absolute left-3.5 top-3.5" />
+                  <input
+                    type="text"
+                    value={userSearchTerm}
+                    onChange={(e) => setUserSearchTerm(e.target.value)}
+                    placeholder="Buscar por nombre, email o teléfono..."
+                    className="w-full pl-10 pr-4 py-2.5 bg-slate-800 border border-slate-700 rounded-xl text-white text-xs focus:ring-2 focus:ring-electric-500 focus:outline-none"
+                  />
+                </div>
+                <button
+                  type="button"
+                  onClick={() => loadData()}
+                  className="px-3.5 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 shrink-0"
+                  title="Recargar lista de clientes"
+                >
+                  <RefreshCw className="w-3.5 h-3.5 text-electric-400" />
+                  <span className="hidden sm:inline">Actualizar</span>
+                </button>
               </div>
             </div>
 
