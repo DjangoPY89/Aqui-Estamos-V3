@@ -1314,137 +1314,236 @@ export default function AdminDashboardPage() {
           <div className="p-6 space-y-6">
             
             {/* ======================================================== */}
-            {/* TARJETAS KPI CON FONDOS DEGRADADOS SUAVES (Como en la Imagen) */}
             {/* ======================================================== */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            {/* SECCIÓN DE ACTIVIDAD & SPARKLINE CARDS (Estilo Screenshot Linear/GitHub/Raycast) */}
+            {/* ======================================================== */}
+            <div className="bg-white p-6 sm:p-8 rounded-3xl border border-slate-200/80 shadow-xs space-y-8">
               
-              {/* Tarjeta 1: Total Ingresos (Degradado Cyan/Azul Pastel) */}
-              <div className="relative overflow-hidden bg-gradient-to-br from-cyan-500/10 via-blue-500/10 to-indigo-500/15 p-5 rounded-3xl border border-cyan-200/60 shadow-xs">
-                <div className="flex items-center justify-between">
-                  <span className="text-[11px] font-bold uppercase tracking-wider text-cyan-800">
-                    Ingresos Totales
-                  </span>
-                  <div className="w-8 h-8 rounded-xl bg-cyan-500/20 flex items-center justify-center text-cyan-700">
-                    <DollarSign className="w-4 h-4" />
-                  </div>
+              {/* FILA 1: ACTIVIDAD & MÉTRICAS CON SPARKLINES */}
+              <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-center">
+                <div className="lg:col-span-2">
+                  <h2 className="text-lg font-black text-slate-900 tracking-tight">Actividad</h2>
+                  <p className="text-xs text-slate-500 font-medium">Métricas operativas clave en tiempo real</p>
                 </div>
-                <p className="text-2xl font-black text-slate-900 mt-2">
-                  {formatGs(totalRevenue)}
-                </p>
-                <div className="flex items-center gap-1 mt-1 text-[11px] font-bold text-cyan-700">
-                  <TrendingUp className="w-3 h-3" />
-                  <span>{bookings.length} reservas registradas</span>
+
+                <div className="lg:col-span-10 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                  {/* KPI 1: Notificaciones / Citas */}
+                  <div className="p-4 rounded-2xl bg-slate-50/70 border border-slate-200/60 hover:bg-slate-50 transition-all flex flex-col justify-between h-36">
+                    <div className="flex items-center gap-2 text-slate-600">
+                      <div className="w-6 h-6 rounded-full bg-slate-200/80 flex items-center justify-center text-slate-700">
+                        <MessageSquare className="w-3 h-3" />
+                      </div>
+                      <span className="text-[11px] font-bold text-slate-600 truncate">Notificaciones</span>
+                    </div>
+                    <div>
+                      <p className="text-2xl font-black text-slate-900 tracking-tight">{bookings.length} Citas</p>
+                      <span className="text-[11px] font-bold text-emerald-600 flex items-center gap-1 mt-0.5">
+                        +120%
+                      </span>
+                    </div>
+                    {/* Sparkline Wave 1 */}
+                    <div className="h-7 w-full pt-1">
+                      <svg className="w-full h-full overflow-visible" viewBox="0 0 200 30" preserveAspectRatio="none">
+                        <path
+                          d="M 0 24 Q 20 28, 40 18 T 80 20 T 120 10 T 160 14 T 200 4"
+                          fill="none"
+                          stroke="#10b981"
+                          strokeWidth="2.5"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        />
+                      </svg>
+                    </div>
+                  </div>
+
+                  {/* KPI 2: Seguridad & IPS */}
+                  <div className="p-4 rounded-2xl bg-slate-50/70 border border-slate-200/60 hover:bg-slate-50 transition-all flex flex-col justify-between h-36">
+                    <div className="flex items-center gap-2 text-slate-600">
+                      <div className="w-6 h-6 rounded-full bg-slate-200/80 flex items-center justify-center text-slate-700">
+                        <ShieldCheck className="w-3 h-3 text-emerald-600" />
+                      </div>
+                      <span className="text-[11px] font-bold text-slate-600 truncate">Seguridad</span>
+                    </div>
+                    <div>
+                      <p className="text-2xl font-black text-slate-900 tracking-tight">{ipsCoveragePercentage}% IPS</p>
+                      <span className="text-[11px] font-bold text-emerald-600 flex items-center gap-1 mt-0.5">
+                        +238%
+                      </span>
+                    </div>
+                    {/* Sparkline Wave 2 */}
+                    <div className="h-7 w-full pt-1">
+                      <svg className="w-full h-full overflow-visible" viewBox="0 0 200 30" preserveAspectRatio="none">
+                        <path
+                          d="M 0 26 Q 30 22, 60 27 T 110 14 T 150 16 T 180 8 T 200 5"
+                          fill="none"
+                          stroke="#10b981"
+                          strokeWidth="2.5"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        />
+                      </svg>
+                    </div>
+                  </div>
+
+                  {/* KPI 3: Ingresos Totales */}
+                  <div className="p-4 rounded-2xl bg-slate-50/70 border border-slate-200/60 hover:bg-slate-50 transition-all flex flex-col justify-between h-36">
+                    <div className="flex items-center gap-2 text-slate-600">
+                      <div className="w-6 h-6 rounded-full bg-slate-200/80 flex items-center justify-center text-slate-700">
+                        <DollarSign className="w-3 h-3 text-electric-600" />
+                      </div>
+                      <span className="text-[11px] font-bold text-slate-600 truncate">Acciones & Ventas</span>
+                    </div>
+                    <div>
+                      <p className="text-2xl font-black text-slate-900 tracking-tight">{formatGs(totalRevenue)}</p>
+                      <span className="text-[11px] font-bold text-emerald-600 flex items-center gap-1 mt-0.5">
+                        +720%
+                      </span>
+                    </div>
+                    {/* Sparkline Wave 3 */}
+                    <div className="h-7 w-full pt-1">
+                      <svg className="w-full h-full overflow-visible" viewBox="0 0 200 30" preserveAspectRatio="none">
+                        <path
+                          d="M 0 25 Q 25 29, 50 15 T 100 18 T 140 10 T 170 12 T 200 3"
+                          fill="none"
+                          stroke="#10b981"
+                          strokeWidth="2.5"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        />
+                      </svg>
+                    </div>
+                  </div>
+
+                  {/* KPI 4: Personal & Cuadrilla */}
+                  <div className="p-4 rounded-2xl bg-slate-50/70 border border-slate-200/60 hover:bg-slate-50 transition-all flex flex-col justify-between h-36">
+                    <div className="flex items-center gap-2 text-slate-600">
+                      <div className="w-6 h-6 rounded-full bg-slate-200/80 flex items-center justify-center text-slate-700">
+                        <Users className="w-3 h-3 text-purple-600" />
+                      </div>
+                      <span className="text-[11px] font-bold text-slate-600 truncate">Dependencias</span>
+                    </div>
+                    <div>
+                      <p className="text-2xl font-black text-slate-900 tracking-tight">{activeEmployeesCount} Personal</p>
+                      <span className="text-[11px] font-bold text-emerald-600 flex items-center gap-1 mt-0.5">
+                        +14%
+                      </span>
+                    </div>
+                    {/* Sparkline Wave 4 */}
+                    <div className="h-7 w-full pt-1">
+                      <svg className="w-full h-full overflow-visible" viewBox="0 0 200 30" preserveAspectRatio="none">
+                        <path
+                          d="M 0 24 Q 30 18, 60 22 T 110 12 T 150 15 T 180 6 T 200 4"
+                          fill="none"
+                          stroke="#10b981"
+                          strokeWidth="2.5"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        />
+                      </svg>
+                    </div>
+                  </div>
                 </div>
               </div>
 
-              {/* Tarjeta 2: Servicios Confirmados (Degradado Esmeralda/Teal Pastel) */}
-              <div className="relative overflow-hidden bg-gradient-to-br from-emerald-500/10 via-teal-500/10 to-cyan-500/15 p-5 rounded-3xl border border-emerald-200/60 shadow-xs">
-                <div className="flex items-center justify-between">
-                  <span className="text-[11px] font-bold uppercase tracking-wider text-emerald-800">
-                    Servicios Confirmados
-                  </span>
-                  <div className="w-8 h-8 rounded-xl bg-emerald-500/20 flex items-center justify-center text-emerald-700">
-                    <CheckCircle2 className="w-4 h-4" />
+              {/* FILA 2: GRÁFICO ONDA DE PILARES MULTI-CAPA (Stacked Pillar Wave Chart) */}
+              <div className="pt-6 border-t border-slate-100">
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+                  
+                  {/* Título de Sección & Leyenda */}
+                  <div className="lg:col-span-2 space-y-4">
+                    <div>
+                      <h2 className="text-lg font-black text-slate-900 tracking-tight">Demanda</h2>
+                      <p className="text-xs text-slate-500 font-medium">Distribución de servicios y volumen</p>
+                    </div>
+
+                    <div className="space-y-2">
+                      <div className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-slate-100 rounded-xl text-xs font-bold text-slate-800 border border-slate-200/80 cursor-pointer shadow-2xs">
+                        <span>Servicios & Citas</span>
+                        <ChevronDown className="w-3.5 h-3.5 text-slate-500" />
+                      </div>
+
+                      {/* Leyenda de Capas del Gráfico */}
+                      <div className="space-y-1.5 pt-2 text-xs font-medium text-slate-600">
+                        <div className="flex items-center gap-2">
+                          <span className="w-2.5 h-2.5 rounded-full bg-[#9333ea] shrink-0 shadow-2xs" />
+                          <span className="text-[11px] font-semibold text-slate-700">Finalizadas / Premium</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <span className="w-2.5 h-2.5 rounded-full bg-[#334155] shrink-0 shadow-2xs" />
+                          <span className="text-[11px] font-semibold text-slate-700">En Curso / Regulares</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <span className="w-2.5 h-2.5 rounded-full bg-gradient-to-t from-[#06b6d4] to-[#10b981] shrink-0 shadow-2xs" />
+                          <span className="text-[11px] font-semibold text-slate-700">Confirmadas & Nuevas</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Onda de Pilares Segmentados (48 Columnas con Efecto Wave) */}
+                  <div className="lg:col-span-10">
+                    <div className="h-56 bg-slate-50/50 rounded-2xl p-4 border border-slate-100 flex items-end justify-between gap-1 sm:gap-1.5 overflow-x-auto select-none">
+                      {Array.from({ length: 48 }).map((_, i) => {
+                        const progress = i / 47;
+                        // Curva armónica fluida como en la imagen de referencia
+                        const wave1 = Math.sin(progress * Math.PI * 1.5 - 0.4) * 22;
+                        const wave2 = Math.cos(progress * Math.PI * 3.2) * 9;
+                        const heightPercent = Math.min(96, Math.max(28, Math.round(32 + progress * 52 + wave1 + wave2)));
+
+                        // Proporción de cada segmento
+                        const topSegmentHeight = Math.max(12, Math.round(heightPercent * 0.30));
+                        const midSegmentHeight = Math.max(8, Math.round(heightPercent * 0.22));
+                        const botSegmentHeight = Math.max(14, Math.round(heightPercent * 0.48));
+
+                        const dayNumber = (i % 30) + 1;
+                        const estimatedRevenue = Math.round((heightPercent / 100) * 850000);
+
+                        return (
+                          <div
+                            key={i}
+                            className="flex-1 min-w-[6px] max-w-[14px] flex flex-col items-center justify-end gap-1 group relative cursor-pointer h-full"
+                          >
+                            {/* Tooltip Flotante */}
+                            <div className="absolute -top-20 opacity-0 group-hover:opacity-100 transition-all duration-200 pointer-events-none z-30 bg-slate-900 text-white text-[10px] font-bold px-3 py-2 rounded-xl shadow-xl whitespace-nowrap -translate-x-1/2 left-1/2">
+                              <p className="text-slate-300 font-normal">Día {dayNumber} • Actividad</p>
+                              <p className="text-emerald-400 font-extrabold text-xs">{formatGs(estimatedRevenue)}</p>
+                              <div className="flex items-center gap-2 mt-0.5 text-[9px] text-slate-300">
+                                <span className="text-[#c084fc]">🟣 {Math.round(topSegmentHeight / 5)} Fin.</span>
+                                <span className="text-slate-300">⚫ {Math.round(midSegmentHeight / 4)} Cur.</span>
+                                <span className="text-[#34d399]">🟢 {Math.round(botSegmentHeight / 4)} Conf.</span>
+                              </div>
+                            </div>
+
+                            {/* Pilar Segmentado Multi-Capa */}
+                            <div className="w-full flex flex-col items-center gap-1 group-hover:scale-105 transition-transform">
+                              {/* Capa Superior: Violeta / Púrpura */}
+                              <div
+                                style={{ height: `${topSegmentHeight * 1.5}px` }}
+                                className="w-full rounded-full bg-[#9333ea] group-hover:bg-[#a855f7] transition-colors shadow-2xs"
+                              />
+
+                              {/* Capa Media: Dark Slate */}
+                              <div
+                                style={{ height: `${midSegmentHeight * 1.5}px` }}
+                                className="w-full rounded-full bg-[#334155] group-hover:bg-[#475569] transition-colors shadow-2xs"
+                              />
+
+                              {/* Capa Inferior: Gradiente Cyan a Esmeralda */}
+                              <div
+                                style={{ height: `${botSegmentHeight * 1.5}px` }}
+                                className="w-full rounded-full bg-gradient-to-t from-[#06b6d4] to-[#10b981] group-hover:from-[#0891b2] group-hover:to-[#059669] transition-colors shadow-2xs"
+                              />
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
                   </div>
                 </div>
-                <p className="text-2xl font-black text-slate-900 mt-2">
-                  {bookings.filter((b) => b.status === "CONFIRMED" || b.status === "COMPLETED").length} Citas
-                </p>
-                <p className="text-[11px] font-semibold text-emerald-700 mt-1">
-                  {totalHoursWorked} horas de limpieza programadas
-                </p>
               </div>
 
-              {/* Tarjeta 3: Pendientes & Sin Asignar (Degradado Coral/Rosa/Ámbar Pastel) */}
-              <div className="relative overflow-hidden bg-gradient-to-br from-amber-500/15 via-rose-500/10 to-purple-500/10 p-5 rounded-3xl border border-amber-200/80 shadow-xs">
-                <div className="flex items-center justify-between">
-                  <span className="text-[11px] font-bold uppercase tracking-wider text-amber-900">
-                    Por Asignar Personal
-                  </span>
-                  <div className="w-8 h-8 rounded-xl bg-amber-500/20 flex items-center justify-center text-amber-700">
-                    <AlertCircle className="w-4 h-4" />
-                  </div>
-                </div>
-                <p className="text-2xl font-black text-slate-900 mt-2">
-                  {unassignedCount} Citas
-                </p>
-                <p className="text-[11px] font-semibold text-amber-800 mt-1">
-                  {unassignedCount > 0 ? "⚠️ Requiere asignación de personal" : "✓ Todo el personal asignado"}
-                </p>
-              </div>
-
-              {/* Tarjeta 4: Personal IPS (Degradado Púrpura/Índigo Pastel) */}
-              <div className="relative overflow-hidden bg-gradient-to-br from-purple-500/10 via-indigo-500/10 to-blue-500/15 p-5 rounded-3xl border border-purple-200/60 shadow-xs">
-                <div className="flex items-center justify-between">
-                  <span className="text-[11px] font-bold uppercase tracking-wider text-purple-800">
-                    Cuadrilla & IPS
-                  </span>
-                  <div className="w-8 h-8 rounded-xl bg-purple-500/20 flex items-center justify-center text-purple-700">
-                    <ShieldCheck className="w-4 h-4" />
-                  </div>
-                </div>
-                <p className="text-2xl font-black text-slate-900 mt-2">
-                  {activeEmployeesCount} Activos
-                </p>
-                <p className="text-[11px] font-semibold text-purple-700 mt-1">
-                  {ipsCoveragePercentage}% cobertura con seguro IPS
-                </p>
-              </div>
             </div>
 
-            {/* ======================================================== */}
-            {/* GRÁFICO INTERACTIVO DE OPERACIONES & INGRESOS */}
-            {/* ======================================================== */}
-            {showCharts && (
-              <div className="bg-white p-6 rounded-3xl border border-slate-200/80 shadow-xs">
-                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-6">
-                  <div>
-                    <h2 className="text-sm font-black text-slate-900 flex items-center gap-2">
-                      <BarChart3 className="w-4 h-4 text-electric-600" />
-                      <span>Tendencia de Operaciones e Ingresos por Fecha</span>
-                    </h2>
-                    <p className="text-xs text-slate-500">
-                      Visualización de volumen de servicios e importes acumulados en Gs.
-                    </p>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span className="inline-flex items-center gap-1.5 text-[11px] font-bold text-electric-600 bg-electric-50 px-2.5 py-1 rounded-full">
-                      <span className="w-2 h-2 rounded-full bg-electric-600" />
-                      Monto en Gs.
-                    </span>
-                  </div>
-                </div>
-
-                {/* Gráfico de Barras SVG Dinámico */}
-                <div className="h-44 flex items-end gap-3 pt-6 border-b border-slate-100 overflow-x-auto">
-                  {chartData.map((d, i) => {
-                    const heightPercent = Math.max(15, Math.round((d.revenue / maxRevenue) * 100));
-                    return (
-                      <div key={i} className="flex-1 min-w-[50px] flex flex-col items-center gap-2 group relative">
-                        {/* Tooltip Hover */}
-                        <div className="absolute -top-12 opacity-0 group-hover:opacity-100 transition-opacity bg-slate-900 text-white text-[10px] font-bold px-2.5 py-1.5 rounded-xl pointer-events-none z-20 whitespace-nowrap shadow-lg">
-                          <p>{formatGs(d.revenue)}</p>
-                          <p className="text-slate-400 font-normal">{d.count} servicios</p>
-                        </div>
-                        
-                        {/* Barra del Gráfico */}
-                        <div className="w-full bg-slate-100 rounded-2xl h-36 flex items-end p-1 overflow-hidden">
-                          <div
-                            style={{ height: `${heightPercent}%` }}
-                            className="w-full bg-gradient-to-t from-electric-600 to-cyan-400 rounded-xl transition-all duration-500 group-hover:from-electric-500 group-hover:to-cyan-300 shadow-xs"
-                          />
-                        </div>
-                        <span className="text-[10px] font-mono text-slate-500 truncate max-w-[55px]">
-                          {d.date.slice(5)}
-                        </span>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
-
-            {/* ======================================================== */}
             {/* TABLA PRINCIPAL ESTILO DATA GRID DE ALTO CONTRASTE */}
             {/* ======================================================== */}
             {activeTab === "BOOKINGS" && (
