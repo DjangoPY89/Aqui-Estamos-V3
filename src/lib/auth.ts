@@ -10,12 +10,14 @@ import { verifyGoogleIdToken } from "./google-auth";
 const googleClientId = (process.env.GOOGLE_CLIENT_ID || process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || "").trim();
 const googleClientSecret = (process.env.GOOGLE_CLIENT_SECRET || "").trim();
 
-if (!process.env.NEXTAUTH_URL) {
-  if (process.env.VERCEL_URL) {
-    process.env.NEXTAUTH_URL = `https://${process.env.VERCEL_URL}`;
-  } else if (process.env.NODE_ENV === "production") {
+// Configuración estricta de NEXTAUTH_URL para evitar redirect_uri_mismatch en Vercel
+const isVercelProd = process.env.VERCEL === "1" || process.env.NODE_ENV === "production";
+if (isVercelProd) {
+  if (!process.env.NEXTAUTH_URL || process.env.NEXTAUTH_URL.includes("localhost") || process.env.NEXTAUTH_URL.includes("-git-")) {
     process.env.NEXTAUTH_URL = "https://aqui-estamos-v3.vercel.app";
   }
+} else if (!process.env.NEXTAUTH_URL) {
+  process.env.NEXTAUTH_URL = "http://localhost:3000";
 }
 
 export const authOptions: NextAuthOptions = {
