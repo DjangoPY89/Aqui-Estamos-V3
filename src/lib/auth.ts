@@ -6,7 +6,10 @@ import bcrypt from "bcryptjs";
 import { createOrUpdateOAuthUser, createUser, getUserByEmail, getUserById, seedInitialData } from "./db";
 import { verifyGoogleIdToken } from "./google-auth";
 
-// Auto-detección de URL en Vercel
+// Configuración de credenciales y URL en Vercel
+const googleClientId = (process.env.GOOGLE_CLIENT_ID || process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || "").trim();
+const googleClientSecret = (process.env.GOOGLE_CLIENT_SECRET || "").trim();
+
 if (!process.env.NEXTAUTH_URL) {
   if (process.env.VERCEL_URL) {
     process.env.NEXTAUTH_URL = `https://${process.env.VERCEL_URL}`;
@@ -19,11 +22,11 @@ export const authOptions: NextAuthOptions = {
   secret: process.env.NEXTAUTH_SECRET || "DjangoPY89_Secret_Production_Key_2026_AquiEstamos",
   providers: [
     // Proveedor Google OAuth Oficial
-    ...((process.env.GOOGLE_CLIENT_ID || process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID) && process.env.GOOGLE_CLIENT_SECRET
+    ...(googleClientId && googleClientSecret
       ? [
           GoogleProvider({
-            clientId: (process.env.GOOGLE_CLIENT_ID || process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || "").trim(),
-            clientSecret: (process.env.GOOGLE_CLIENT_SECRET || "").trim(),
+            clientId: googleClientId,
+            clientSecret: googleClientSecret,
             authorization: {
               params: {
                 prompt: "select_account",

@@ -84,49 +84,22 @@ export default function GoogleSignInButton({
     }
   }, [gisLoaded, clientId]);
 
-  // Manejo del clic en el botón: Directo a Google OAuth 2.0 oficial con manejo de errores y redirección segura
+  // Manejo del clic en el botón: Directo a Google OAuth 2.0 oficial con redirección nativa
   const handleGoogleClick = async () => {
     if (isLoading) return;
     setIsLoading(true);
 
     try {
-      // 1. Intentar redirección oficial de NextAuth Google
-      const result = await signIn("google", {
-        callbackUrl: callbackUrl || "/portal",
-        redirect: false,
+      // 1. Redirección oficial OAuth de Google estándar
+      const targetUrl = callbackUrl || "/portal";
+      await signIn("google", {
+        callbackUrl: targetUrl,
+        redirect: true,
       });
-
-      if (result?.url) {
-        window.location.href = result.url;
-        return;
-      }
-
-      if (result?.error) {
-        throw new Error(result.error);
-      }
     } catch (err: any) {
-      console.warn("Google OAuth directo no disponible o falló:", err);
-      
-      // 2. Fallback de desarrollo si no hay claves de Google configuradas en producción
-      try {
-        const fallbackRes = await signIn("credentials", {
-          redirect: false,
-          isGoogleAuth: "true",
-          googleEmail: "usuario.google@gmail.com",
-          googleName: "Usuario Google",
-          callbackUrl: callbackUrl || "/portal",
-        });
-
-        if (fallbackRes?.ok) {
-          window.location.href = callbackUrl || "/portal";
-          return;
-        }
-      } catch (fErr) {}
-
-      if (onError) {
-        onError("No se pudo conectar con Google. Por favor ingresa con tu correo y contraseña.");
-      }
-      setIsLoading(false);
+      console.warn("Error en signIn google:", err);
+      // Si el framework del cliente no redirige de inmediato, forzar navegación directa
+      window.location.href = `/api/auth/signin/google?callbackUrl=${encodeURIComponent(callbackUrl || "/portal")}`;
     }
   };
 
