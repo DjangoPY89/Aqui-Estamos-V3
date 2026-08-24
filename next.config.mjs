@@ -1,7 +1,9 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
-  serverComponentsExternalPackages: ["better-sqlite3"],
+  experimental: {
+    serverComponentsExternalPackages: ["better-sqlite3"],
+  },
   images: {
     unoptimized: true,
     remotePatterns: [
