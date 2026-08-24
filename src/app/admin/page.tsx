@@ -167,25 +167,45 @@ export default function AdminDashboardPage() {
     setAdminAuthLoading(true);
 
     try {
-      const res = await signIn("credentials", {
-        redirect: false,
-        email: adminEmail.trim().toLowerCase(),
-        password: adminPassword,
-        callbackUrl: "/admin",
+      const res = await fetch("/api/admin/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: adminEmail.trim().toLowerCase(),
+          password: adminPassword,
+        }),
       });
 
-      if (res?.ok) {
-        window.location.href = "/admin";
-        return;
+      let data: any = {};
+      try {
+        const text = await res.text();
+        data = text ? JSON.parse(text) : {};
+      } catch (e) {
+        data = { error: "No se pudo procesar la respuesta del servidor." };
       }
 
-      if (res?.error) {
-        setAdminAuthError("Correo o contraseña incorrectos. Verifica que sea juanas89@gmail.com y tu clave.");
+      if (res.ok && data.ok) {
+        // Verificación exitosa: usar NextAuth para establecer sesión
+        const loginRes = await signIn("credentials", {
+          redirect: false,
+          email: adminEmail.trim().toLowerCase(),
+          password: adminPassword,
+          callbackUrl: "/admin",
+        });
+
+        if (loginRes?.ok) {
+          window.location.href = "/admin";
+        } else {
+          // Sesión establecida vía cookie admin, recargar para detectarla
+          window.location.href = "/admin";
+        }
+      } else {
+        setAdminAuthError(data.error || "Credenciales incorrectas.");
         setAdminAuthLoading(false);
       }
     } catch (err: any) {
       console.error("Error en login admin:", err);
-      setAdminAuthError(err?.message || "Ocurrió un inconveniente al validar. Por favor intenta de nuevo.");
+      setAdminAuthError("No se pudo alcanzar el servidor. Verifica tu conexión e intenta de nuevo.");
       setAdminAuthLoading(false);
     }
   };
