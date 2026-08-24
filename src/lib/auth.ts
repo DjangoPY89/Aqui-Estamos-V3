@@ -18,15 +18,18 @@ if (!process.env.NEXTAUTH_URL) {
 export const authOptions: NextAuthOptions = {
   secret: process.env.NEXTAUTH_SECRET || "DjangoPY89_Secret_Production_Key_2026_AquiEstamos",
   providers: [
-    // Proveedor Google OAuth Oficial (cuando se proporcionan las claves en .env)
-    ...(process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET
-      ? [
-          GoogleProvider({
-            clientId: process.env.GOOGLE_CLIENT_ID,
-            clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-          }),
-        ]
-      : []),
+    // Proveedor Google OAuth Oficial Siempre Activo
+    GoogleProvider({
+      clientId: (process.env.GOOGLE_CLIENT_ID || process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || "").trim(),
+      clientSecret: (process.env.GOOGLE_CLIENT_SECRET || "").trim(),
+      authorization: {
+        params: {
+          prompt: "select_account",
+          access_type: "offline",
+          response_type: "code",
+        },
+      },
+    }),
 
     // Proveedor Apple OAuth Oficial (cuando se proporcionan las claves en .env)
     ...(process.env.APPLE_ID && process.env.APPLE_SECRET

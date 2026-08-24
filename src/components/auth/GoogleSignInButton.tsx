@@ -25,7 +25,7 @@ export default function GoogleSignInButton({
   const [isLoading, setIsLoading] = useState(false);
   const [gisLoaded, setGisLoaded] = useState(false);
 
-  const clientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || process.env.GOOGLE_CLIENT_ID || "";
+  const clientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || "";
 
   // Callback para Google Identity Services (GIS Token)
   const handleCredentialResponse = async (response: any) => {
@@ -72,10 +72,10 @@ export default function GoogleSignInButton({
           cancel_on_tap_outside: true,
         });
 
-        // Habilitar Google One Tap en la esquina superior
+        // Intentar One Tap discretamente en escritorio
         window.google.accounts.id.prompt((notification: any) => {
           if (notification.isNotDisplayed() || notification.isSkippedMoment()) {
-            // One Tap omitido o bloqueado por navegador, el botón manual sigue activo
+            // One Tap omitido, el botón manual sigue activo
           }
         });
       } catch (e) {
@@ -84,36 +84,17 @@ export default function GoogleSignInButton({
     }
   }, [gisLoaded, clientId]);
 
-  // Manejo del clic en el botón personalizado optimizado para móviles y escritorio
+  // Manejo del clic en el botón: Directo a Google OAuth 2.0 oficial
   const handleGoogleClick = async () => {
     if (isLoading) return;
     setIsLoading(true);
 
     try {
-      // Flujo de redirección estándar oficial OAuth de Google (100% compatible con móviles iOS Safari y Android)
-      if (clientId) {
-        await signIn("google", {
-          callbackUrl: callbackUrl || "/portal",
-          redirect: true,
-        });
-        return;
-      }
-
-      // Fallback de desarrollo si no hay claves configuradas
-      const res = await signIn("credentials", {
-        redirect: false,
-        isGoogleAuth: "true",
-        googleEmail: "usuario.google@gmail.com",
-        googleName: "Usuario Google",
+      // Redirección oficial OAuth de Google estándar (100% compatible con iPhone, Android y Desktop)
+      await signIn("google", {
         callbackUrl: callbackUrl || "/portal",
+        redirect: true,
       });
-
-      if (res?.error) {
-        if (onError) onError(res.error);
-        setIsLoading(false);
-      } else {
-        window.location.href = callbackUrl || "/portal";
-      }
     } catch (err: any) {
       console.warn("Error en inicio de sesión Google:", err);
       if (onError) onError("No se pudo conectar con Google. Puedes ingresar con tu correo.");
