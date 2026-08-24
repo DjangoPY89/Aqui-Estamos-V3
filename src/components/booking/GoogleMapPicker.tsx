@@ -372,11 +372,16 @@ export default function GoogleMapPicker({
           </div>
         </div>
 
-        {/* Badge de Google Maps Calles HD */}
-        <div className="flex items-center gap-1.5 bg-white px-3 py-1.5 rounded-xl border border-neutral-200 shadow-2xs self-start sm:self-auto text-[11px] font-bold text-slate-700">
-          <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-          <span>🗺️ Calles HD Oficial</span>
-        </div>
+        {/* Botón Destacado: Detectar mi Ubicación GPS */}
+        <button
+          type="button"
+          onClick={handleDetectGPS}
+          disabled={isLocating}
+          className="flex items-center gap-2 bg-white hover:bg-electric-50 text-electric-700 hover:text-electric-800 px-3.5 py-2 rounded-xl border border-electric-200 shadow-xs font-bold text-xs transition-all active:scale-95 disabled:opacity-50 self-start sm:self-auto cursor-pointer"
+        >
+          <Navigation className={`w-3.5 h-3.5 ${isLocating ? "animate-spin text-electric-600" : "text-electric-600"}`} />
+          <span>{isLocating ? "Detectando GPS..." : "📍 Detectar mi ubicación GPS"}</span>
+        </button>
       </div>
 
       {geoStatus && (
