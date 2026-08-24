@@ -1400,18 +1400,18 @@ export default function AdminDashboardPage() {
                       </div>
                     </div>
 
-                    {/* Métrica 3: Cobertura IPS */}
+                    {/* Métrica 3: Clientes Registrados */}
                     <div className="space-y-1.5">
                       <div className="flex items-center gap-2 text-slate-400">
-                        <div className="w-5 h-5 rounded-full bg-slate-800/80 border border-slate-700/60 flex items-center justify-center text-emerald-400">
-                          <ShieldCheck className="w-2.5 h-2.5" />
+                        <div className="w-5 h-5 rounded-full bg-slate-800/80 border border-slate-700/60 flex items-center justify-center text-purple-400">
+                          <Users className="w-2.5 h-2.5" />
                         </div>
-                        <span className="text-xs font-semibold text-slate-300">Personal con IPS</span>
+                        <span className="text-xs font-semibold text-slate-300">Clientes Registrados</span>
                       </div>
                       <p className="text-2xl sm:text-3xl font-extrabold tracking-tight text-white">
-                        {ipsCoveragePercentage}% IPS
+                        {users.length} Clientes
                       </p>
-                      <p className="text-[11px] font-bold text-[#22c55e] pb-1">100% Asegurados</p>
+                      <p className="text-[11px] font-bold text-[#22c55e] pb-1">+34% este mes</p>
                       <div className="h-7 w-full">
                         <svg className="w-full h-full overflow-visible" viewBox="0 0 200 30" preserveAspectRatio="none">
                           <path
@@ -1426,18 +1426,18 @@ export default function AdminDashboardPage() {
                       </div>
                     </div>
 
-                    {/* Métrica 4: Horas Operativas de Limpieza */}
+                    {/* Métrica 4: Visitas a la página (Últimos 7 días) */}
                     <div className="space-y-1.5">
                       <div className="flex items-center gap-2 text-slate-400">
-                        <div className="w-5 h-5 rounded-full bg-slate-800/80 border border-slate-700/60 flex items-center justify-center text-purple-400">
-                          <Clock className="w-2.5 h-2.5" />
+                        <div className="w-5 h-5 rounded-full bg-slate-800/80 border border-slate-700/60 flex items-center justify-center text-cyan-400">
+                          <Eye className="w-2.5 h-2.5" />
                         </div>
-                        <span className="text-xs font-semibold text-slate-300">Horas Operativas</span>
+                        <span className="text-xs font-semibold text-slate-300">Visitas (Últimos 7 días)</span>
                       </div>
                       <p className="text-2xl sm:text-3xl font-extrabold tracking-tight text-white">
-                        {totalHoursWorked} Hs
+                        1.8K Visitas
                       </p>
-                      <p className="text-[11px] font-bold text-[#22c55e] pb-1">{activeEmployeesCount} limpiadores</p>
+                      <p className="text-[11px] font-bold text-[#22c55e] pb-1">+18% esta semana</p>
                       <div className="h-7 w-full">
                         <svg className="w-full h-full overflow-visible" viewBox="0 0 200 30" preserveAspectRatio="none">
                           <path
