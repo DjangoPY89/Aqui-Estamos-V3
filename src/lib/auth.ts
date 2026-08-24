@@ -11,11 +11,9 @@ const googleClientId = (process.env.GOOGLE_CLIENT_ID || process.env.NEXT_PUBLIC_
 const googleClientSecret = (process.env.GOOGLE_CLIENT_SECRET || "").trim();
 
 // Configuración estricta de NEXTAUTH_URL para evitar redirect_uri_mismatch en Vercel
-const isVercelProd = process.env.VERCEL === "1" || process.env.NODE_ENV === "production";
-if (isVercelProd) {
-  if (!process.env.NEXTAUTH_URL || process.env.NEXTAUTH_URL.includes("localhost") || process.env.NEXTAUTH_URL.includes("-git-")) {
-    process.env.NEXTAUTH_URL = "https://aqui-estamos-v3.vercel.app";
-  }
+if (process.env.VERCEL === "1" || process.env.NODE_ENV === "production") {
+  process.env.NEXTAUTH_URL = "https://aqui-estamos-v3.vercel.app";
+  process.env.NEXTAUTH_URL_INTERNAL = "https://aqui-estamos-v3.vercel.app";
 } else if (!process.env.NEXTAUTH_URL) {
   process.env.NEXTAUTH_URL = "http://localhost:3000";
 }
