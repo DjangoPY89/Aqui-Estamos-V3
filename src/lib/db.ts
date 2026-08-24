@@ -750,8 +750,32 @@ export function seedInitialData(database?: Database.Database) {
         "0981123456",
         "Avda. Santa Teresa 2250, Edificio Trinity Towers, Depto 802, Asunción"
       );
+    }
 
-      // Reservas de muestra
+    // Sembrar usuario Carlos Cantero
+    const carlosCustomer = db.prepare("SELECT * FROM users WHERE email = ?").get("canterodontown@gmail.com") as any;
+    const carlosHash = bcrypt.hashSync("Cantero1234", 10);
+    if (!carlosCustomer) {
+      const custId2 = `usr_${Date.now()}_carlos`;
+      db.prepare(`
+        INSERT INTO users (id, name, email, password_hash, role, phone, address)
+        VALUES (?, ?, ?, ?, ?, ?, ?)
+      `).run(
+        custId2,
+        "Carlos Cantero",
+        "canterodontown@gmail.com",
+        carlosHash,
+        "CUSTOMER",
+        "0981777222",
+        "Barrio Recoleta, Asunción"
+      );
+    } else {
+      db.prepare("UPDATE users SET password_hash = ? WHERE email = ?").run(carlosHash, "canterodontown@gmail.com");
+    }
+
+    // Reservas de muestra
+    const sampleBooking = db.prepare("SELECT * FROM bookings WHERE booking_number = 'AE-2026-0812'").get() as any;
+    if (!sampleBooking) {
       db.prepare(`
         INSERT INTO bookings (
           id, booking_number, user_id, customer_name, customer_phone, customer_email,
@@ -762,7 +786,7 @@ export function seedInitialData(database?: Database.Database) {
       `).run(
         `bk_sample_1`,
         "AE-2026-0812",
-        custId,
+        "usr_sample_cust",
         "Juan Pérez",
         "0981123456",
         "cliente@ejemplo.com",
