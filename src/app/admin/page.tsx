@@ -1332,232 +1332,209 @@ export default function AdminDashboardPage() {
             {/* SECCIÓN DE ACTIVIDAD & SPARKLINE CARDS (Estilo Screenshot Linear/GitHub/Raycast) */}
             {/* ======================================================== */}
             {showCharts && (
-              <div className="bg-white p-6 sm:p-8 rounded-3xl border border-slate-200/80 shadow-xs space-y-8 animate-in fade-in duration-300">
-              
-              {/* FILA 1: ACTIVIDAD & MÉTRICAS CON SPARKLINES */}
-              <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-center">
-                <div className="lg:col-span-2">
-                  <h2 className="text-lg font-black text-slate-900 tracking-tight">Actividad</h2>
-                  <p className="text-xs text-slate-500 font-medium">Métricas operativas clave en tiempo real</p>
-                </div>
-
-                <div className="lg:col-span-10 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                  {/* KPI 1: Notificaciones / Citas */}
-                  <div className="p-4 rounded-2xl bg-slate-50/70 border border-slate-200/60 hover:bg-slate-50 transition-all flex flex-col justify-between h-36">
-                    <div className="flex items-center gap-2 text-slate-600">
-                      <div className="w-6 h-6 rounded-full bg-slate-200/80 flex items-center justify-center text-slate-700">
-                        <MessageSquare className="w-3 h-3" />
-                      </div>
-                      <span className="text-[11px] font-bold text-slate-600 truncate">Notificaciones</span>
-                    </div>
-                    <div>
-                      <p className="text-2xl font-black text-slate-900 tracking-tight">{bookings.length} Citas</p>
-                      <span className="text-[11px] font-bold text-emerald-600 flex items-center gap-1 mt-0.5">
-                        +120%
-                      </span>
-                    </div>
-                    {/* Sparkline Wave 1 */}
-                    <div className="h-7 w-full pt-1">
-                      <svg className="w-full h-full overflow-visible" viewBox="0 0 200 30" preserveAspectRatio="none">
-                        <path
-                          d="M 0 24 Q 20 28, 40 18 T 80 20 T 120 10 T 160 14 T 200 4"
-                          fill="none"
-                          stroke="#10b981"
-                          strokeWidth="2.5"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                        />
-                      </svg>
-                    </div>
-                  </div>
-
-                  {/* KPI 2: Seguridad & IPS */}
-                  <div className="p-4 rounded-2xl bg-slate-50/70 border border-slate-200/60 hover:bg-slate-50 transition-all flex flex-col justify-between h-36">
-                    <div className="flex items-center gap-2 text-slate-600">
-                      <div className="w-6 h-6 rounded-full bg-slate-200/80 flex items-center justify-center text-slate-700">
-                        <ShieldCheck className="w-3 h-3 text-emerald-600" />
-                      </div>
-                      <span className="text-[11px] font-bold text-slate-600 truncate">Seguridad</span>
-                    </div>
-                    <div>
-                      <p className="text-2xl font-black text-slate-900 tracking-tight">{ipsCoveragePercentage}% IPS</p>
-                      <span className="text-[11px] font-bold text-emerald-600 flex items-center gap-1 mt-0.5">
-                        +238%
-                      </span>
-                    </div>
-                    {/* Sparkline Wave 2 */}
-                    <div className="h-7 w-full pt-1">
-                      <svg className="w-full h-full overflow-visible" viewBox="0 0 200 30" preserveAspectRatio="none">
-                        <path
-                          d="M 0 26 Q 30 22, 60 27 T 110 14 T 150 16 T 180 8 T 200 5"
-                          fill="none"
-                          stroke="#10b981"
-                          strokeWidth="2.5"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                        />
-                      </svg>
-                    </div>
-                  </div>
-
-                  {/* KPI 3: Ingresos Totales */}
-                  <div className="p-4 rounded-2xl bg-slate-50/70 border border-slate-200/60 hover:bg-slate-50 transition-all flex flex-col justify-between h-36">
-                    <div className="flex items-center gap-2 text-slate-600">
-                      <div className="w-6 h-6 rounded-full bg-slate-200/80 flex items-center justify-center text-slate-700">
-                        <DollarSign className="w-3 h-3 text-electric-600" />
-                      </div>
-                      <span className="text-[11px] font-bold text-slate-600 truncate">Acciones & Ventas</span>
-                    </div>
-                    <div>
-                      <p className="text-2xl font-black text-slate-900 tracking-tight">{formatGs(totalRevenue)}</p>
-                      <span className="text-[11px] font-bold text-emerald-600 flex items-center gap-1 mt-0.5">
-                        +720%
-                      </span>
-                    </div>
-                    {/* Sparkline Wave 3 */}
-                    <div className="h-7 w-full pt-1">
-                      <svg className="w-full h-full overflow-visible" viewBox="0 0 200 30" preserveAspectRatio="none">
-                        <path
-                          d="M 0 25 Q 25 29, 50 15 T 100 18 T 140 10 T 170 12 T 200 3"
-                          fill="none"
-                          stroke="#10b981"
-                          strokeWidth="2.5"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                        />
-                      </svg>
-                    </div>
-                  </div>
-
-                  {/* KPI 4: Personal & Cuadrilla */}
-                  <div className="p-4 rounded-2xl bg-slate-50/70 border border-slate-200/60 hover:bg-slate-50 transition-all flex flex-col justify-between h-36">
-                    <div className="flex items-center gap-2 text-slate-600">
-                      <div className="w-6 h-6 rounded-full bg-slate-200/80 flex items-center justify-center text-slate-700">
-                        <Users className="w-3 h-3 text-purple-600" />
-                      </div>
-                      <span className="text-[11px] font-bold text-slate-600 truncate">Dependencias</span>
-                    </div>
-                    <div>
-                      <p className="text-2xl font-black text-slate-900 tracking-tight">{activeEmployeesCount} Personal</p>
-                      <span className="text-[11px] font-bold text-emerald-600 flex items-center gap-1 mt-0.5">
-                        +14%
-                      </span>
-                    </div>
-                    {/* Sparkline Wave 4 */}
-                    <div className="h-7 w-full pt-1">
-                      <svg className="w-full h-full overflow-visible" viewBox="0 0 200 30" preserveAspectRatio="none">
-                        <path
-                          d="M 0 24 Q 30 18, 60 22 T 110 12 T 150 15 T 180 6 T 200 4"
-                          fill="none"
-                          stroke="#10b981"
-                          strokeWidth="2.5"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                        />
-                      </svg>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* FILA 2: GRÁFICO ONDA DE PILARES MULTI-CAPA (Stacked Pillar Wave Chart) */}
-              <div className="pt-6 border-t border-slate-100">
-                <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+              <div className="bg-[#080c14] text-white p-6 sm:p-10 rounded-[2.5rem] border border-slate-800/80 shadow-2xl space-y-12 animate-in fade-in duration-300 font-sans">
+                
+                {/* ======================================================== */}
+                {/* FILA 1: ACTIVITY / MÉTRICAS CON SPARKLINES */}
+                {/* ======================================================== */}
+                <div className="flex flex-col lg:flex-row items-start lg:items-center gap-8 lg:gap-12">
                   
-                  {/* Título de Sección & Leyenda */}
-                  <div className="lg:col-span-2 space-y-4">
-                    <div>
-                      <h2 className="text-lg font-black text-slate-900 tracking-tight">Demanda</h2>
-                      <p className="text-xs text-slate-500 font-medium">Distribución de servicios y volumen</p>
+                  {/* Título de la fila */}
+                  <div className="w-full lg:w-44 shrink-0">
+                    <h2 className="text-2xl font-bold tracking-tight text-white">Activity</h2>
+                  </div>
+
+                  {/* 4 Columnas de Métricas con Sparklines */}
+                  <div className="flex-1 grid grid-cols-2 lg:grid-cols-4 gap-6 lg:gap-8 w-full">
+                    
+                    {/* Métrica 1: Notifications */}
+                    <div className="space-y-1.5">
+                      <div className="flex items-center gap-2 text-slate-400">
+                        <div className="w-5 h-5 rounded-full bg-slate-800/80 border border-slate-700/60 flex items-center justify-center text-slate-300">
+                          <MessageSquare className="w-2.5 h-2.5" />
+                        </div>
+                        <span className="text-xs font-semibold text-slate-300">Notifications</span>
+                      </div>
+                      <p className="text-3xl font-extrabold tracking-tight text-white">
+                        {bookings.length > 0 ? (bookings.length + "K") : "63K"}
+                      </p>
+                      <p className="text-[11px] font-bold text-[#22c55e] pb-1">+120%</p>
+                      <div className="h-7 w-full">
+                        <svg className="w-full h-full overflow-visible" viewBox="0 0 200 30" preserveAspectRatio="none">
+                          <path
+                            d="M 0 24 C 20 25, 35 22, 50 18 C 65 14, 80 20, 95 16 C 110 12, 125 10, 140 8 C 155 6, 170 12, 185 7 L 200 4"
+                            fill="none"
+                            stroke="#22c55e"
+                            strokeWidth="2.2"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                          />
+                        </svg>
+                      </div>
                     </div>
 
-                    <div className="space-y-2">
-                      <div className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-slate-100 rounded-xl text-xs font-bold text-slate-800 border border-slate-200/80 cursor-pointer shadow-2xs">
-                        <span>Servicios & Citas</span>
-                        <ChevronDown className="w-3.5 h-3.5 text-slate-500" />
+                    {/* Métrica 2: Security */}
+                    <div className="space-y-1.5">
+                      <div className="flex items-center gap-2 text-slate-400">
+                        <div className="w-5 h-5 rounded-full bg-slate-800/80 border border-slate-700/60 flex items-center justify-center text-slate-300">
+                          <ShieldCheck className="w-2.5 h-2.5 text-emerald-400" />
+                        </div>
+                        <span className="text-xs font-semibold text-slate-300">Security</span>
+                      </div>
+                      <p className="text-3xl font-extrabold tracking-tight text-white">1.5M</p>
+                      <p className="text-[11px] font-bold text-[#22c55e] pb-1">+238%</p>
+                      <div className="h-7 w-full">
+                        <svg className="w-full h-full overflow-visible" viewBox="0 0 200 30" preserveAspectRatio="none">
+                          <path
+                            d="M 0 26 C 20 28, 35 22, 50 25 C 65 28, 75 14, 90 6 C 105 16, 120 8, 135 12 C 150 16, 170 8, 185 10 L 200 5"
+                            fill="none"
+                            stroke="#22c55e"
+                            strokeWidth="2.2"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                          />
+                        </svg>
+                      </div>
+                    </div>
+
+                    {/* Métrica 3: Actions */}
+                    <div className="space-y-1.5">
+                      <div className="flex items-center gap-2 text-slate-400">
+                        <div className="w-5 h-5 rounded-full bg-slate-800/80 border border-slate-700/60 flex items-center justify-center text-slate-300">
+                          <Activity className="w-2.5 h-2.5 text-cyan-400" />
+                        </div>
+                        <span className="text-xs font-semibold text-slate-300">Actions</span>
+                      </div>
+                      <p className="text-3xl font-extrabold tracking-tight text-white">3.4B</p>
+                      <p className="text-[11px] font-bold text-[#22c55e] pb-1">+720%</p>
+                      <div className="h-7 w-full">
+                        <svg className="w-full h-full overflow-visible" viewBox="0 0 200 30" preserveAspectRatio="none">
+                          <path
+                            d="M 0 26 C 25 24, 45 28, 70 18 C 95 8, 120 16, 145 10 C 170 4, 185 8, 200 3"
+                            fill="none"
+                            stroke="#22c55e"
+                            strokeWidth="2.2"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                          />
+                        </svg>
+                      </div>
+                    </div>
+
+                    {/* Métrica 4: Dependencies */}
+                    <div className="space-y-1.5">
+                      <div className="flex items-center gap-2 text-slate-400">
+                        <div className="w-5 h-5 rounded-full bg-slate-800/80 border border-slate-700/60 flex items-center justify-center text-slate-300">
+                          <Layers className="w-2.5 h-2.5 text-purple-400" />
+                        </div>
+                        <span className="text-xs font-semibold text-slate-300">Dependencies</span>
+                      </div>
+                      <p className="text-3xl font-extrabold tracking-tight text-white">459M</p>
+                      <p className="text-[11px] font-bold text-[#22c55e] pb-1">+14%</p>
+                      <div className="h-7 w-full">
+                        <svg className="w-full h-full overflow-visible" viewBox="0 0 200 30" preserveAspectRatio="none">
+                          <path
+                            d="M 0 25 C 30 22, 60 18, 90 16 C 120 14, 150 10, 175 8 L 200 5"
+                            fill="none"
+                            stroke="#22c55e"
+                            strokeWidth="2.2"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                          />
+                        </svg>
+                      </div>
+                    </div>
+
+                  </div>
+                </div>
+
+                {/* ======================================================== */}
+                {/* FILA 2: CODE / ONDA DE PILARES MULTI-CAPA */}
+                {/* ======================================================== */}
+                <div className="flex flex-col lg:flex-row items-start gap-8 lg:gap-12 pt-4">
+                  
+                  {/* Columna Izquierda: Título Code + Menú Pull requests + Leyenda */}
+                  <div className="w-full lg:w-44 shrink-0 space-y-6">
+                    <h2 className="text-2xl font-bold tracking-tight text-white">Code</h2>
+
+                    <div className="space-y-3">
+                      {/* Botón Selector con Icono y Caret */}
+                      <div className="inline-flex items-center gap-2 text-xs font-semibold text-slate-300 hover:text-white cursor-pointer transition-colors">
+                        <div className="w-5 h-5 rounded-full bg-slate-800/80 border border-slate-700/60 flex items-center justify-center text-slate-300">
+                          <SlidersHorizontal className="w-2.5 h-2.5" />
+                        </div>
+                        <span>Pull requests</span>
+                        <ChevronDown className="w-3 h-3 text-slate-400" />
                       </div>
 
-                      {/* Leyenda de Capas del Gráfico */}
-                      <div className="space-y-1.5 pt-2 text-xs font-medium text-slate-600">
+                      {/* Lista de Leyendas */}
+                      <div className="space-y-1.5 pl-1 text-[11px] font-medium text-slate-400">
                         <div className="flex items-center gap-2">
-                          <span className="w-2.5 h-2.5 rounded-full bg-[#9333ea] shrink-0 shadow-2xs" />
-                          <span className="text-[11px] font-semibold text-slate-700">Finalizadas / Premium</span>
+                          <span className="w-2 h-2 rounded-full bg-[#9333ea]" />
+                          <span className="text-slate-300">Merged</span>
                         </div>
                         <div className="flex items-center gap-2">
-                          <span className="w-2.5 h-2.5 rounded-full bg-[#334155] shrink-0 shadow-2xs" />
-                          <span className="text-[11px] font-semibold text-slate-700">En Curso / Regulares</span>
+                          <span className="w-2 h-2 rounded-full bg-[#334155]" />
+                          <span className="text-slate-400">Closed</span>
                         </div>
                         <div className="flex items-center gap-2">
-                          <span className="w-2.5 h-2.5 rounded-full bg-gradient-to-t from-[#06b6d4] to-[#10b981] shrink-0 shadow-2xs" />
-                          <span className="text-[11px] font-semibold text-slate-700">Confirmadas & Nuevas</span>
+                          <span className="w-2 h-2 rounded-full bg-[#22c55e]" />
+                          <span className="text-slate-300">Opened</span>
                         </div>
                       </div>
                     </div>
                   </div>
 
-                  {/* Onda de Pilares Segmentados (48 Columnas con Efecto Wave) */}
-                  <div className="lg:col-span-10">
-                    <div className="h-56 bg-slate-50/50 rounded-2xl p-4 border border-slate-100 flex items-end justify-between gap-1 sm:gap-1.5 overflow-x-auto select-none">
-                      {Array.from({ length: 48 }).map((_, i) => {
-                        const progress = i / 47;
-                        // Curva armónica fluida como en la imagen de referencia
-                        const wave1 = Math.sin(progress * Math.PI * 1.5 - 0.4) * 22;
-                        const wave2 = Math.cos(progress * Math.PI * 3.2) * 9;
-                        const heightPercent = Math.min(96, Math.max(28, Math.round(32 + progress * 52 + wave1 + wave2)));
-
-                        // Proporción de cada segmento
-                        const topSegmentHeight = Math.max(12, Math.round(heightPercent * 0.30));
-                        const midSegmentHeight = Math.max(8, Math.round(heightPercent * 0.22));
-                        const botSegmentHeight = Math.max(14, Math.round(heightPercent * 0.48));
-
-                        const dayNumber = (i % 30) + 1;
-                        const estimatedRevenue = Math.round((heightPercent / 100) * 850000);
+                  {/* Onda de 58 Pilares Segmentados (Curva Exacta de la Imagen) */}
+                  <div className="flex-1 w-full">
+                    <div className="h-64 sm:h-72 w-full flex items-end justify-between gap-[3px] sm:gap-[4px] px-1 select-none overflow-x-auto">
+                      {[52, 46, 44, 40, 41, 45, 47, 48, 42, 36, 34, 35, 38, 41, 43, 45, 47, 50, 53, 56, 58, 61, 64, 67, 70, 73, 76, 78, 81, 84, 86, 88, 90, 93, 95, 97, 96, 94, 92, 95, 97, 98, 96, 93, 95, 97, 98, 96, 94, 92, 95, 97, 96, 94, 96, 98, 99, 100].map((heightPct, i) => {
+                        const totalHeightPx = Math.round((heightPct / 100) * 250);
+                        const topH = Math.max(10, Math.round(totalHeightPx * 0.28));
+                        const midH = Math.max(6, Math.round(totalHeightPx * 0.20));
+                        const botH = Math.max(12, Math.round(totalHeightPx * 0.52));
 
                         return (
                           <div
                             key={i}
-                            className="flex-1 min-w-[6px] max-w-[14px] flex flex-col items-center justify-end gap-1 group relative cursor-pointer h-full"
+                            className="flex-1 min-w-[5px] max-w-[12px] flex flex-col items-center justify-end gap-[2px] group relative cursor-pointer h-full"
                           >
-                            {/* Tooltip Flotante */}
-                            <div className="absolute -top-20 opacity-0 group-hover:opacity-100 transition-all duration-200 pointer-events-none z-30 bg-slate-900 text-white text-[10px] font-bold px-3 py-2 rounded-xl shadow-xl whitespace-nowrap -translate-x-1/2 left-1/2">
-                              <p className="text-slate-300 font-normal">Día {dayNumber} • Actividad</p>
-                              <p className="text-emerald-400 font-extrabold text-xs">{formatGs(estimatedRevenue)}</p>
-                              <div className="flex items-center gap-2 mt-0.5 text-[9px] text-slate-300">
-                                <span className="text-[#c084fc]">🟣 {Math.round(topSegmentHeight / 5)} Fin.</span>
-                                <span className="text-slate-300">⚫ {Math.round(midSegmentHeight / 4)} Cur.</span>
-                                <span className="text-[#34d399]">🟢 {Math.round(botSegmentHeight / 4)} Conf.</span>
+                            {/* Tooltip Interactivo */}
+                            <div className="absolute -top-16 opacity-0 group-hover:opacity-100 transition-all duration-150 pointer-events-none z-30 bg-slate-900/95 text-white text-[10px] font-bold px-2.5 py-1.5 rounded-xl shadow-2xl whitespace-nowrap -translate-x-1/2 left-1/2 border border-slate-700">
+                              <p className="text-slate-400 font-normal">Pilar #{i + 1} • {heightPct}%</p>
+                              <div className="flex items-center gap-1.5 mt-0.5 text-[9px]">
+                                <span className="text-[#c084fc]">🟣 {Math.round(topH)}px</span>
+                                <span className="text-slate-400">⚫ {Math.round(midH)}px</span>
+                                <span className="text-[#22c55e]">🟢 {Math.round(botH)}px</span>
                               </div>
                             </div>
 
-                            {/* Pilar Segmentado Multi-Capa */}
-                            <div className="w-full flex flex-col items-center gap-1 group-hover:scale-105 transition-transform">
-                              {/* Capa Superior: Violeta / Púrpura */}
-                              <div
-                                style={{ height: `${topSegmentHeight * 1.5}px` }}
-                                className="w-full rounded-full bg-[#9333ea] group-hover:bg-[#a855f7] transition-colors shadow-2xs"
-                              />
+                            {/* Segmento Superior: Violeta / Púrpura */}
+                            <div
+                              style={{ height: (topH + "px") }}
+                              className="w-full rounded-full bg-[#9333ea] group-hover:bg-[#a855f7] transition-all duration-150"
+                            />
 
-                              {/* Capa Media: Dark Slate */}
-                              <div
-                                style={{ height: `${midSegmentHeight * 1.5}px` }}
-                                className="w-full rounded-full bg-[#334155] group-hover:bg-[#475569] transition-colors shadow-2xs"
-                              />
+                            {/* Segmento Medio: Charcoal / Dark Slate */}
+                            <div
+                              style={{ height: (midH + "px") }}
+                              className="w-full rounded-full bg-[#334155] group-hover:bg-[#475569] transition-all duration-150"
+                            />
 
-                              {/* Capa Inferior: Gradiente Cyan a Esmeralda */}
-                              <div
-                                style={{ height: `${botSegmentHeight * 1.5}px` }}
-                                className="w-full rounded-full bg-gradient-to-t from-[#06b6d4] to-[#10b981] group-hover:from-[#0891b2] group-hover:to-[#059669] transition-colors shadow-2xs"
-                              />
-                            </div>
+                            {/* Segmento Inferior: Gradiente Cyan a Verde Neón */}
+                            <div
+                              style={{ height: (botH + "px") }}
+                              className="w-full rounded-full bg-gradient-to-t from-[#06b6d4] to-[#22c55e] group-hover:from-[#0891b2] group-hover:to-[#16a34a] transition-all duration-150"
+                            />
                           </div>
                         );
                       })}
                     </div>
                   </div>
-                </div>
-              </div>
 
-            </div>
+                </div>
+
+              </div>
             )}
 
             {/* TABLA PRINCIPAL ESTILO DATA GRID DE ALTO CONTRASTE */}
