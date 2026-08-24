@@ -96,10 +96,7 @@ function BookingContent() {
       setSelectedExtras(extrasParam.split(",").filter(Boolean));
     }
 
-    // Configurar fecha mínima: mañana
-    const tomorrow = new Date();
-    tomorrow.setDate(tomorrow.getDate() + 1);
-    setServiceDate(tomorrow.toISOString().split("T")[0]);
+    // No preseleccionar fecha para exigir que el cliente elija activamente
   }, [searchParams]);
 
   // Cargar perfil y direcciones guardadas del cliente
@@ -952,16 +949,32 @@ function BookingContent() {
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
                   <div>
-                    <label className="block text-xs font-medium text-neutral-700 mb-1">
-                      Fecha del Servicio *
+                    <label className="block text-xs font-bold text-neutral-800 mb-1 flex items-center justify-between">
+                      <span>Fecha del Servicio *</span>
+                      {!serviceDate && (
+                        <span className="text-[10px] font-bold text-amber-600 bg-amber-50 px-2 py-0.5 rounded-md border border-amber-200">
+                          Selección Obligatoria
+                        </span>
+                      )}
                     </label>
                     <input
                       type="date"
                       required
+                      min={new Date(Date.now() + 86400000).toISOString().split("T")[0]}
                       value={serviceDate}
                       onChange={(e) => setServiceDate(e.target.value)}
-                      className="w-full px-3 py-2 rounded-lg border border-neutral-300 text-xs focus:ring-1 focus:ring-electric-600 focus:outline-none"
+                      className={`w-full px-3 py-2.5 rounded-xl border text-xs focus:ring-2 focus:ring-electric-600 focus:outline-none transition-all ${
+                        !serviceDate
+                          ? "border-amber-300 bg-amber-50/20 text-neutral-600 font-medium"
+                          : "border-emerald-300 bg-emerald-50/20 text-neutral-900 font-bold"
+                      }`}
                     />
+                    {!serviceDate && (
+                      <p className="text-[11px] text-amber-700 font-medium mt-1 flex items-center gap-1">
+                        <AlertCircle className="w-3 h-3 text-amber-600 shrink-0" />
+                        <span>Debes elegir el día para agendar tu limpieza</span>
+                      </p>
+                    )}
                   </div>
 
                   <div>

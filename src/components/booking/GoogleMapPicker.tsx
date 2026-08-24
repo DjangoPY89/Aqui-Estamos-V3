@@ -372,41 +372,10 @@ export default function GoogleMapPicker({
           </div>
         </div>
 
-        {/* Selector de Vistas de Mapa */}
-        <div className="flex items-center gap-1 bg-white p-1 rounded-xl border border-neutral-200 shadow-2xs self-start sm:self-auto">
-          <button
-            type="button"
-            onClick={() => handleStyleChange("google_streets")}
-            className={`px-2.5 py-1 text-[11px] font-bold rounded-lg transition-all ${
-              mapStyle === "google_streets"
-                ? "bg-electric-600 text-white shadow-electric-xs"
-                : "text-neutral-600 hover:text-neutral-900 hover:bg-neutral-100"
-            }`}
-          >
-            🗺️ Calles HD
-          </button>
-          <button
-            type="button"
-            onClick={() => handleStyleChange("google_hybrid")}
-            className={`px-2.5 py-1 text-[11px] font-bold rounded-lg transition-all ${
-              mapStyle === "google_hybrid"
-                ? "bg-electric-600 text-white shadow-electric-xs"
-                : "text-neutral-600 hover:text-neutral-900 hover:bg-neutral-100"
-            }`}
-          >
-            🛰️ Satélite
-          </button>
-          <button
-            type="button"
-            onClick={() => handleStyleChange("carto_voyager")}
-            className={`px-2.5 py-1 text-[11px] font-bold rounded-lg transition-all ${
-              mapStyle === "carto_voyager"
-                ? "bg-electric-600 text-white shadow-electric-xs"
-                : "text-neutral-600 hover:text-neutral-900 hover:bg-neutral-100"
-            }`}
-          >
-            🎨 Moderno
-          </button>
+        {/* Badge de Google Maps Calles HD */}
+        <div className="flex items-center gap-1.5 bg-white px-3 py-1.5 rounded-xl border border-neutral-200 shadow-2xs self-start sm:self-auto text-[11px] font-bold text-slate-700">
+          <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+          <span>🗺️ Calles HD Oficial</span>
         </div>
       </div>
 
