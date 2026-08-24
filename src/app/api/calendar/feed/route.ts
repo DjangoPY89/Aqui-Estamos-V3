@@ -48,9 +48,19 @@ export async function GET(req: Request) {
     for (const b of allBookings) {
       if (!b.serviceDate) continue;
       const { dtStart, dtEnd } = formatIcsDate(b.serviceDate, b.serviceTime, b.serviceHours || 4);
-      const summary = `Limpieza: ${b.customerName || "Cliente"} (${b.serviceHours || 4}hs - ${b.bookingNumber || "Reserva"})`;
-      const description = `Servicio de Limpieza Aquí Estamos\\nCliente: ${b.customerName || "N/A"}\\nTeléfono: ${b.customerPhone || "N/A"}\\nPersonal Asignado: ${b.assignedCleaner || "Por confirmar"}\\nTotal: ${formatGs(b.totalPrice || 0)}\\nEstado: ${b.status || "CONFIRMED"}`;
-      const location = (b.address || "Asunción, Paraguay").replace(/,/g, "\\,");
+      const isAssigned = Boolean(b.assignedCleaner && b.assignedCleaner !== "UNASSIGNED" && b.assignedCleaner !== "Sin Asignar");
+      
+      const summary = isAssigned 
+        ? `🧼 Limpieza: ${b.customerName || "Cliente"} (${b.assignedCleaner})`
+        : `⏳ Limpieza: ${b.customerName || "Cliente"} (Pendiente de Asignación)`;
+        
+      const description = `Servicio de Limpieza Aquí Estamos\\nCliente: ${b.customerName || "N/A"}\\nTeléfono: ${b.customerPhone || "N/A"}\\nPersonal Asignado: ${isAssigned ? b.assignedCleaner : "⚠️ Sin personal asignado aún"}\\nTotal: ${formatGs(b.totalPrice || 0)}\\nEstado: ${b.status || "CONFIRMED"}`;
+      
+      // Asignar lugar en el calendario solo y cuando el empleado se encuentre asignado
+      const location = isAssigned 
+        ? (b.address || "Asunción, Paraguay").replace(/,/g, "\\,")
+        : "Pendiente de Asignación de Empleado (Dirección reservada)";
+        
       const uid = `booking-${b.id || b.bookingNumber}@aquiestamos.com.py`;
 
       icsContent.push(
