@@ -40,7 +40,10 @@ import {
   CalendarPlus,
   MessageSquare,
   Send,
-  FileSpreadsheet
+  FileSpreadsheet,
+  ArrowUpDown,
+  ArrowUp,
+  ArrowDown
 } from "lucide-react";
 import { Booking, CorporateLead, Employee, User } from "@/types";
 import { formatGs } from "@/lib/pricing";
@@ -74,6 +77,19 @@ export default function AdminDashboardPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [userSearchTerm, setUserSearchTerm] = useState("");
   const [employeeSearchTerm, setEmployeeSearchTerm] = useState("");
+
+  // Estados de Ordenamiento Dinámico de Columnas
+  const [sortField, setSortField] = useState<string>("createdAt");
+  const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc");
+
+  const handleSort = (field: string) => {
+    if (sortField === field) {
+      setSortDirection((prev) => (prev === "asc" ? "desc" : "asc"));
+    } else {
+      setSortField(field);
+      setSortDirection("asc");
+    }
+  };
 
   // Estado de Asignación Automática
   const [isAutoAssigning, setIsAutoAssigning] = useState(false);
@@ -523,7 +539,7 @@ export default function AdminDashboardPage() {
       "E-mail Empleados"
     ];
 
-    const rows = filteredBookings.map((b) => {
+    const rows = sortedBookings.map((b) => {
       const emp = getAssignedEmployee(b.assignedCleaner);
       const extrasStr = b.extras && b.extras.length > 0 ? b.extras.join(", ") : "Ninguno";
       const mapsLink = b.latitude && b.longitude
@@ -682,6 +698,116 @@ export default function AdminDashboardPage() {
       b.address.toLowerCase().includes(searchTerm.toLowerCase());
     return matchesStatus && matchesSearch;
   });
+
+  // Ordenamiento Dinámico de Menor a Mayor / Mayor a Menor para cualquier columna
+  const sortedBookings = [...filteredBookings].sort((a, b) => {
+    let valA: any = "";
+    let valB: any = "";
+
+    switch (sortField) {
+      case "createdAt":
+        valA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+        valB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+        break;
+      case "customerName":
+        valA = (a.customerName || "").toLowerCase();
+        valB = (b.customerName || "").toLowerCase();
+        break;
+      case "customerPhone":
+        valA = (a.customerPhone || "").replace(/\D/g, "");
+        valB = (b.customerPhone || "").replace(/\D/g, "");
+        break;
+      case "customerEmail":
+        valA = (a.customerEmail || "").toLowerCase();
+        valB = (b.customerEmail || "").toLowerCase();
+        break;
+      case "serviceHours":
+        valA = Number(a.serviceHours) || 0;
+        valB = Number(b.serviceHours) || 0;
+        break;
+      case "extras":
+        valA = (a.extras || []).length;
+        valB = (b.extras || []).length;
+        break;
+      case "totalPrice":
+        valA = Number(a.totalPrice) || 0;
+        valB = Number(b.totalPrice) || 0;
+        break;
+      case "serviceDate":
+        valA = (a.serviceDate || "") + " " + (a.serviceTime || "");
+        valB = (b.serviceDate || "") + " " + (b.serviceTime || "");
+        break;
+      case "serviceTime":
+        valA = a.serviceTime || "";
+        valB = b.serviceTime || "";
+        break;
+      case "address":
+        valA = (a.address || "").toLowerCase();
+        valB = (b.address || "").toLowerCase();
+        break;
+      case "frequency":
+        valA = (a.frequency || "").toLowerCase();
+        valB = (b.frequency || "").toLowerCase();
+        break;
+      case "assignedCleaner":
+        valA = (a.assignedCleaner || "").toLowerCase();
+        valB = (b.assignedCleaner || "").toLowerCase();
+        break;
+      case "status":
+        valA = (a.status || "").toLowerCase();
+        valB = (b.status || "").toLowerCase();
+        break;
+      case "employeePhone": {
+        const empA = getAssignedEmployee(a.assignedCleaner);
+        const empB = getAssignedEmployee(b.assignedCleaner);
+        valA = (empA?.phone || "").replace(/\D/g, "");
+        valB = (empB?.phone || "").replace(/\D/g, "");
+        break;
+      }
+      case "employeeEmail": {
+        const empA = getAssignedEmployee(a.assignedCleaner);
+        const empB = getAssignedEmployee(b.assignedCleaner);
+        valA = (empA?.email || "").toLowerCase();
+        valB = (empB?.email || "").toLowerCase();
+        break;
+      }
+      default:
+        valA = (a as any)[sortField] || "";
+        valB = (b as any)[sortField] || "";
+    }
+
+    if (valA < valB) return sortDirection === "asc" ? -1 : 1;
+    if (valA > valB) return sortDirection === "asc" ? 1 : -1;
+    return 0;
+  });
+
+  const renderSortHeader = (label: string, field: string, align: "left" | "center" | "right" = "left", minWidth?: string) => {
+    const isActive = sortField === field;
+    return (
+      <th
+        onClick={() => handleSort(field)}
+        className={`px-4 py-3.5 border-r border-slate-700/50 cursor-pointer select-none hover:bg-slate-700/80 transition-colors group ${
+          align === "center" ? "text-center" : align === "right" ? "text-right" : "text-left"
+        } ${minWidth || ""}`}
+        title={`Clic para ordenar por "${label}" (${isActive && sortDirection === "asc" ? "Mayor a Menor" : "Menor a Mayor"})`}
+      >
+        <div className={`inline-flex items-center gap-1.5 ${align === "center" ? "justify-center" : align === "right" ? "justify-end" : "justify-start"}`}>
+          <span className={`${isActive ? "text-cyan-300 font-black" : "text-slate-300 group-hover:text-white"}`}>
+            {label}
+          </span>
+          {isActive ? (
+            sortDirection === "asc" ? (
+              <ArrowUp className="w-3.5 h-3.5 text-cyan-300 shrink-0 font-bold animate-bounce" />
+            ) : (
+              <ArrowDown className="w-3.5 h-3.5 text-cyan-300 shrink-0 font-bold animate-bounce" />
+            )
+          ) : (
+            <ArrowUpDown className="w-3 h-3 text-slate-500 opacity-40 group-hover:opacity-100 transition-opacity shrink-0" />
+          )}
+        </div>
+      </th>
+    );
+  };
 
   const filteredEmployees = employees.filter((e) => {
     const q = employeeSearchTerm.toLowerCase();
@@ -1070,28 +1196,28 @@ export default function AdminDashboardPage() {
               <table className="w-full text-left text-xs text-slate-300 border-collapse">
                 <thead className="bg-slate-800 text-slate-300 font-bold uppercase text-[11px] tracking-wider border-b border-slate-700 whitespace-nowrap sticky top-0 z-10 shadow-sm">
                   <tr>
-                    <th className="px-4 py-3.5 border-r border-slate-700/50">Fecha Registro</th>
-                    <th className="px-4 py-3.5 border-r border-slate-700/50">Nombre</th>
-                    <th className="px-4 py-3.5 border-r border-slate-700/50">Teléfono</th>
-                    <th className="px-4 py-3.5 border-r border-slate-700/50">Email</th>
-                    <th className="px-3 py-3.5 border-r border-slate-700/50 text-center">Horas</th>
-                    <th className="px-4 py-3.5 border-r border-slate-700/50">Extras</th>
-                    <th className="px-4 py-3.5 border-r border-slate-700/50">Total</th>
-                    <th className="px-4 py-3.5 border-r border-slate-700/50">Fecha Servicio</th>
-                    <th className="px-3 py-3.5 border-r border-slate-700/50 text-center">Hora</th>
-                    <th className="px-4 py-3.5 border-r border-slate-700/50 min-w-[220px]">Dirección</th>
+                    {renderSortHeader("Fecha Registro", "createdAt", "left")}
+                    {renderSortHeader("Nombre", "customerName", "left")}
+                    {renderSortHeader("Teléfono", "customerPhone", "left")}
+                    {renderSortHeader("Email", "customerEmail", "left")}
+                    {renderSortHeader("Horas", "serviceHours", "center")}
+                    {renderSortHeader("Extras", "extras", "left")}
+                    {renderSortHeader("Total", "totalPrice", "left")}
+                    {renderSortHeader("Fecha Servicio", "serviceDate", "left")}
+                    {renderSortHeader("Hora", "serviceTime", "center")}
+                    {renderSortHeader("Dirección", "address", "left", "min-w-[220px]")}
                     <th className="px-3 py-3.5 border-r border-slate-700/50 text-center">Ubicación Maps</th>
-                    <th className="px-3 py-3.5 border-r border-slate-700/50 text-center">Frecuencia</th>
-                    <th className="px-4 py-3.5 border-r border-slate-700/50 min-w-[190px]">Empleado Asignado</th>
-                    <th className="px-4 py-3.5 border-r border-slate-700/50 text-center">Estatus</th>
-                    <th className="px-4 py-3.5 border-r border-slate-700/50">Teléfono Empleado</th>
-                    <th className="px-4 py-3.5 border-r border-slate-700/50">E-mail Empleados</th>
+                    {renderSortHeader("Frecuencia", "frequency", "center")}
+                    {renderSortHeader("Empleado Asignado", "assignedCleaner", "left", "min-w-[190px]")}
+                    {renderSortHeader("Estatus", "status", "center")}
+                    {renderSortHeader("Teléfono Empleado", "employeePhone", "left")}
+                    {renderSortHeader("E-mail Empleados", "employeeEmail", "left")}
                     <th className="px-4 py-3.5 border-r border-slate-700/50 text-center">Enviar WhatsApp</th>
                     <th className="px-4 py-3.5 text-center">Acciones / Calendario</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-800/80 font-mono text-[11px]">
-                  {filteredBookings.map((b) => {
+                  {sortedBookings.map((b) => {
                     const assignedEmp = getAssignedEmployee(b.assignedCleaner);
                     const mapsQueryUrl = b.latitude && b.longitude
                       ? `https://www.google.com/maps?q=${b.latitude},${b.longitude}`
