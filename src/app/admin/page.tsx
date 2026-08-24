@@ -84,7 +84,7 @@ export default function AdminDashboardPage() {
   const [users, setUsers] = useState<AdminUser[]>([]);
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<"BOOKINGS" | "EMPLOYEES" | "CUSTOMERS" | "LEADS" | "ANALYTICS">("BOOKINGS");
+  const [activeTab, setActiveTab] = useState<"BOOKINGS" | "EMPLOYEES" | "CUSTOMERS" | "LEADS" | "ANALYTICS" | "CALENDAR">("BOOKINGS");
   const [quickViewFilter, setQuickViewFilter] = useState<"ALL" | "TODAY" | "THIS_WEEK" | "UNASSIGNED" | "CONFIRMED" | "COMPLETED">("ALL");
   const [statusFilter, setStatusFilter] = useState("ALL");
   const [searchTerm, setSearchTerm] = useState("");
@@ -546,8 +546,9 @@ export default function AdminDashboardPage() {
     const title = `Limpieza Aquí Estamos - ${b.customerName} (${b.bookingNumber})`;
     const details = `Servicio de Limpieza (${b.serviceHours} Horas)\nCliente: ${b.customerName}\nTeléfono: ${b.customerPhone}\nEmail: ${b.customerEmail}\nPersonal: ${b.assignedCleaner || "Por confirmar"}\nTotal: ${formatGs(b.totalPrice)}`;
     const location = b.address;
+    const calId = "b33804903d47ee99d6e63afab3bdacd8d60e6c4b8d8146e7b538d13f15cd624e@group.calendar.google.com";
     
-    return `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(title)}&dates=${startIso}/${endIso}&details=${encodeURIComponent(details)}&location=${encodeURIComponent(location)}`;
+    return `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(title)}&dates=${startIso}/${endIso}&details=${encodeURIComponent(details)}&location=${encodeURIComponent(location)}&src=${encodeURIComponent(calId)}&add=${encodeURIComponent(calId)}&ctz=America/Asuncion`;
   };
 
   const exportToCSV = () => {
@@ -1177,6 +1178,23 @@ export default function AdminDashboardPage() {
                   {leads.length}
                 </span>
               </button>
+
+              <button
+                onClick={() => setActiveTab("CALENDAR")}
+                className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all ${
+                  activeTab === "CALENDAR"
+                    ? "bg-electric-50 text-electric-700 shadow-xs"
+                    : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
+                }`}
+              >
+                <div className="flex items-center gap-2.5">
+                  <CalendarDays className={`w-4 h-4 ${activeTab === "CALENDAR" ? "text-electric-600" : "text-slate-400"}`} />
+                  <span>Google Calendar</span>
+                </div>
+                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
+                  En Vivo
+                </span>
+              </button>
             </div>
 
             {/* Accesos Rápidos Operativos */}
@@ -1255,6 +1273,7 @@ export default function AdminDashboardPage() {
                   {activeTab === "EMPLOYEES" && "Cuadrilla & Personal IPS"}
                   {activeTab === "CUSTOMERS" && "Directorio de Clientes"}
                   {activeTab === "LEADS" && "Solicitudes Empresas B2B"}
+                  {activeTab === "CALENDAR" && "Google Calendar en Vivo"}
                 </h1>
                 <span className="px-2.5 py-0.5 rounded-full bg-slate-100 text-slate-600 text-[11px] font-bold">
                   En Vivo
@@ -2168,6 +2187,60 @@ export default function AdminDashboardPage() {
                       ))}
                     </tbody>
                   </table>
+                </div>
+              </div>
+            )}
+
+            {/* ======================================================== */}
+            {/* TAB 5: GOOGLE CALENDAR EN VIVO */}
+            {/* ======================================================== */}
+            {activeTab === "CALENDAR" && (
+              <div className="bg-white rounded-3xl border border-slate-200 shadow-xs overflow-hidden p-6 sm:p-7 space-y-5 animate-in fade-in duration-200">
+                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 pb-4 border-b border-slate-100">
+                  <div>
+                    <h2 className="text-base font-black text-slate-900 flex items-center gap-2">
+                      <CalendarDays className="w-5 h-5 text-electric-600" />
+                      <span>Calendario Operativo Google Calendar</span>
+                    </h2>
+                    <p className="text-xs text-slate-500 mt-0.5">
+                      Visualización y sincronización en tiempo real de todas las citas y limpiezas agendadas.
+                    </p>
+                  </div>
+                  
+                  <div className="flex flex-wrap items-center gap-2.5">
+                    <a
+                      href="https://calendar.google.com/calendar/embed?src=b33804903d47ee99d6e63afab3bdacd8d60e6c4b8d8146e7b538d13f15cd624e%40group.calendar.google.com&ctz=America%2FAsuncion"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-1.5 px-3.5 py-2 bg-white hover:bg-slate-50 text-slate-700 font-bold text-xs rounded-xl border border-slate-200 shadow-xs transition-all active:scale-95"
+                    >
+                      <ExternalLink className="w-3.5 h-3.5 text-slate-500" />
+                      <span>Abrir en Google Calendar Web</span>
+                    </a>
+                    
+                    <button
+                      type="button"
+                      onClick={() => setIsCreatingBooking(true)}
+                      className="flex items-center gap-1.5 px-3.5 py-2 bg-electric-600 hover:bg-electric-700 text-white font-bold text-xs rounded-xl shadow-xs transition-all active:scale-95"
+                    >
+                      <PlusCircle className="w-3.5 h-3.5" />
+                      <span>Nueva Cita</span>
+                    </button>
+                  </div>
+                </div>
+
+                {/* Google Calendar Iframe Embebido */}
+                <div className="w-full h-[650px] sm:h-[750px] rounded-2xl overflow-hidden border border-slate-200 shadow-inner bg-slate-50 relative">
+                  <iframe
+                    src="https://calendar.google.com/calendar/embed?src=b33804903d47ee99d6e63afab3bdacd8d60e6c4b8d8146e7b538d13f15cd624e%40group.calendar.google.com&ctz=America%2FAsuncion"
+                    style={{ border: 0 }}
+                    width="100%"
+                    height="100%"
+                    frameBorder="0"
+                    scrolling="no"
+                    className="w-full h-full"
+                    title="Calendario Operativo Aquí Estamos"
+                  />
                 </div>
               </div>
             )}

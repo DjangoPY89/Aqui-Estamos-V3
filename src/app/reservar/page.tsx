@@ -421,9 +421,19 @@ function BookingContent() {
             </div>
 
             <div className="space-y-2.5">
+              <a
+                href={`https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(`Limpieza Aquí Estamos (${completedBooking.bookingNumber})`)}&dates=${completedBooking.serviceDate.replace(/-/g, "")}T${(completedBooking.serviceTime || "08:00").replace(":", "")}00/${completedBooking.serviceDate.replace(/-/g, "")}T${(parseInt((completedBooking.serviceTime || "08:00").split(":")[0], 10) + (completedBooking.serviceHours || 4)).toString().padStart(2, "0")}${(completedBooking.serviceTime || "08:00").split(":")[1] || "00"}00&details=${encodeURIComponent(`Servicio de Limpieza ${completedBooking.serviceHours} Horas\nCliente: ${completedBooking.customerName}\nTeléfono: ${completedBooking.customerPhone}\nDirección: ${completedBooking.address}\nTotal: ${formatGs(completedBooking.totalPrice)}`)}&location=${encodeURIComponent(completedBooking.address)}&src=b33804903d47ee99d6e63afab3bdacd8d60e6c4b8d8146e7b538d13f15cd624e@group.calendar.google.com&add=b33804903d47ee99d6e63afab3bdacd8d60e6c4b8d8146e7b538d13f15cd624e@group.calendar.google.com&ctz=America/Asuncion`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="w-full py-3.5 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold flex items-center justify-center gap-2 shadow-sm transition-all active:scale-[0.99]"
+              >
+                <Calendar className="w-4 h-4" />
+                <span>Añadir a mi Google Calendar</span>
+              </a>
+
               <Link
                 href="/portal"
-                className="w-full py-3.5 px-4 rounded-xl bg-electric-600 hover:bg-electric-700 text-white text-xs font-semibold flex items-center justify-center gap-2 shadow-electric transition-all active:scale-[0.99]"
+                className="w-full py-3 px-4 rounded-xl bg-electric-600 hover:bg-electric-700 text-white text-xs font-semibold flex items-center justify-center gap-2 shadow-electric transition-all active:scale-[0.99]"
               >
                 <span>Ver en mi Portal de Cliente</span>
                 <ArrowRight className="w-3.5 h-3.5" />
