@@ -35,7 +35,12 @@ import {
   Shuffle,
   Briefcase,
   Star,
-  Check
+  Check,
+  Download,
+  CalendarPlus,
+  MessageSquare,
+  Send,
+  FileSpreadsheet
 } from "lucide-react";
 import { Booking, CorporateLead, Employee, User } from "@/types";
 import { formatGs } from "@/lib/pricing";
@@ -431,8 +436,131 @@ export default function AdminDashboardPage() {
         loadData();
       }
     } catch (err) {
-      console.error("Error al actualizar estado:", err);
+      console.error("Error al actualizar estado de empleado:", err);
     }
+  };
+
+  // Funciones de sincronización y vista estilo Google Spreadsheet
+  const getAssignedEmployee = (cleanerName?: string | null): Employee | null => {
+    if (!cleanerName) return null;
+    const clean = cleanerName.toLowerCase().trim();
+    return (
+      employees.find((e) => {
+        const empName = e.name.toLowerCase().trim();
+        return clean.includes(empName) || empName.includes(clean);
+      }) || null
+    );
+  };
+
+  const handleQuickStatusChange = async (bookingId: string, newStatus: string) => {
+    try {
+      const res = await fetch(`/api/bookings/${bookingId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: newStatus }),
+      });
+      if (res.ok) {
+        setBookings((prev) =>
+          prev.map((b) => (b.id === bookingId ? { ...b, status: newStatus as any } : b))
+        );
+        showNotification(`✓ Estado de reserva actualizado a "${newStatus}".`);
+      }
+    } catch (err) {
+      console.error("Error al actualizar estado rápido:", err);
+    }
+  };
+
+  const generateWhatsAppCustomerUrl = (b: Booking) => {
+    const raw = (b.customerPhone || "").replace(/\D/g, "");
+    const phone = raw.startsWith("595") ? raw : raw.startsWith("0") ? `595${raw.substring(1)}` : `595${raw}`;
+    const extrasStr = b.extras && b.extras.length > 0 ? b.extras.join(", ") : "Ninguno";
+    const msg = `¡Hola ${b.customerName}! 🧼 Te saludamos de *Aquí Estamos*. Te confirmamos tu servicio de limpieza agendado:\n\n📅 *Fecha:* ${b.serviceDate}\n⏰ *Hora:* ${b.serviceTime} hs (${b.serviceHours} Horas)\n📍 *Dirección:* ${b.address}\n✨ *Extras:* ${extrasStr}\n💰 *Total:* ${formatGs(b.totalPrice)}\n👤 *Personal:* ${b.assignedCleaner || "Asignación en curso"}\n\n¿Deseas confirmar o tienes alguna consulta?`;
+    return `https://wa.me/${phone}?text=${encodeURIComponent(msg)}`;
+  };
+
+  const generateWhatsAppEmployeeUrl = (b: Booking, emp: Employee) => {
+    const raw = (emp.phone || "").replace(/\D/g, "");
+    const phone = raw.startsWith("595") ? raw : raw.startsWith("0") ? `595${raw.substring(1)}` : `595${raw}`;
+    const extrasStr = b.extras && b.extras.length > 0 ? b.extras.join(", ") : "Ninguno";
+    const msg = `¡Hola ${emp.name}! 👋 Tienes un nuevo servicio de limpieza asignado:\n\n📅 *Fecha:* ${b.serviceDate}\n⏰ *Hora:* ${b.serviceTime} hs (${b.serviceHours} Horas)\n👤 *Cliente:* ${b.customerName} (Tel: ${b.customerPhone})\n📍 *Dirección:* ${b.address}\n✨ *Extras:* ${extrasStr}\n📝 *Notas:* ${b.notes || "Ninguna"}`;
+    return `https://wa.me/${phone}?text=${encodeURIComponent(msg)}`;
+  };
+
+  const generateGoogleCalendarUrl = (b: Booking) => {
+    const dateFormatted = b.serviceDate.replace(/-/g, "");
+    const timeParts = (b.serviceTime || "09:00").split(":");
+    const startHour = parseInt(timeParts[0] || "9", 10);
+    const startMin = timeParts[1] || "00";
+    const endHour = startHour + (b.serviceHours || 4);
+    
+    const startIso = `${dateFormatted}T${startHour.toString().padStart(2, "0")}${startMin}00`;
+    const endIso = `${dateFormatted}T${endHour.toString().padStart(2, "0")}${startMin}00`;
+    
+    const title = `Limpieza Aquí Estamos - ${b.customerName} (${b.bookingNumber})`;
+    const details = `Servicio de Limpieza (${b.serviceHours} Horas)\nCliente: ${b.customerName}\nTeléfono: ${b.customerPhone}\nEmail: ${b.customerEmail}\nPersonal: ${b.assignedCleaner || "Por confirmar"}\nTotal: ${formatGs(b.totalPrice)}`;
+    const location = b.address;
+    
+    return `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(title)}&dates=${startIso}/${endIso}&details=${encodeURIComponent(details)}&location=${encodeURIComponent(location)}`;
+  };
+
+  const exportToCSV = () => {
+    const headers = [
+      "Fecha Registro",
+      "Nombre",
+      "Teléfono",
+      "Email",
+      "Horas",
+      "Extras",
+      "Total",
+      "Fecha Servicio",
+      "Hora",
+      "Dirección",
+      "Ubicación Maps",
+      "Frecuencia",
+      "Empleado Asignado",
+      "Estatus",
+      "Telefono del Empleado",
+      "E-mail Empleados"
+    ];
+
+    const rows = filteredBookings.map((b) => {
+      const emp = getAssignedEmployee(b.assignedCleaner);
+      const extrasStr = b.extras && b.extras.length > 0 ? b.extras.join(", ") : "Ninguno";
+      const mapsLink = b.latitude && b.longitude
+        ? `https://www.google.com/maps?q=${b.latitude},${b.longitude}`
+        : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(b.address)}`;
+      
+      const createdDate = b.createdAt ? new Date(b.createdAt).toLocaleString("es-PY") : "";
+
+      return [
+        `"${createdDate}"`,
+        `"${(b.customerName || "").replace(/"/g, '""')}"`,
+        `"${b.customerPhone || ""}"`,
+        `"${b.customerEmail || ""}"`,
+        `"${b.serviceHours || ""}"`,
+        `"${extrasStr.replace(/"/g, '""')}"`,
+        `"${b.totalPrice || 0}"`,
+        `"${b.serviceDate || ""}"`,
+        `"${b.serviceTime || ""}"`,
+        `"${(b.address || "").replace(/"/g, '""')}"`,
+        `"${mapsLink}"`,
+        `"${b.frequency || "once"}"`,
+        `"${(b.assignedCleaner || "").replace(/"/g, '""')}"`,
+        `"${b.status || "PENDING"}"`,
+        `"${emp?.phone || ""}"`,
+        `"${emp?.email || ""}"`
+      ].join(",");
+    });
+
+    const csvString = "data:text/csv;charset=utf-8,\uFEFF" + [headers.join(","), ...rows].join("\n");
+    const encoded = encodeURI(csvString);
+    const link = document.createElement("a");
+    link.setAttribute("href", encoded);
+    link.setAttribute("download", `Aqui_Estamos_Reservas_${new Date().toISOString().slice(0, 10)}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    showNotification("✓ Planilla exportada a archivo CSV exitosamente.");
   };
 
   const openEditModal = (b: Booking) => {
@@ -862,40 +990,22 @@ export default function AdminDashboardPage() {
           </button>
         </div>
 
-        {/* TAB 1: Tabla de Reservas */}
+        {/* TAB 1: Tabla de Reservas Estilo Spreadsheet */}
         {activeTab === "BOOKINGS" && (
           <div className="bg-slate-900 rounded-3xl border border-slate-800 shadow-xl overflow-hidden">
-            {/* Filtros, Buscador y Botón de Asignación Aleatoria */}
-            <div className="p-6 border-b border-slate-800 flex flex-col sm:flex-row gap-4 justify-between items-center">
-              <div className="relative w-full sm:w-80">
-                <Search className="w-4 h-4 text-slate-500 absolute left-3.5 top-3.5" />
-                <input
-                  type="text"
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  placeholder="Buscar por cliente, código o personal..."
-                  className="w-full pl-10 pr-4 py-2.5 bg-slate-800 border border-slate-700 rounded-xl text-white text-xs focus:ring-2 focus:ring-electric-500 focus:outline-none"
-                />
-              </div>
-
-              <div className="flex flex-wrap items-center gap-3 w-full sm:w-auto">
-                {/* Botón de Asignación Aleatoria Automática */}
-                <button
-                  type="button"
-                  onClick={handleAutoAssignAll}
-                  disabled={isAutoAssigning || unassignedCount === 0}
-                  className="flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-amber-500 to-electric-600 hover:from-amber-400 hover:to-electric-500 text-white font-bold text-xs rounded-xl shadow-md transition-all active:scale-95 disabled:opacity-50"
-                  title="Asigna personal disponible al azar a todas las reservas pendientes"
-                >
-                  <Shuffle className={`w-3.5 h-3.5 ${isAutoAssigning ? "animate-spin" : ""}`} />
-                  <span>
-                    {isAutoAssigning 
-                      ? "Asignando..." 
-                      : unassignedCount > 0 
-                      ? `🎲 Asignar Aleatorio (${unassignedCount} sin asignar)` 
-                      : "✓ Todo Asignado"}
-                  </span>
-                </button>
+            {/* Barra de Filtros, Buscador y Botones de Acción */}
+            <div className="p-6 border-b border-slate-800 flex flex-col lg:flex-row gap-4 justify-between items-start lg:items-center">
+              <div className="flex flex-wrap items-center gap-3 w-full lg:w-auto">
+                <div className="relative w-full sm:w-72">
+                  <Search className="w-4 h-4 text-slate-500 absolute left-3.5 top-3.5" />
+                  <input
+                    type="text"
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    placeholder="Buscar por cliente, teléfono, email, dirección..."
+                    className="w-full pl-10 pr-4 py-2.5 bg-slate-800 border border-slate-700 rounded-xl text-white text-xs focus:ring-2 focus:ring-electric-500 focus:outline-none placeholder:text-slate-500"
+                  />
+                </div>
 
                 <div className="flex items-center gap-2">
                   <Filter className="w-4 h-4 text-slate-400" />
@@ -906,143 +1016,355 @@ export default function AdminDashboardPage() {
                   >
                     <option value="ALL">Todos los estados</option>
                     <option value="PENDING">Pendientes</option>
-                    <option value="CONFIRMED">Confirmadas</option>
+                    <option value="CONFIRMED">Confirmados</option>
                     <option value="IN_PROGRESS">En Curso</option>
-                    <option value="COMPLETED">Completadas</option>
-                    <option value="CANCELLED">Canceladas</option>
+                    <option value="COMPLETED">Finalizados</option>
+                    <option value="CANCELLED">Cancelados</option>
                   </select>
                 </div>
               </div>
+
+              <div className="flex flex-wrap items-center gap-2.5 w-full lg:w-auto justify-start lg:justify-end">
+                {/* Botón de Exportar a CSV estilo Google Sheets */}
+                <button
+                  type="button"
+                  onClick={exportToCSV}
+                  className="flex items-center gap-2 px-3.5 py-2.5 bg-emerald-600/20 hover:bg-emerald-600 text-emerald-300 hover:text-white font-bold text-xs rounded-xl border border-emerald-500/30 shadow-sm transition-all active:scale-95"
+                  title="Descargar datos en formato CSV compatible con Excel y Google Sheets"
+                >
+                  <FileSpreadsheet className="w-4 h-4" />
+                  <span>Exportar CSV</span>
+                </button>
+
+                {/* Botón de Asignación Aleatoria Automática */}
+                <button
+                  type="button"
+                  onClick={handleAutoAssignAll}
+                  disabled={isAutoAssigning || unassignedCount === 0}
+                  className="flex items-center gap-2 px-3.5 py-2.5 bg-gradient-to-r from-amber-500 to-electric-600 hover:from-amber-400 hover:to-electric-500 text-white font-bold text-xs rounded-xl shadow-md transition-all active:scale-95 disabled:opacity-50"
+                  title="Asigna personal disponible al azar a todas las reservas pendientes"
+                >
+                  <Shuffle className={`w-3.5 h-3.5 ${isAutoAssigning ? "animate-spin" : ""}`} />
+                  <span>
+                    {isAutoAssigning 
+                      ? "Asignando..." 
+                      : unassignedCount > 0 
+                      ? `🎲 Asignar (${unassignedCount})` 
+                      : "✓ Todo Asignado"}
+                  </span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={loadData}
+                  className="p-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white rounded-xl border border-slate-700 transition-all"
+                  title="Actualizar datos"
+                >
+                  <RefreshCw className={`w-4 h-4 ${isLoading ? "animate-spin" : ""}`} />
+                </button>
+              </div>
             </div>
 
-            {/* Tabla de Reservas */}
+            {/* Tabla Completa Estilo Google Spreadsheet */}
             <div className="overflow-x-auto">
-              <table className="w-full text-left text-xs text-slate-300">
-                <thead className="bg-slate-800/80 text-slate-400 font-bold uppercase tracking-wider">
+              <table className="w-full text-left text-xs text-slate-300 border-collapse">
+                <thead className="bg-slate-800 text-slate-300 font-bold uppercase text-[11px] tracking-wider border-b border-slate-700 whitespace-nowrap sticky top-0 z-10 shadow-sm">
                   <tr>
-                    <th className="px-6 py-4">Código / Cliente</th>
-                    <th className="px-6 py-4">Fecha & Hora</th>
-                    <th className="px-6 py-4">Horas / Extras</th>
-                    <th className="px-6 py-4">Total (Gs.)</th>
-                    <th className="px-6 py-4">Estado</th>
-                    <th className="px-6 py-4">Personal Asignado (1-Clic)</th>
-                    <th className="px-6 py-4 text-right">Acción</th>
+                    <th className="px-4 py-3.5 border-r border-slate-700/50">Fecha Registro</th>
+                    <th className="px-4 py-3.5 border-r border-slate-700/50">Nombre</th>
+                    <th className="px-4 py-3.5 border-r border-slate-700/50">Teléfono</th>
+                    <th className="px-4 py-3.5 border-r border-slate-700/50">Email</th>
+                    <th className="px-3 py-3.5 border-r border-slate-700/50 text-center">Horas</th>
+                    <th className="px-4 py-3.5 border-r border-slate-700/50">Extras</th>
+                    <th className="px-4 py-3.5 border-r border-slate-700/50">Total</th>
+                    <th className="px-4 py-3.5 border-r border-slate-700/50">Fecha Servicio</th>
+                    <th className="px-3 py-3.5 border-r border-slate-700/50 text-center">Hora</th>
+                    <th className="px-4 py-3.5 border-r border-slate-700/50 min-w-[220px]">Dirección</th>
+                    <th className="px-3 py-3.5 border-r border-slate-700/50 text-center">Ubicación Maps</th>
+                    <th className="px-3 py-3.5 border-r border-slate-700/50 text-center">Frecuencia</th>
+                    <th className="px-4 py-3.5 border-r border-slate-700/50 min-w-[190px]">Empleado Asignado</th>
+                    <th className="px-4 py-3.5 border-r border-slate-700/50 text-center">Estatus</th>
+                    <th className="px-4 py-3.5 border-r border-slate-700/50">Teléfono Empleado</th>
+                    <th className="px-4 py-3.5 border-r border-slate-700/50">E-mail Empleados</th>
+                    <th className="px-4 py-3.5 border-r border-slate-700/50 text-center">Enviar WhatsApp</th>
+                    <th className="px-4 py-3.5 text-center">Acciones / Calendario</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-800">
-                  {filteredBookings.map((b) => (
-                    <tr key={b.id} className="hover:bg-slate-800/40 transition-colors">
-                      <td className="px-6 py-4">
-                        <p className="font-extrabold text-white text-sm">{b.bookingNumber}</p>
-                        <p className="text-slate-300 font-medium">{b.customerName}</p>
-                        <p className="text-[11px] text-slate-400">{b.customerPhone}</p>
-                        <div className="flex items-center gap-1 mt-0.5">
-                          <p className="text-[10px] text-slate-400 truncate max-w-[200px]">{b.address}</p>
-                          {b.latitude && b.longitude && (
-                            <a
-                              href={`https://www.google.com/maps?q=${b.latitude},${b.longitude}`}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="text-electric-400 hover:text-electric-300 shrink-0"
-                              title="Ver en Google Maps"
-                            >
-                              <ExternalLink className="w-3 h-3" />
-                            </a>
-                          )}
-                        </div>
-                      </td>
-                      <td className="px-6 py-4">
-                        <p className="font-bold text-white">{b.serviceDate}</p>
-                        <p className="text-slate-400">{b.serviceTime} hs</p>
-                      </td>
-                      <td className="px-6 py-4">
-                        <span className="font-bold text-electric-400">{b.serviceHours} Horas</span>
-                        {b.extras && b.extras.length > 0 && (
-                          <p className="text-[10px] text-slate-400 truncate max-w-[150px]">
-                            {b.extras.join(", ")}
-                          </p>
-                        )}
-                      </td>
-                      <td className="px-6 py-4 font-black text-white">
-                        {formatGs(b.totalPrice)}
-                      </td>
-                      <td className="px-6 py-4">
-                        <span
-                          className={`inline-block px-2.5 py-1 rounded-full font-bold text-[10px] uppercase ${
-                            b.status === "CONFIRMED"
-                              ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30"
-                              : b.status === "IN_PROGRESS"
-                              ? "bg-amber-500/20 text-amber-400 border border-amber-500/30"
-                              : b.status === "COMPLETED"
-                              ? "bg-slate-700 text-slate-300"
-                              : b.status === "CANCELLED"
-                              ? "bg-rose-500/20 text-rose-400 border border-rose-500/30"
-                              : "bg-electric-500/20 text-electric-400 border border-electric-500/30"
-                          }`}
-                        >
-                          {b.status}
+                <tbody className="divide-y divide-slate-800/80 font-mono text-[11px]">
+                  {filteredBookings.map((b) => {
+                    const assignedEmp = getAssignedEmployee(b.assignedCleaner);
+                    const mapsQueryUrl = b.latitude && b.longitude
+                      ? `https://www.google.com/maps?q=${b.latitude},${b.longitude}`
+                      : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(b.address)}`;
+                    
+                    const formatExtras = () => {
+                      if (!b.extras || b.extras.length === 0) return <span className="text-slate-500 font-sans">Ninguno</span>;
+                      return (
+                        <span className="text-amber-300 font-sans flex flex-wrap gap-1">
+                          {b.extras.map((ex, i) => (
+                            <span key={i} className="inline-block px-1.5 py-0.5 bg-slate-800 rounded border border-slate-700 text-[10px]">
+                              {ex}
+                            </span>
+                          ))}
                         </span>
-                      </td>
+                      );
+                    };
 
-                      {/* Selector Rápido de Personal (Asignar / Reasignar / Quitar) */}
-                      <td className="px-6 py-4">
-                        <div className="space-y-1">
+                    const formatFrequency = () => {
+                      switch (b.frequency as string) {
+                        case "weekly_2_4":
+                        case "weekly":
+                        case "semanal":
+                          return <span className="px-2 py-0.5 rounded-full bg-blue-500/20 text-blue-300 font-sans font-bold text-[10px] border border-blue-500/30">Semanal</span>;
+                        case "biweekly":
+                        case "quincenal":
+                          return <span className="px-2 py-0.5 rounded-full bg-purple-500/20 text-purple-300 font-sans font-bold text-[10px] border border-purple-500/30">Quincenal</span>;
+                        case "monthly":
+                        case "mensual":
+                          return <span className="px-2 py-0.5 rounded-full bg-cyan-500/20 text-cyan-300 font-sans font-bold text-[10px] border border-cyan-500/30">Mensual</span>;
+                        default:
+                          return <span className="px-2 py-0.5 rounded-full bg-slate-800 text-slate-400 font-sans font-medium text-[10px] border border-slate-700">Una vez</span>;
+                      }
+                    };
+
+                    const formatCreatedDate = () => {
+                      if (!b.createdAt) return "-";
+                      try {
+                        const d = new Date(b.createdAt);
+                        return d.toLocaleString("es-PY", {
+                          day: "2-digit",
+                          month: "2-digit",
+                          year: "numeric",
+                          hour: "2-digit",
+                          minute: "2-digit"
+                        });
+                      } catch (e) {
+                        return b.createdAt;
+                      }
+                    };
+
+                    return (
+                      <tr key={b.id} className="hover:bg-slate-800/50 transition-colors">
+                        {/* 1. Fecha Registro */}
+                        <td className="px-4 py-3 border-r border-slate-800 text-slate-400 whitespace-nowrap">
+                          {formatCreatedDate()}
+                        </td>
+
+                        {/* 2. Nombre */}
+                        <td className="px-4 py-3 border-r border-slate-800 font-bold text-white whitespace-nowrap font-sans">
+                          <p>{b.customerName}</p>
+                          <span className="text-[9px] font-mono text-slate-500 font-normal">{b.bookingNumber}</span>
+                        </td>
+
+                        {/* 3. Teléfono */}
+                        <td className="px-4 py-3 border-r border-slate-800 text-slate-300 whitespace-nowrap font-sans">
+                          <a
+                            href={generateWhatsAppCustomerUrl(b)}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-emerald-400 hover:underline flex items-center gap-1"
+                            title="Abrir WhatsApp del cliente"
+                          >
+                            <MessageSquare className="w-3 h-3 text-emerald-400" />
+                            <span>{b.customerPhone}</span>
+                          </a>
+                        </td>
+
+                        {/* 4. Email */}
+                        <td className="px-4 py-3 border-r border-slate-800 text-slate-400 font-sans truncate max-w-[160px]">
+                          <a href={`mailto:${b.customerEmail}`} className="hover:text-slate-200 hover:underline">
+                            {b.customerEmail}
+                          </a>
+                        </td>
+
+                        {/* 5. Horas */}
+                        <td className="px-3 py-3 border-r border-slate-800 text-center font-bold text-cyan-400">
+                          {b.serviceHours} hs
+                        </td>
+
+                        {/* 6. Extras */}
+                        <td className="px-4 py-3 border-r border-slate-800 max-w-[200px]">
+                          {formatExtras()}
+                        </td>
+
+                        {/* 7. Total */}
+                        <td className="px-4 py-3 border-r border-slate-800 font-black text-emerald-400 whitespace-nowrap">
+                          {formatGs(b.totalPrice)}
+                        </td>
+
+                        {/* 8. Fecha Servicio */}
+                        <td className="px-4 py-3 border-r border-slate-800 font-bold text-white whitespace-nowrap">
+                          {b.serviceDate}
+                        </td>
+
+                        {/* 9. Hora */}
+                        <td className="px-3 py-3 border-r border-slate-800 text-center text-slate-300 whitespace-nowrap">
+                          {b.serviceTime}
+                        </td>
+
+                        {/* 10. Dirección */}
+                        <td className="px-4 py-3 border-r border-slate-800 font-sans text-slate-300">
+                          <p className="line-clamp-2 max-w-[260px]" title={b.address}>
+                            {b.address}
+                          </p>
+                        </td>
+
+                        {/* 11. Ubicación Maps */}
+                        <td className="px-3 py-3 border-r border-slate-800 text-center whitespace-nowrap">
+                          <a
+                            href={mapsQueryUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-1 px-2 py-1 rounded bg-electric-500/10 hover:bg-electric-500/20 text-electric-400 text-[10px] font-sans font-bold border border-electric-500/30 transition-colors"
+                          >
+                            <MapPin className="w-3 h-3 text-electric-400" />
+                            <span>Ver en Mapa</span>
+                          </a>
+                        </td>
+
+                        {/* 12. Frecuencia */}
+                        <td className="px-3 py-3 border-r border-slate-800 text-center whitespace-nowrap">
+                          {formatFrequency()}
+                        </td>
+
+                        {/* 13. Empleado Asignado (Selector 1-Clic) */}
+                        <td className="px-4 py-3 border-r border-slate-800">
+                          <div className="space-y-1">
+                            <select
+                              value={b.assignedCleaner || "UNASSIGNED"}
+                              onChange={(e) => handleQuickAssignCleaner(b.id, e.target.value)}
+                              className={`w-full px-2 py-1 rounded text-[11px] font-sans font-semibold focus:outline-none transition-colors border ${
+                                b.assignedCleaner
+                                  ? "bg-slate-800 text-emerald-400 border-slate-700 hover:border-emerald-500/50"
+                                  : "bg-amber-500/10 text-amber-300 border-amber-500/30 hover:border-amber-400"
+                              }`}
+                            >
+                              <option value="UNASSIGNED">❌ Sin Asignar</option>
+                              <option value="RANDOM">🎲 Asignar al Azar</option>
+                              <optgroup label="Personal Activo">
+                                {employees
+                                  .filter((e) => e.status === "ACTIVE")
+                                  .map((emp) => (
+                                    <option key={emp.id} value={`${emp.name}`}>
+                                      👤 {emp.name} ({emp.zone.split(" ")[0]})
+                                    </option>
+                                  ))}
+                              </optgroup>
+                            </select>
+                            {b.assignedCleaner && (
+                              <p className="text-[9px] font-sans text-slate-400 flex items-center gap-1">
+                                <Check className="w-2.5 h-2.5 text-emerald-400" />
+                                <span className="truncate">{b.assignedCleaner}</span>
+                              </p>
+                            )}
+                          </div>
+                        </td>
+
+                        {/* 14. Estatus (Selector Rápido) */}
+                        <td className="px-4 py-3 border-r border-slate-800 text-center whitespace-nowrap font-sans">
                           <select
-                            value={b.assignedCleaner || "UNASSIGNED"}
-                            onChange={(e) => handleQuickAssignCleaner(b.id, e.target.value)}
-                            className={`w-full max-w-[210px] px-2.5 py-1.5 rounded-lg text-xs font-semibold focus:outline-none transition-colors border ${
-                              b.assignedCleaner
-                                ? "bg-slate-800 text-emerald-400 border-slate-700 hover:border-emerald-500/50"
-                                : "bg-amber-500/10 text-amber-300 border-amber-500/30 hover:border-amber-400"
+                            value={b.status}
+                            onChange={(e) => handleQuickStatusChange(b.id, e.target.value)}
+                            className={`px-2 py-1 rounded-full text-[10px] font-bold uppercase focus:outline-none border cursor-pointer ${
+                              b.status === "CONFIRMED"
+                                ? "bg-emerald-500/20 text-emerald-400 border-emerald-500/40"
+                                : b.status === "IN_PROGRESS"
+                                ? "bg-amber-500/20 text-amber-400 border-amber-500/40"
+                                : b.status === "COMPLETED"
+                                ? "bg-slate-700 text-slate-200 border-slate-600"
+                                : b.status === "CANCELLED"
+                                ? "bg-rose-500/20 text-rose-400 border-rose-500/40"
+                                : "bg-electric-500/20 text-electric-400 border-electric-500/40"
                             }`}
                           >
-                            <option value="UNASSIGNED">❌ Sin Asignar (Quitar)</option>
-                            <option value="RANDOM">🎲 Asignar al Azar</option>
-                            <optgroup label="Personal Activo">
-                              {employees
-                                .filter((e) => e.status === "ACTIVE")
-                                .map((emp) => (
-                                  <option key={emp.id} value={`${emp.name} (IPS Verificado)`}>
-                                    👤 {emp.name} ({emp.zone.split(" ")[0]})
-                                  </option>
-                                ))}
-                            </optgroup>
+                            <option value="PENDING" className="bg-slate-900 text-white">Pendiente</option>
+                            <option value="CONFIRMED" className="bg-slate-900 text-white">Confirmado</option>
+                            <option value="IN_PROGRESS" className="bg-slate-900 text-white">En Curso</option>
+                            <option value="COMPLETED" className="bg-slate-900 text-white">Finalizado</option>
+                            <option value="CANCELLED" className="bg-slate-900 text-white">Cancelado</option>
                           </select>
-                          {b.assignedCleaner && (
-                            <p className="text-[10px] text-slate-400 flex items-center gap-1">
-                              <Check className="w-3 h-3 text-emerald-400" />
-                              <span className="truncate">{b.assignedCleaner}</span>
-                            </p>
-                          )}
-                        </div>
-                      </td>
+                        </td>
 
-                      <td className="px-6 py-4 text-right">
-                        <div className="flex items-center justify-end gap-1.5">
-                          <button
-                            type="button"
-                            onClick={() => openEditModal(b)}
-                            className="px-2.5 py-1.5 bg-electric-600/20 hover:bg-electric-600 text-electric-300 hover:text-white rounded-lg font-bold text-xs border border-electric-500/30 transition-all flex items-center gap-1"
-                            title="Editar todos los datos de la reserva"
+                        {/* 15. Teléfono del Empleado */}
+                        <td className="px-4 py-3 border-r border-slate-800 text-slate-300 whitespace-nowrap font-sans">
+                          {assignedEmp ? (
+                            <a
+                              href={generateWhatsAppEmployeeUrl(b, assignedEmp)}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-emerald-400 hover:underline flex items-center gap-1"
+                              title="Enviar WhatsApp al empleado asignado"
+                            >
+                              <MessageSquare className="w-3 h-3 text-emerald-400" />
+                              <span>{assignedEmp.phone}</span>
+                            </a>
+                          ) : (
+                            <span className="text-slate-600">-</span>
+                          )}
+                        </td>
+
+                        {/* 16. E-mail Empleados */}
+                        <td className="px-4 py-3 border-r border-slate-800 text-slate-400 font-sans truncate max-w-[150px]">
+                          {assignedEmp?.email ? (
+                            <a href={`mailto:${assignedEmp.email}`} className="hover:text-slate-200 hover:underline">
+                              {assignedEmp.email}
+                            </a>
+                          ) : (
+                            <span className="text-slate-600">-</span>
+                          )}
+                        </td>
+
+                        {/* 17. Enviar Mensaje WhatsApp */}
+                        <td className="px-4 py-3 border-r border-slate-800 text-center whitespace-nowrap font-sans">
+                          <a
+                            href={generateWhatsAppCustomerUrl(b)}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-[11px] font-bold shadow-xs transition-all active:scale-95"
+                            title="Enviar WhatsApp de confirmación al cliente"
                           >
-                            <Edit3 className="w-3.5 h-3.5" />
-                            <span>Editar</span>
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => handleDeleteBooking(b.id, b.bookingNumber)}
-                            className="p-1.5 bg-rose-500/10 hover:bg-rose-600 text-rose-400 hover:text-white rounded-lg font-bold text-xs border border-rose-500/20 transition-all"
-                            title="Eliminar reserva permanentemente"
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
+                            <Send className="w-3 h-3" />
+                            <span>Enviar WhatsApp</span>
+                          </a>
+                        </td>
+
+                        {/* 18. Column 1 / Acciones: Crear Evento Google Calendar, Editar, Eliminar */}
+                        <td className="px-4 py-3 text-center whitespace-nowrap font-sans">
+                          <div className="flex items-center justify-center gap-1.5">
+                            <a
+                              href={generateGoogleCalendarUrl(b)}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="px-2 py-1 bg-blue-600/20 hover:bg-blue-600 text-blue-300 hover:text-white rounded-lg font-bold text-[10px] border border-blue-500/30 transition-all flex items-center gap-1"
+                              title="Crear Evento en Google Calendar con Invitados"
+                            >
+                              <CalendarPlus className="w-3 h-3" />
+                              <span>Google Calendar</span>
+                            </a>
+                            <button
+                              type="button"
+                              onClick={() => openEditModal(b)}
+                              className="p-1 bg-electric-600/20 hover:bg-electric-600 text-electric-300 hover:text-white rounded-lg font-bold border border-electric-500/30 transition-all"
+                              title="Editar reserva"
+                            >
+                              <Edit3 className="w-3.5 h-3.5" />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleDeleteBooking(b.id, b.bookingNumber)}
+                              className="p-1 bg-rose-500/10 hover:bg-rose-600 text-rose-400 hover:text-white rounded-lg font-bold border border-rose-500/20 transition-all"
+                              title="Eliminar reserva"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
                   {filteredBookings.length === 0 && (
                     <tr>
-                      <td colSpan={7} className="px-6 py-12 text-center text-slate-500">
+                      <td colSpan={18} className="px-6 py-12 text-center text-slate-500 font-sans">
                         No se encontraron reservas con los filtros seleccionados.
                       </td>
                     </tr>
