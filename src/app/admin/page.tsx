@@ -174,15 +174,18 @@ export default function AdminDashboardPage() {
         callbackUrl: "/admin",
       });
 
-      if (res?.error) {
-        setAdminAuthError("Correo o contraseña de administrador incorrecta.");
-        setAdminAuthLoading(false);
-      } else {
+      if (res?.ok) {
         window.location.href = "/admin";
+        return;
+      }
+
+      if (res?.error) {
+        setAdminAuthError("Correo o contraseña incorrectos. Verifica que sea juanas89@gmail.com y tu clave.");
+        setAdminAuthLoading(false);
       }
     } catch (err: any) {
       console.error("Error en login admin:", err);
-      setAdminAuthError("Error al conectar con el servidor.");
+      setAdminAuthError(err?.message || "Ocurrió un inconveniente al validar. Por favor intenta de nuevo.");
       setAdminAuthLoading(false);
     }
   };
