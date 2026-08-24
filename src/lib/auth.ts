@@ -11,11 +11,7 @@ const googleClientId = (process.env.GOOGLE_CLIENT_ID || process.env.NEXT_PUBLIC_
 const googleClientSecret = (process.env.GOOGLE_CLIENT_SECRET || "").trim();
 
 if (!process.env.NEXTAUTH_URL) {
-  if (process.env.VERCEL_URL) {
-    process.env.NEXTAUTH_URL = `https://${process.env.VERCEL_URL}`;
-  } else {
-    process.env.NEXTAUTH_URL = "https://aqui-estamos-v3.vercel.app";
-  }
+  process.env.NEXTAUTH_URL = "https://aqui-estamos-v3.vercel.app";
 }
 
 export const authOptions: NextAuthOptions = {
