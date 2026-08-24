@@ -161,21 +161,35 @@ export default function CustomerPortalPage() {
       let loadedProfile: User | null = null;
 
       if (bookingsRes.ok) {
-        const data = await bookingsRes.json();
-        loadedBookings = data.bookings || [];
-        setBookings(loadedBookings);
+        try {
+          const contentType = bookingsRes.headers.get("content-type") || "";
+          if (contentType.includes("application/json")) {
+            const data = await bookingsRes.json();
+            loadedBookings = data.bookings || [];
+            setBookings(loadedBookings);
+          }
+        } catch (e) {
+          console.warn("No se pudo parsear respuesta de reservas:", e);
+        }
       }
 
       if (profileRes.ok) {
-        const data = await profileRes.json();
-        if (data.user) {
-          loadedProfile = data.user;
-          setUserProfile(data.user);
-          setProfileName(data.user.name || "");
-          setProfilePhone(data.user.phone || "");
-          setProfileAddress(data.user.address || "");
-          setProfileRuc(data.user.ruc || "");
-          setProfileTaxName(data.user.taxName || "");
+        try {
+          const contentType = profileRes.headers.get("content-type") || "";
+          if (contentType.includes("application/json")) {
+            const data = await profileRes.json();
+            if (data.user) {
+              loadedProfile = data.user;
+              setUserProfile(data.user);
+              setProfileName(data.user.name || "");
+              setProfilePhone(data.user.phone || "");
+              setProfileAddress(data.user.address || "");
+              setProfileRuc(data.user.ruc || "");
+              setProfileTaxName(data.user.taxName || "");
+            }
+          }
+        } catch (e) {
+          console.warn("No se pudo parsear respuesta de perfil:", e);
         }
       }
 
