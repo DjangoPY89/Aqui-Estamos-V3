@@ -175,12 +175,13 @@ export default function AdminDashboardPage() {
       });
 
       if (res?.error) {
-        setAdminAuthError("Correo o clave de administrador incorrecta.");
+        setAdminAuthError("Correo o contraseña de administrador incorrecta.");
         setAdminAuthLoading(false);
       } else {
-        window.location.reload();
+        window.location.href = "/admin";
       }
     } catch (err: any) {
+      console.error("Error en login admin:", err);
       setAdminAuthError("Error al conectar con el servidor.");
       setAdminAuthLoading(false);
     }
