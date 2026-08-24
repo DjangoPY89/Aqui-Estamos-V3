@@ -116,7 +116,14 @@ function LoginContent() {
         }),
       });
 
-      const data = await res.json();
+      let data: any = {};
+      try {
+        const text = await res.text();
+        data = text ? JSON.parse(text) : {};
+      } catch (e) {
+        data = { error: "Ocurrió un error al procesar el registro." };
+      }
+
       if (!res.ok) {
         throw new Error(data.error || "Error al crear la cuenta.");
       }
