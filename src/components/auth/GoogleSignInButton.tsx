@@ -84,65 +84,38 @@ export default function GoogleSignInButton({
     }
   }, [gisLoaded, clientId]);
 
-  // Manejo del clic en el botón personalizado
+  // Manejo del clic en el botón personalizado optimizado para móviles y escritorio
   const handleGoogleClick = async () => {
     if (isLoading) return;
     setIsLoading(true);
 
     try {
-      // 1. Intentar flujo directo de Google OAuth oficial con NextAuth
+      // Flujo de redirección estándar oficial OAuth de Google (100% compatible con móviles iOS Safari y Android)
       if (clientId) {
-        // Si GIS está disponible, intentar abrir el selector de cuentas
-        if (window.google?.accounts?.id) {
-          try {
-            window.google.accounts.id.prompt();
-          } catch (e) {}
-        }
-
-        // Ejecutar signIn con provider "google"
-        const res = await signIn("google", {
-          callbackUrl,
+        await signIn("google", {
+          callbackUrl: callbackUrl || "/portal",
           redirect: true,
         });
-
-        if (res?.error) {
-          throw new Error(res.error);
-        }
         return;
       }
 
-      // 2. Fallback de desarrollo si no hay claves de Google en local
+      // Fallback de desarrollo si no hay claves configuradas
       const res = await signIn("credentials", {
         redirect: false,
         isGoogleAuth: "true",
         googleEmail: "usuario.google@gmail.com",
         googleName: "Usuario Google",
-        callbackUrl,
+        callbackUrl: callbackUrl || "/portal",
       });
 
       if (res?.error) {
         if (onError) onError(res.error);
         setIsLoading(false);
       } else {
-        window.location.href = callbackUrl;
+        window.location.href = callbackUrl || "/portal";
       }
     } catch (err: any) {
       console.warn("Error en inicio de sesión Google:", err);
-      // Fallback amigable
-      try {
-        const fallbackRes = await signIn("credentials", {
-          redirect: false,
-          isGoogleAuth: "true",
-          googleEmail: "usuario.google@gmail.com",
-          googleName: "Usuario Google",
-          callbackUrl,
-        });
-        if (fallbackRes?.ok) {
-          window.location.href = callbackUrl;
-          return;
-        }
-      } catch (fErr) {}
-
       if (onError) onError("No se pudo conectar con Google. Puedes ingresar con tu correo.");
       setIsLoading(false);
     }

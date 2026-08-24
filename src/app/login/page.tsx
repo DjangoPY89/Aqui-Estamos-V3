@@ -187,6 +187,9 @@ function LoginContent() {
                 <input
                   type={authRoleTab === "ADMIN" ? "text" : "email"}
                   required
+                  autoCapitalize="none"
+                  autoCorrect="off"
+                  spellCheck="false"
                   autoComplete="username"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
@@ -217,6 +220,9 @@ function LoginContent() {
                 <input
                   type={showPassword ? "text" : "password"}
                   required
+                  autoCapitalize="none"
+                  autoCorrect="off"
+                  spellCheck="false"
                   autoComplete="current-password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
