@@ -196,9 +196,24 @@ function LoginContent() {
 
           {/* Mensaje de Error */}
           {errorMsg && (
-            <div className="p-3.5 bg-rose-50 border border-rose-200 text-rose-700 text-xs rounded-2xl flex items-center gap-2.5 animate-in fade-in">
-              <AlertCircle className="w-4 h-4 shrink-0 text-rose-500" />
-              <span>{errorMsg}</span>
+            <div className="p-3.5 bg-rose-50 border border-rose-200 text-rose-700 text-xs rounded-2xl flex items-center justify-between gap-2 animate-in fade-in">
+              <div className="flex items-center gap-2">
+                <AlertCircle className="w-4 h-4 shrink-0 text-rose-500" />
+                <span>{errorMsg}</span>
+              </div>
+              {errorMsg.includes("Ya existe") && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setActiveTab("LOGIN");
+                    setLoginEmail(regEmail);
+                    setErrorMsg(null);
+                  }}
+                  className="font-bold underline text-electric-600 hover:text-electric-700 shrink-0 ml-2 cursor-pointer"
+                >
+                  Iniciar sesión
+                </button>
+              )}
             </div>
           )}
 
