@@ -2,6 +2,12 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { createEmployee, deleteEmployee, getAllEmployees, updateEmployee } from "@/lib/db";
+import {
+  supabaseCreateEmployee,
+  supabaseDeleteEmployee,
+  supabaseGetAllEmployees,
+  supabaseUpdateEmployee,
+} from "@/lib/supabase-db";
 
 export const dynamic = "force-dynamic";
 
@@ -12,7 +18,13 @@ export async function GET() {
       return NextResponse.json({ error: "No autorizado. Se requieren permisos de administrador." }, { status: 403 });
     }
 
-    const employees = getAllEmployees();
+    let employees: any[] = [];
+    try {
+      employees = await supabaseGetAllEmployees();
+    } catch (e) {
+      employees = getAllEmployees();
+    }
+
     return NextResponse.json({ employees });
   } catch (error: any) {
     console.error("Error al obtener empleados:", error);
@@ -34,14 +46,30 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Nombre y teléfono son campos obligatorios." }, { status: 400 });
     }
 
-    const employee = createEmployee({
-      name,
-      ci,
-      phone,
-      email,
-      zone,
-      ipsVerified: ipsVerified !== false,
-    });
+    let employee: any = null;
+    try {
+      employee = await supabaseCreateEmployee({
+        name,
+        ci,
+        phone,
+        email,
+        zone,
+        ipsVerified: ipsVerified !== false,
+      });
+      // Sincronizar local
+      try {
+        createEmployee({ name, ci, phone, email, zone, ipsVerified: ipsVerified !== false });
+      } catch (e) {}
+    } catch (e) {
+      employee = createEmployee({
+        name,
+        ci,
+        phone,
+        email,
+        zone,
+        ipsVerified: ipsVerified !== false,
+      });
+    }
 
     return NextResponse.json({ ok: true, employee });
   } catch (error: any) {
@@ -64,7 +92,16 @@ export async function PATCH(req: Request) {
       return NextResponse.json({ error: "ID de empleado requerido." }, { status: 400 });
     }
 
-    const updated = updateEmployee(id, data);
+    let updated: any = null;
+    try {
+      updated = await supabaseUpdateEmployee(id, data);
+      try {
+        updateEmployee(id, data);
+      } catch (e) {}
+    } catch (e) {
+      updated = updateEmployee(id, data);
+    }
+
     return NextResponse.json({ ok: true, employee: updated });
   } catch (error: any) {
     console.error("Error al actualizar empleado:", error);
@@ -86,7 +123,16 @@ export async function DELETE(req: Request) {
       return NextResponse.json({ error: "ID de empleado requerido." }, { status: 400 });
     }
 
-    const success = deleteEmployee(id);
+    let success = false;
+    try {
+      success = await supabaseDeleteEmployee(id);
+      try {
+        deleteEmployee(id);
+      } catch (e) {}
+    } catch (e) {
+      success = deleteEmployee(id);
+    }
+
     if (!success) {
       return NextResponse.json({ error: "Empleado no encontrado o no se pudo eliminar." }, { status: 404 });
     }

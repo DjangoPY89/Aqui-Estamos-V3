@@ -4,6 +4,10 @@ import GoogleProvider from "next-auth/providers/google";
 import AppleProvider from "next-auth/providers/apple";
 import bcrypt from "bcryptjs";
 import { createOrUpdateOAuthUser, createUser, getUserByEmail, getUserById, seedInitialData } from "./db";
+import {
+  supabaseCreateOrUpdateOAuthUser,
+  supabaseGetUserByEmail,
+} from "./supabase-db";
 import { verifyGoogleIdToken } from "./google-auth";
 
 // Configuración de credenciales y URL en Vercel
@@ -53,54 +57,45 @@ export const authOptions: NextAuthOptions = {
       id: "credentials",
       name: "Email y Contraseña",
       credentials: {
-        email: { label: "Correo", type: "email" },
-        password: { label: "Contraseña", type: "password" },
-        isDemo: { label: "Demo", type: "text" },
-        demoProvider: { label: "Demo Provider", type: "text" },
-        isGoogleToken: { label: "Google Token Auth", type: "text" },
-        googleToken: { label: "Google JWT Token", type: "text" },
-        isGoogleAuth: { label: "Google Auth", type: "text" },
-        googleEmail: { label: "Google Email", type: "email" },
+        email: { label: "Email", type: "email" },
+        password: { label: "Password", type: "password" },
+        idToken: { label: "Google ID Token", type: "text" },
+        isGoogleAuth: { label: "Google Auth Flag", type: "text" },
+        googleEmail: { label: "Google Email", type: "text" },
         googleName: { label: "Google Name", type: "text" },
-        isAppleAuth: { label: "Apple Auth", type: "text" },
-        appleEmail: { label: "Apple Email", type: "email" },
+        isAppleAuth: { label: "Apple Auth Flag", type: "text" },
+        appleEmail: { label: "Apple Email", type: "text" },
         appleName: { label: "Apple Name", type: "text" },
       },
       async authorize(credentials) {
         if (!credentials) return null;
 
-        // Asegurar que la base de datos esté sembrada
-        seedInitialData();
-
-        // 0. Autenticación con Google Identity Services (GIS SDK - JWT Token)
-        if (credentials.isGoogleToken === "true" && credentials.googleToken) {
-          const verified = verifyGoogleIdToken(credentials.googleToken);
-          if (!verified || !verified.email) {
-            throw new Error("Token de Google Identity Services inválido o no verificado.");
-          }
-          const user = createOrUpdateOAuthUser({
-            email: verified.email.toLowerCase(),
-            name: verified.name,
-            image: verified.picture,
-          });
-          return {
-            id: user.id,
-            name: user.name,
-            email: user.email,
-            role: user.role,
-            image: user.image || undefined,
-          };
-        }
-
         // 1. Acceso Directo de Cuenta de Google
         if (credentials.isGoogleAuth === "true") {
           const email = (credentials.googleEmail || "usuario.google@gmail.com").trim().toLowerCase();
           const name = (credentials.googleName || "Usuario Google").trim();
-          const user = createOrUpdateOAuthUser({
-            email,
-            name,
-            image: "https://lh3.googleusercontent.com/a/default-user=s96-c",
-          });
+          let user: any = null;
+          try {
+            user = await supabaseCreateOrUpdateOAuthUser({
+              email,
+              name,
+              image: "https://lh3.googleusercontent.com/a/default-user=s96-c",
+            });
+            try {
+              createOrUpdateOAuthUser({
+                email,
+                name,
+                image: "https://lh3.googleusercontent.com/a/default-user=s96-c",
+              });
+            } catch (e) {}
+          } catch (e) {
+            user = createOrUpdateOAuthUser({
+              email,
+              name,
+              image: "https://lh3.googleusercontent.com/a/default-user=s96-c",
+            });
+          }
+
           return {
             id: user.id,
             name: user.name,
@@ -114,10 +109,16 @@ export const authOptions: NextAuthOptions = {
         if (credentials.isAppleAuth === "true") {
           const email = (credentials.appleEmail || "usuario.apple@icloud.com").trim().toLowerCase();
           const name = (credentials.appleName || "Usuario Apple ID").trim();
-          const user = createOrUpdateOAuthUser({
-            email,
-            name,
-          });
+          let user: any = null;
+          try {
+            user = await supabaseCreateOrUpdateOAuthUser({ email, name });
+            try {
+              createOrUpdateOAuthUser({ email, name });
+            } catch (e) {}
+          } catch (e) {
+            user = createOrUpdateOAuthUser({ email, name });
+          }
+
           return {
             id: user.id,
             name: user.name,
@@ -143,18 +144,27 @@ export const authOptions: NextAuthOptions = {
             try {
               seedInitialData();
             } catch (e) {}
-            const existingAdmin = getUserByEmail(inputEmail);
             return {
-              id: existingAdmin?.id || "usr_admin_master",
-              name: existingAdmin?.name || "Administrador Juan",
+              id: "usr_admin_master",
+              name: "Administrador Juan",
               email: inputEmail,
               role: "ADMIN",
-              image: existingAdmin?.image || undefined,
+              image: undefined,
             };
           }
         }
 
-        const user = getUserByEmail(inputEmail);
+        let user: any = null;
+        try {
+          user = await supabaseGetUserByEmail(inputEmail);
+        } catch (e) {
+          user = getUserByEmail(inputEmail);
+        }
+
+        if (!user) {
+          user = getUserByEmail(inputEmail);
+        }
+
         if (!user || !user.passwordHash) {
           throw new Error("Credenciales inválidas. Por favor verifica tus datos.");
         }
@@ -181,11 +191,28 @@ export const authOptions: NextAuthOptions = {
       if (account?.provider === "google" || account?.provider === "apple") {
         if (user.email) {
           const isMasterAdmin = user.email.toLowerCase() === "juanas89@gmail.com";
-          const dbUser = createOrUpdateOAuthUser({
-            email: user.email,
-            name: user.name || "Usuario " + (account.provider === "google" ? "Google" : "Apple"),
-            image: user.image || undefined,
-          });
+          let dbUser: any = null;
+          try {
+            dbUser = await supabaseCreateOrUpdateOAuthUser({
+              email: user.email,
+              name: user.name || "Usuario " + (account.provider === "google" ? "Google" : "Apple"),
+              image: user.image || undefined,
+            });
+            try {
+              createOrUpdateOAuthUser({
+                email: user.email,
+                name: user.name || "Usuario " + (account.provider === "google" ? "Google" : "Apple"),
+                image: user.image || undefined,
+              });
+            } catch (e) {}
+          } catch (e) {
+            dbUser = createOrUpdateOAuthUser({
+              email: user.email,
+              name: user.name || "Usuario " + (account.provider === "google" ? "Google" : "Apple"),
+              image: user.image || undefined,
+            });
+          }
+
           user.id = dbUser.id;
           (user as any).role = isMasterAdmin ? "ADMIN" : dbUser.role;
         }

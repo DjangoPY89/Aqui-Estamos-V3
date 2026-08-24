@@ -2,6 +2,11 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { deleteBooking, getBookingById, updateBooking } from "@/lib/db";
+import {
+  supabaseDeleteBooking,
+  supabaseGetBookingById,
+  supabaseUpdateBooking,
+} from "@/lib/supabase-db";
 
 export const dynamic = "force-dynamic";
 
@@ -10,7 +15,17 @@ export async function GET(
   { params }: { params: { id: string } }
 ) {
   try {
-    const booking = getBookingById(params.id);
+    let booking: any = null;
+    try {
+      booking = await supabaseGetBookingById(params.id);
+    } catch (e) {
+      booking = getBookingById(params.id);
+    }
+
+    if (!booking) {
+      booking = getBookingById(params.id);
+    }
+
     if (!booking) {
       return NextResponse.json({ error: "Reserva no encontrada." }, { status: 404 });
     }
@@ -26,7 +41,16 @@ export async function PATCH(
 ) {
   try {
     const session = await getServerSession(authOptions);
-    const booking = getBookingById(params.id);
+    let booking: any = null;
+    try {
+      booking = await supabaseGetBookingById(params.id);
+    } catch (e) {
+      booking = getBookingById(params.id);
+    }
+
+    if (!booking) {
+      booking = getBookingById(params.id);
+    }
 
     if (!booking) {
       return NextResponse.json({ error: "Reserva no encontrada." }, { status: 404 });
@@ -38,7 +62,7 @@ export async function PATCH(
 
     // Si es cliente, solo puede cancelar o solicitar reprogramación si es su reserva
     if (userRole !== "ADMIN") {
-      const isOwner = booking.userId === userId || booking.customerEmail === session?.user?.email;
+      const isOwner = booking.userId === userId || (booking.customerEmail && session?.user?.email && booking.customerEmail.toLowerCase() === session.user.email.toLowerCase());
       if (!isOwner) {
         return NextResponse.json({ error: "No autorizado para modificar esta reserva." }, { status: 403 });
       }
@@ -52,12 +76,21 @@ export async function PATCH(
       if (body.serviceTime) allowedUpdates.serviceTime = body.serviceTime;
       if (body.notes) allowedUpdates.notes = body.notes;
 
-      const updated = updateBooking(params.id, allowedUpdates);
+      let updated: any = null;
+      try {
+        updated = await supabaseUpdateBooking(params.id, allowedUpdates);
+        try {
+          updateBooking(params.id, allowedUpdates);
+        } catch (e) {}
+      } catch (e) {
+        updated = updateBooking(params.id, allowedUpdates);
+      }
+
       return NextResponse.json({ message: "Reserva actualizada.", booking: updated });
     }
 
     // Si es administrador, puede actualizar cualquier campo
-    const updated = updateBooking(params.id, {
+    const adminUpdates = {
       status: body.status,
       assignedCleaner: body.assignedCleaner,
       customerName: body.customerName,
@@ -74,7 +107,17 @@ export async function PATCH(
       notes: body.notes,
       serviceDate: body.serviceDate,
       serviceTime: body.serviceTime,
-    });
+    };
+
+    let updated: any = null;
+    try {
+      updated = await supabaseUpdateBooking(params.id, adminUpdates);
+      try {
+        updateBooking(params.id, adminUpdates);
+      } catch (e) {}
+    } catch (e) {
+      updated = updateBooking(params.id, adminUpdates);
+    }
 
     return NextResponse.json({ message: "Reserva actualizada por administración.", booking: updated });
   } catch (error: any) {
@@ -95,12 +138,16 @@ export async function DELETE(
       return NextResponse.json({ error: "Acceso no autorizado. Se requiere rol de administrador." }, { status: 403 });
     }
 
-    const booking = getBookingById(params.id);
-    if (!booking) {
-      return NextResponse.json({ error: "Reserva no encontrada." }, { status: 404 });
+    let success = false;
+    try {
+      success = await supabaseDeleteBooking(params.id);
+      try {
+        deleteBooking(params.id);
+      } catch (e) {}
+    } catch (e) {
+      success = deleteBooking(params.id);
     }
 
-    const success = deleteBooking(params.id);
     if (!success) {
       return NextResponse.json({ error: "No se pudo eliminar la reserva." }, { status: 500 });
     }

@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createPasswordResetToken } from "@/lib/db";
+import { supabaseCreatePasswordResetToken } from "@/lib/supabase-db";
 import { sendPasswordResetEmail } from "@/lib/email";
 
 export const dynamic = "force-dynamic";
@@ -16,7 +17,16 @@ export async function POST(req: Request) {
       );
     }
 
-    const resetData = createPasswordResetToken(email.trim().toLowerCase());
+    const cleanEmail = email.trim().toLowerCase();
+    let resetData: any = null;
+    try {
+      resetData = await supabaseCreatePasswordResetToken(cleanEmail);
+      try {
+        createPasswordResetToken(cleanEmail);
+      } catch (e) {}
+    } catch (e) {
+      resetData = createPasswordResetToken(cleanEmail);
+    }
 
     if (resetData) {
       const baseUrl = process.env.NEXTAUTH_URL || "https://aqui-estamos-v3.vercel.app";
@@ -43,3 +53,4 @@ export async function POST(req: Request) {
     );
   }
 }
+

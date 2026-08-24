@@ -2,6 +2,13 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { createBooking, getBookings, getUserByEmail, createUser } from "@/lib/db";
+import {
+  supabaseCreateBooking,
+  supabaseCreateUser,
+  supabaseGetAllBookings,
+  supabaseGetBookingsByUserId,
+  supabaseGetUserByEmail,
+} from "@/lib/supabase-db";
 import { calculatePricing } from "@/lib/pricing";
 import { generateBookingNumber } from "@/lib/utils";
 import { sendNewBookingAdminNotification, sendBookingConfirmationToCustomer } from "@/lib/email";
@@ -20,24 +27,58 @@ export async function GET(req: Request) {
     const userId = (session?.user as any)?.id;
 
     if (userRole === "ADMIN") {
-      const bookings = getBookings({ status, email });
-      return NextResponse.json({ bookings });
+      let allBookings: any[] = [];
+      try {
+        allBookings = await supabaseGetAllBookings();
+        if (status && status !== "ALL") {
+          allBookings = allBookings.filter((b) => b.status === status);
+        }
+        if (email) {
+          allBookings = allBookings.filter((b) => b.customerEmail && b.customerEmail.toLowerCase() === email.toLowerCase());
+        }
+      } catch (e) {
+        allBookings = getBookings({ status, email });
+      }
+      return NextResponse.json({ bookings: allBookings });
     }
 
     // Si es cliente autenticado, filtrar por su ID o email
     if (session?.user?.email) {
-      const bookings = getBookings({
-        userId: userId || undefined,
-        email: session.user.email,
-        status,
-      });
-      return NextResponse.json({ bookings });
+      let clientBookings: any[] = [];
+      try {
+        if (userId) {
+          clientBookings = await supabaseGetBookingsByUserId(userId);
+        }
+        if (clientBookings.length === 0) {
+          const all = await supabaseGetAllBookings();
+          clientBookings = all.filter((b) => b.customerEmail && b.customerEmail.toLowerCase() === session?.user?.email?.toLowerCase());
+        }
+        if (status && status !== "ALL") {
+          clientBookings = clientBookings.filter((b) => b.status === status);
+        }
+      } catch (e) {
+        clientBookings = getBookings({
+          userId: userId || undefined,
+          email: session.user.email,
+          status,
+        });
+      }
+      return NextResponse.json({ bookings: clientBookings });
     }
 
     // Si no está autenticado pero consulta con su email específico
     if (email) {
-      const bookings = getBookings({ email, status });
-      return NextResponse.json({ bookings });
+      let clientBookings: any[] = [];
+      try {
+        const all = await supabaseGetAllBookings();
+        clientBookings = all.filter((b) => b.customerEmail && b.customerEmail.toLowerCase() === email.toLowerCase());
+        if (status && status !== "ALL") {
+          clientBookings = clientBookings.filter((b) => b.status === status);
+        }
+      } catch (e) {
+        clientBookings = getBookings({ email, status });
+      }
+      return NextResponse.json({ bookings: clientBookings });
     }
 
     return NextResponse.json({ bookings: [] });
@@ -81,22 +122,44 @@ export async function POST(req: Request) {
 
     // Asociar a usuario autenticado o crear cuenta de cliente automática
     let userId = (session?.user as any)?.id;
-    const targetEmail = session?.user?.email || customerEmail;
+    const targetEmail = (session?.user?.email || customerEmail).trim().toLowerCase();
 
     if (targetEmail) {
-      let existingUser = getUserByEmail(targetEmail);
+      let existingUser: any = null;
+      try {
+        existingUser = await supabaseGetUserByEmail(targetEmail);
+      } catch (e) {
+        existingUser = getUserByEmail(targetEmail);
+      }
+
       if (!existingUser) {
         try {
-          existingUser = createUser({
+          existingUser = await supabaseCreateUser({
             name: customerName,
             email: targetEmail,
             phone: customerPhone,
             role: "CUSTOMER",
             password: "cliente" + Math.random().toString(36).substring(2, 8),
           });
+          try {
+            createUser({
+              name: customerName,
+              email: targetEmail,
+              phone: customerPhone,
+              role: "CUSTOMER",
+              password: "cliente" + Math.random().toString(36).substring(2, 8),
+            });
+          } catch (e) {}
         } catch (e) {
-          // Si ya existe por condición de carrera, recuperarlo
-          existingUser = getUserByEmail(targetEmail);
+          try {
+            existingUser = createUser({
+              name: customerName,
+              email: targetEmail,
+              phone: customerPhone,
+              role: "CUSTOMER",
+              password: "cliente" + Math.random().toString(36).substring(2, 8),
+            });
+          } catch (e2) {}
         }
       }
       if (existingUser) {
@@ -104,28 +167,76 @@ export async function POST(req: Request) {
       }
     }
 
-    const booking = createBooking({
-      bookingNumber,
-      userId: userId || null,
-      customerName,
-      customerPhone,
-      customerEmail: targetEmail,
-      address,
-      latitude: latitude ? parseFloat(latitude.toString()) : null,
-      longitude: longitude ? parseFloat(longitude.toString()) : null,
-      serviceHours: Number(serviceHours) as any,
-      frequency: frequency || "once",
-      extras,
-      serviceDate,
-      serviceTime,
-      totalPrice: pricing.finalPrice,
-      discount: pricing.discountAmount,
-      paymentMethod,
-      paymentStatus: "PENDING",
-      status: "PENDING",
-      assignedCleaner: null,
-      notes: notes || null,
-    });
+    let booking: any = null;
+    try {
+      booking = await supabaseCreateBooking({
+        userId: userId || undefined,
+        customerName,
+        customerPhone,
+        customerEmail: targetEmail,
+        address,
+        latitude: latitude ? parseFloat(latitude.toString()) : undefined,
+        longitude: longitude ? parseFloat(longitude.toString()) : undefined,
+        serviceHours: Number(serviceHours),
+        frequency: frequency || "once",
+        extras,
+        serviceDate,
+        serviceTime,
+        totalPrice: pricing.finalPrice,
+        discount: pricing.discountAmount,
+        paymentMethod,
+        notes: notes || undefined,
+      });
+
+      // Sincronizar en local por respaldo
+      try {
+        createBooking({
+          bookingNumber: booking.bookingNumber || bookingNumber,
+          userId: userId || null,
+          customerName,
+          customerPhone,
+          customerEmail: targetEmail,
+          address,
+          latitude: latitude ? parseFloat(latitude.toString()) : null,
+          longitude: longitude ? parseFloat(longitude.toString()) : null,
+          serviceHours: Number(serviceHours) as any,
+          frequency: frequency || "once",
+          extras,
+          serviceDate,
+          serviceTime,
+          totalPrice: pricing.finalPrice,
+          discount: pricing.discountAmount,
+          paymentMethod,
+          paymentStatus: "PENDING",
+          status: "PENDING",
+          assignedCleaner: null,
+          notes: notes || null,
+        });
+      } catch (e) {}
+    } catch (e) {
+      booking = createBooking({
+        bookingNumber,
+        userId: userId || null,
+        customerName,
+        customerPhone,
+        customerEmail: targetEmail,
+        address,
+        latitude: latitude ? parseFloat(latitude.toString()) : null,
+        longitude: longitude ? parseFloat(longitude.toString()) : null,
+        serviceHours: Number(serviceHours) as any,
+        frequency: frequency || "once",
+        extras,
+        serviceDate,
+        serviceTime,
+        totalPrice: pricing.finalPrice,
+        discount: pricing.discountAmount,
+        paymentMethod,
+        paymentStatus: "PENDING",
+        status: "PENDING",
+        assignedCleaner: null,
+        notes: notes || null,
+      });
+    }
 
     // Enviar notificación por correo al Administrador (juanas89@gmail.com) y al Cliente
     try {

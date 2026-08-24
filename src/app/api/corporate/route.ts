@@ -2,6 +2,11 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { createCorporateLead, getCorporateLeads, updateCorporateLeadStatus } from "@/lib/db";
+import {
+  supabaseCreateCorporateLead,
+  supabaseGetAllCorporateLeads,
+  supabaseUpdateCorporateLeadStatus,
+} from "@/lib/supabase-db";
 
 export const dynamic = "force-dynamic";
 
@@ -14,7 +19,13 @@ export async function GET() {
       return NextResponse.json({ error: "No autorizado." }, { status: 403 });
     }
 
-    const leads = getCorporateLeads();
+    let leads: any[] = [];
+    try {
+      leads = await supabaseGetAllCorporateLeads();
+    } catch (e) {
+      leads = getCorporateLeads();
+    }
+
     return NextResponse.json({ leads });
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });
@@ -33,15 +44,40 @@ export async function POST(req: Request) {
       );
     }
 
-    const lead = createCorporateLead({
-      companyName,
-      ruc: ruc || null,
-      facilityType,
-      contactName,
-      phone,
-      email: email || null,
-      requirements: requirements || null,
-    });
+    let lead: any = null;
+    try {
+      lead = await supabaseCreateCorporateLead({
+        companyName,
+        ruc: ruc || undefined,
+        facilityType,
+        contactName,
+        phone,
+        email: email || undefined,
+        requirements: requirements || undefined,
+      });
+      // Sincronizar local
+      try {
+        createCorporateLead({
+          companyName,
+          ruc: ruc || null,
+          facilityType,
+          contactName,
+          phone,
+          email: email || null,
+          requirements: requirements || null,
+        });
+      } catch (e) {}
+    } catch (e) {
+      lead = createCorporateLead({
+        companyName,
+        ruc: ruc || null,
+        facilityType,
+        contactName,
+        phone,
+        email: email || null,
+        requirements: requirements || null,
+      });
+    }
 
     return NextResponse.json(
       {
@@ -69,11 +105,20 @@ export async function PATCH(req: Request) {
     const { id, status } = body;
 
     if (!id || !status) {
-      return NextResponse.json({ error: "ID y nuevo estado son obligatorios." }, { status: 400 });
+      return NextResponse.json({ error: "ID y estado requeridos." }, { status: 400 });
     }
 
-    const updated = updateCorporateLeadStatus(id, status);
-    return NextResponse.json({ message: "Estado de lead actualizado.", lead: updated });
+    let updated: any = null;
+    try {
+      updated = await supabaseUpdateCorporateLeadStatus(id, status);
+      try {
+        updateCorporateLeadStatus(id, status);
+      } catch (e) {}
+    } catch (e) {
+      updated = updateCorporateLeadStatus(id, status);
+    }
+
+    return NextResponse.json({ message: "Estado de lead corporativo actualizado.", lead: updated });
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }

@@ -49,7 +49,18 @@ export async function POST(req: Request) {
     }
 
     // Verificar contra base de datos (otros admins)
-    const user = getUserByEmail(inputEmail);
+    let user: any = null;
+    try {
+      const { supabaseGetUserByEmail } = await import("@/lib/supabase-db");
+      user = await supabaseGetUserByEmail(inputEmail);
+    } catch (e) {
+      user = getUserByEmail(inputEmail);
+    }
+
+    if (!user) {
+      user = getUserByEmail(inputEmail);
+    }
+
     if (!user || !user.passwordHash) {
       return NextResponse.json({ error: "Correo o contraseña incorrectos." }, { status: 401 });
     }

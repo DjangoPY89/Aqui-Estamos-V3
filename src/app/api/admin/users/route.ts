@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
-import { getAllUsers } from "@/lib/db";
+import { getAllUsers, updateUserProfile } from "@/lib/db";
+import { supabaseGetAllUsers, supabaseUpdateUser } from "@/lib/supabase-db";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -14,7 +15,13 @@ export async function GET() {
       return NextResponse.json({ error: "No autorizado. Se requieren permisos de administrador." }, { status: 403 });
     }
 
-    const users = getAllUsers();
+    let users: any[] = [];
+    try {
+      users = await supabaseGetAllUsers();
+    } catch (e) {
+      users = getAllUsers();
+    }
+
     return NextResponse.json(
       { users },
       {
@@ -44,14 +51,28 @@ export async function PATCH(req: Request) {
       return NextResponse.json({ error: "ID de usuario es obligatorio." }, { status: 400 });
     }
 
-    const { updateUserProfile } = await import("@/lib/db");
-    const updatedUser = updateUserProfile(userId, {
-      address,
-      phone,
-      name,
-      ruc,
-      taxName,
-    });
+    let updatedUser: any = null;
+    try {
+      updatedUser = await supabaseUpdateUser(userId, {
+        address,
+        phone,
+        name,
+        ruc,
+        taxName,
+      });
+      // Sincronizar en local
+      try {
+        updateUserProfile(userId, { address, phone, name, ruc, taxName });
+      } catch (e) {}
+    } catch (e) {
+      updatedUser = updateUserProfile(userId, {
+        address,
+        phone,
+        name,
+        ruc,
+        taxName,
+      });
+    }
 
     if (!updatedUser) {
       return NextResponse.json({ error: "Usuario no encontrado." }, { status: 404 });

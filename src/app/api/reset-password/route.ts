@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { verifyAndResetPassword } from "@/lib/db";
+import { supabaseVerifyAndResetPassword } from "@/lib/supabase-db";
 
 export const dynamic = "force-dynamic";
 
@@ -22,7 +23,16 @@ export async function POST(req: Request) {
       );
     }
 
-    const success = verifyAndResetPassword(tokenOrCode.trim(), newPassword);
+    const cleanToken = tokenOrCode.trim();
+    let success = false;
+    try {
+      success = await supabaseVerifyAndResetPassword(cleanToken, newPassword);
+      try {
+        verifyAndResetPassword(cleanToken, newPassword);
+      } catch (e) {}
+    } catch (e) {
+      success = verifyAndResetPassword(cleanToken, newPassword);
+    }
 
     if (!success) {
       return NextResponse.json(
