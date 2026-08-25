@@ -14,12 +14,12 @@ export default function Hero() {
           loop
           muted
           playsInline
-          className="w-full h-full object-cover scale-105"
+          className="w-full h-full object-cover scale-105 opacity-75"
         />
         {/* Capas de Degradado Cinemático para Contraste y Legibilidad Premium */}
-        <div className="absolute inset-0 bg-neutral-950/65 backdrop-brightness-75" />
-        <div className="absolute inset-0 bg-gradient-to-t from-neutral-950 via-neutral-950/20 to-neutral-950/50" />
-        <div className="absolute inset-0 bg-gradient-to-r from-neutral-950/80 via-neutral-950/40 to-transparent" />
+        <div className="absolute inset-0 bg-neutral-950/70 backdrop-brightness-75" />
+        <div className="absolute inset-0 bg-gradient-to-t from-neutral-950 via-neutral-950/30 to-neutral-950/60" />
+        <div className="absolute inset-0 bg-gradient-to-r from-neutral-950/85 via-neutral-950/50 to-neutral-950/20" />
       </div>
 
       {/* Contenido Hero Superpuesto */}
