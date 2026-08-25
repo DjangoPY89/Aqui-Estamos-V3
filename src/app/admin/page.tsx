@@ -86,7 +86,7 @@ export default function AdminDashboardPage() {
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<"BOOKINGS" | "EMPLOYEES" | "CUSTOMERS" | "LEADS" | "ANALYTICS" | "CALENDAR">("BOOKINGS");
-  const [quickViewFilter, setQuickViewFilter] = useState<"ALL" | "TODAY" | "THIS_WEEK" | "UNASSIGNED" | "CONFIRMED" | "COMPLETED">("ALL");
+  const [quickViewFilter, setQuickViewFilter] = useState<"ALL" | "TODAY" | "THIS_WEEK" | "UNASSIGNED" | "PENDING" | "CONFIRMED" | "COMPLETED">("ALL");
   const [statusFilter, setStatusFilter] = useState("ALL");
   const [searchTerm, setSearchTerm] = useState("");
   const [userSearchTerm, setUserSearchTerm] = useState("");
@@ -804,6 +804,7 @@ export default function AdminDashboardPage() {
       // Filtro de Pestaña Rápida
       if (quickViewFilter === "TODAY" && b.serviceDate !== todayStr) return false;
       if (quickViewFilter === "UNASSIGNED" && b.assignedCleaner && b.assignedCleaner !== "Sin Asignar") return false;
+      if (quickViewFilter === "PENDING" && b.status !== "PENDING") return false;
       if (quickViewFilter === "CONFIRMED" && b.status !== "CONFIRMED") return false;
       if (quickViewFilter === "COMPLETED" && b.status !== "COMPLETED") return false;
       
@@ -1738,6 +1739,18 @@ export default function AdminDashboardPage() {
                       }`}
                     >
                       Todas ({bookings.length})
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => setQuickViewFilter("PENDING")}
+                      className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
+                        quickViewFilter === "PENDING"
+                          ? "bg-white text-amber-800 shadow-xs"
+                          : "text-slate-600 hover:text-slate-900"
+                      }`}
+                    >
+                      🟡 Pendientes ({bookings.filter((b) => b.status === "PENDING").length})
                     </button>
 
                     <button
