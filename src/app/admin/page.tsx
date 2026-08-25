@@ -49,6 +49,7 @@ import {
   PlusCircle,
   LogOut,
   ChevronRight,
+  ChevronLeft,
   ChevronDown,
   Layers,
   Activity,
@@ -91,6 +92,10 @@ export default function AdminDashboardPage() {
   const [userSearchTerm, setUserSearchTerm] = useState("");
   const [employeeSearchTerm, setEmployeeSearchTerm] = useState("");
   const [showCharts, setShowCharts] = useState(true);
+
+  // Estados del Calendario Operativo en Vivo
+  const [currentCalendarDate, setCurrentCalendarDate] = useState(new Date());
+  const [calendarViewMode, setCalendarViewMode] = useState<"MONTH" | "AGENDA" | "GOOGLE">("MONTH");
 
   // Estados de Ordenamiento Dinámico de Columnas
   const [sortField, setSortField] = useState<string>("createdAt");
@@ -2251,134 +2256,444 @@ export default function AdminDashboardPage() {
             )}
 
             {/* ======================================================== */}
-            {/* TAB 5: GOOGLE CALENDAR EN VIVO & SINCRONIZACIÓN */}
+            {/* TAB 5: CALENDARIO OPERATIVO EN VIVO & SINCRONIZACIÓN */}
             {/* ======================================================== */}
-            {activeTab === "CALENDAR" && (
-              <div className="bg-white rounded-3xl border border-slate-200 shadow-xs overflow-hidden p-6 sm:p-7 space-y-6 animate-in fade-in duration-200">
-                
-                {/* Cabecera y Botones de Sincronización */}
-                <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 pb-5 border-b border-slate-100">
-                  <div>
-                    <h2 className="text-base font-black text-slate-900 flex items-center gap-2">
-                      <CalendarDays className="w-5 h-5 text-electric-600" />
-                      <span>Calendario Operativo Google Calendar</span>
-                    </h2>
-                    <p className="text-xs text-slate-500 mt-0.5">
-                      Visualización y sincronización en tiempo real de todas las citas y limpiezas agendadas.
-                    </p>
-                  </div>
+            {activeTab === "CALENDAR" && (() => {
+              const year = currentCalendarDate.getFullYear();
+              const month = currentCalendarDate.getMonth();
+              const monthNames = [
+                "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
+                "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"
+              ];
+              const dayNames = ["Lun", "Mar", "Mié", "Jue", "Vie", "Sáb", "Dom"];
+              const now = new Date();
+              const todayStr = `${now.getFullYear()}-${(now.getMonth() + 1).toString().padStart(2, "0")}-${now.getDate().toString().padStart(2, "0")}`;
+
+              // Cálculo de cuadrícula mensual (Lunes = 0)
+              const firstDayOfMonth = new Date(year, month, 1);
+              const lastDayOfMonth = new Date(year, month + 1, 0);
+              let startDayOfWeek = firstDayOfMonth.getDay();
+              startDayOfWeek = startDayOfWeek === 0 ? 6 : startDayOfWeek - 1;
+              const daysInMonth = lastDayOfMonth.getDate();
+              const totalCells = Math.ceil((startDayOfWeek + daysInMonth) / 7) * 7;
+
+              const monthGridDays = [];
+              for (let i = 0; i < totalCells; i++) {
+                const dayNumber = i - startDayOfWeek + 1;
+                const cellDate = new Date(year, month, dayNumber);
+                const dateStr = `${cellDate.getFullYear()}-${(cellDate.getMonth() + 1).toString().padStart(2, "0")}-${cellDate.getDate().toString().padStart(2, "0")}`;
+                const isCurrentMonth = dayNumber >= 1 && dayNumber <= daysInMonth;
+                monthGridDays.push({
+                  dayNumber: cellDate.getDate(),
+                  dateStr,
+                  isCurrentMonth,
+                  isToday: dateStr === todayStr,
+                });
+              }
+
+              return (
+                <div className="bg-white rounded-3xl border border-slate-200 shadow-xs overflow-hidden p-5 sm:p-7 space-y-6 animate-in fade-in duration-200">
                   
-                  <div className="flex flex-wrap items-center gap-2.5">
-                    {/* Botón Suscribir en Google Calendar */}
-                    <a
-                      href="https://calendar.google.com/calendar/r?cid=https%3A%2F%2Fcalendar.google.com%2Fcalendar%2Fical%2F6995kk35n4bc196tnd07q3onahg0t2lh%40import.calendar.google.com%2Fpublic%2Fbasic.ics"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex items-center gap-1.5 px-3.5 py-2 bg-electric-600 hover:bg-electric-700 text-white font-bold text-xs rounded-xl shadow-xs transition-all active:scale-95"
-                      title="Sincronizar automáticamente en tu cuenta de Google Calendar"
-                    >
-                      <CalendarDays className="w-3.5 h-3.5" />
-                      <span>+ Suscribir en Google Calendar</span>
-                    </a>
-
-                    {/* Botón Apple Calendar / iOS */}
-                    <a
-                      href="webcal://calendar.google.com/calendar/ical/6995kk35n4bc196tnd07q3onahg0t2lh%40import.calendar.google.com/public/basic.ics"
-                      className="flex items-center gap-1.5 px-3.5 py-2 bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs rounded-xl shadow-xs transition-all active:scale-95"
-                      title="Sincronizar en iPhone, iPad, Mac o Outlook"
-                    >
-                      <span>🍏 Apple / Outlook</span>
-                    </a>
-
-                    {/* Descargar Archivo iCal */}
-                    <a
-                      href="/api/calendar/feed"
-                      download="aquiestamos-agenda.ics"
-                      className="flex items-center gap-1.5 px-3.5 py-2 bg-white hover:bg-slate-50 text-slate-700 font-bold text-xs rounded-xl border border-slate-200 shadow-xs transition-all active:scale-95"
-                    >
-                      <Download className="w-3.5 h-3.5 text-slate-500" />
-                      <span>Descargar .ics</span>
-                    </a>
+                  {/* Cabecera Principal y Selector de Vistas */}
+                  <div className="flex flex-col xl:flex-row justify-between items-start xl:items-center gap-4 pb-5 border-b border-slate-100">
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-2.5">
+                        <div className="w-8 h-8 rounded-xl bg-electric-50 text-electric-600 flex items-center justify-center font-bold">
+                          <CalendarDays className="w-4 h-4" />
+                        </div>
+                        <div>
+                          <h2 className="text-base font-black text-slate-900 flex items-center gap-2">
+                            <span>Calendario Operativo en Tiempo Real</span>
+                            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                              En Vivo ({bookings.length} Citas)
+                            </span>
+                          </h2>
+                          <p className="text-xs text-slate-500">
+                            Agenda interactiva en vivo conectada a la base de datos con asignación de personal y sincronización instantánea.
+                          </p>
+                        </div>
+                      </div>
+                    </div>
                     
-                    <button
-                      type="button"
-                      onClick={() => setIsCreatingBooking(true)}
-                      className="flex items-center gap-1.5 px-3.5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl shadow-xs transition-all active:scale-95"
-                    >
-                      <PlusCircle className="w-3.5 h-3.5" />
-                      <span>Nueva Cita</span>
-                    </button>
-                  </div>
-                </div>
+                    {/* Barra de Controles y Selector de Modo */}
+                    <div className="flex flex-wrap items-center gap-2 w-full xl:w-auto justify-between xl:justify-end">
+                      
+                      {/* Píldoras de Cambio de Vista */}
+                      <div className="inline-flex p-1 bg-slate-100/80 rounded-2xl border border-slate-200/80 text-xs font-semibold">
+                        <button
+                          type="button"
+                          onClick={() => setCalendarViewMode("MONTH")}
+                          className={`px-3 py-1.5 rounded-xl transition-all ${
+                            calendarViewMode === "MONTH"
+                              ? "bg-white text-slate-900 shadow-xs font-bold"
+                              : "text-slate-600 hover:text-slate-900"
+                          }`}
+                        >
+                          📅 Vista Mensual
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setCalendarViewMode("AGENDA")}
+                          className={`px-3 py-1.5 rounded-xl transition-all ${
+                            calendarViewMode === "AGENDA"
+                              ? "bg-white text-slate-900 shadow-xs font-bold"
+                              : "text-slate-600 hover:text-slate-900"
+                          }`}
+                        >
+                          📋 Vista Agenda
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setCalendarViewMode("GOOGLE")}
+                          className={`px-3 py-1.5 rounded-xl transition-all ${
+                            calendarViewMode === "GOOGLE"
+                              ? "bg-white text-slate-900 shadow-xs font-bold"
+                              : "text-slate-600 hover:text-slate-900"
+                          }`}
+                        >
+                          🌐 Google Embed
+                        </button>
+                      </div>
 
-                {/* Banner Informativo con URLs de Integración iCal */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 p-4 rounded-2xl bg-slate-50 border border-slate-200 text-xs">
-                  <div className="space-y-1">
-                    <p className="font-bold text-slate-800 flex items-center gap-1.5">
-                      <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
-                      <span>Enlace iCal Público (.ics):</span>
-                    </p>
-                    <div className="flex items-center gap-2">
-                      <input
-                        type="text"
-                        readOnly
-                        value="https://calendar.google.com/calendar/ical/6995kk35n4bc196tnd07q3onahg0t2lh%40import.calendar.google.com/public/basic.ics"
-                        className="w-full bg-white border border-slate-200 rounded-lg px-2.5 py-1 text-[11px] font-mono text-slate-600 truncate select-all"
-                      />
+                      {/* Botón Nueva Cita */}
                       <button
                         type="button"
-                        onClick={() => {
-                          navigator.clipboard.writeText("https://calendar.google.com/calendar/ical/6995kk35n4bc196tnd07q3onahg0t2lh%40import.calendar.google.com/public/basic.ics");
-                          showNotification("✓ Enlace iCal copiado al portapapeles.");
-                        }}
-                        className="px-2.5 py-1 bg-white hover:bg-slate-100 text-slate-700 font-bold rounded-lg border border-slate-200 text-[11px] shrink-0"
+                        onClick={() => setIsCreatingBooking(true)}
+                        className="flex items-center gap-1.5 px-3.5 py-2 bg-electric-600 hover:bg-electric-700 text-white font-bold text-xs rounded-xl shadow-xs transition-all active:scale-95"
                       >
-                        Copiar
+                        <PlusCircle className="w-3.5 h-3.5" />
+                        <span>Nueva Cita</span>
                       </button>
                     </div>
                   </div>
 
-                  <div className="space-y-1">
-                    <p className="font-bold text-slate-800 flex items-center gap-1.5">
-                      <span className="w-2 h-2 rounded-full bg-electric-500"></span>
-                      <span>ID Oficial de Calendario:</span>
-                    </p>
-                    <div className="flex items-center gap-2">
-                      <input
-                        type="text"
-                        readOnly
-                        value="6995kk35n4bc196tnd07q3onahg0t2lh@import.calendar.google.com"
-                        className="w-full bg-white border border-slate-200 rounded-lg px-2.5 py-1 text-[11px] font-mono text-slate-600 truncate select-all"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => {
-                          navigator.clipboard.writeText("6995kk35n4bc196tnd07q3onahg0t2lh@import.calendar.google.com");
-                          showNotification("✓ ID de Calendario copiado.");
-                        }}
-                        className="px-2.5 py-1 bg-white hover:bg-slate-100 text-slate-700 font-bold rounded-lg border border-slate-200 text-[11px] shrink-0"
-                      >
-                        Copiar
-                      </button>
-                    </div>
-                  </div>
-                </div>
+                  {/* ======================================================== */}
+                  {/* VISTA 1: CALENDARIO MENSUAL INTERACTIVO */}
+                  {/* ======================================================== */}
+                  {calendarViewMode === "MONTH" && (
+                    <div className="space-y-4">
+                      {/* Barra de Navegación de Mes */}
+                      <div className="flex items-center justify-between bg-slate-50/80 p-3 rounded-2xl border border-slate-200/80">
+                        <div className="flex items-center gap-2">
+                          <button
+                            type="button"
+                            onClick={() => setCurrentCalendarDate(new Date(year, month - 1, 1))}
+                            className="p-2 bg-white hover:bg-slate-100 text-slate-700 rounded-xl border border-slate-200 shadow-2xs transition-all active:scale-95"
+                            title="Mes Anterior"
+                          >
+                            <ChevronLeft className="w-4 h-4" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setCurrentCalendarDate(new Date(year, month + 1, 1))}
+                            className="p-2 bg-white hover:bg-slate-100 text-slate-700 rounded-xl border border-slate-200 shadow-2xs transition-all active:scale-95"
+                            title="Mes Siguiente"
+                          >
+                            <ChevronRight className="w-4 h-4" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setCurrentCalendarDate(new Date())}
+                            className="px-3 py-1.5 bg-white hover:bg-slate-100 text-slate-700 font-bold text-xs rounded-xl border border-slate-200 shadow-2xs transition-all"
+                          >
+                            Hoy
+                          </button>
+                        </div>
 
-                {/* Google Calendar Iframe Embebido */}
-                <div className="w-full h-[650px] sm:h-[750px] rounded-2xl overflow-hidden border border-slate-200 shadow-inner bg-slate-50 relative">
-                  <iframe
-                    src="https://calendar.google.com/calendar/embed?src=6995kk35n4bc196tnd07q3onahg0t2lh%40import.calendar.google.com&ctz=America%2FAsuncion"
-                    style={{ border: 0 }}
-                    width="100%"
-                    height="100%"
-                    frameBorder="0"
-                    scrolling="no"
-                    className="w-full h-full"
-                    title="Calendario Operativo Aquí Estamos"
-                  />
+                        <h3 className="text-sm sm:text-base font-black text-slate-900 tracking-tight capitalize">
+                          {monthNames[month]} {year}
+                        </h3>
+
+                        <div className="flex items-center gap-2 text-xs font-semibold text-slate-500">
+                          <button
+                            type="button"
+                            onClick={() => loadData()}
+                            className="flex items-center gap-1.5 px-3 py-1.5 bg-white hover:bg-slate-100 text-slate-700 font-bold text-xs rounded-xl border border-slate-200 shadow-2xs transition-all"
+                            title="Refrescar citas de la base de datos"
+                          >
+                            <RefreshCw className="w-3.5 h-3.5 text-slate-500" />
+                            <span className="hidden sm:inline">Actualizar</span>
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Cuadrícula de Calendario */}
+                      <div className="border border-slate-200 rounded-2xl overflow-hidden bg-slate-200/50 shadow-inner">
+                        {/* Cabecera de Días de la Semana */}
+                        <div className="grid grid-cols-7 bg-slate-100 border-b border-slate-200 text-center text-xs font-black text-slate-600 py-2.5">
+                          {dayNames.map((d) => (
+                            <div key={d} className="tracking-wide uppercase">
+                              {d}
+                            </div>
+                          ))}
+                        </div>
+
+                        {/* Celdas de Días */}
+                        <div className="grid grid-cols-7 gap-[1px] bg-slate-200">
+                          {monthGridDays.map((cell, idx) => {
+                            const dayBookings = bookings.filter((b) => b.serviceDate === cell.dateStr);
+
+                            return (
+                              <div
+                                key={idx}
+                                className={`min-h-[105px] sm:min-h-[125px] p-2 flex flex-col justify-between transition-colors ${
+                                  cell.isCurrentMonth
+                                    ? cell.isToday
+                                      ? "bg-electric-50/40"
+                                      : "bg-white"
+                                    : "bg-slate-50/60 text-slate-400"
+                                } hover:bg-slate-50/90`}
+                              >
+                                {/* Número de Día y Botón Rápido */}
+                                <div className="flex items-center justify-between">
+                                  <span
+                                    className={`text-xs font-black w-6 h-6 flex items-center justify-center rounded-full ${
+                                      cell.isToday
+                                        ? "bg-electric-600 text-white shadow-xs"
+                                        : cell.isCurrentMonth
+                                        ? "text-slate-800"
+                                        : "text-slate-400"
+                                    }`}
+                                  >
+                                    {cell.dayNumber}
+                                  </span>
+
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      setNewBookingDate(cell.dateStr);
+                                      setIsCreatingBooking(true);
+                                    }}
+                                    className="opacity-0 hover:opacity-100 group-hover:opacity-100 p-1 text-slate-400 hover:text-electric-600 hover:bg-slate-100 rounded-md transition-opacity"
+                                    title={`Agendar cita para el ${cell.dateStr}`}
+                                  >
+                                    <PlusCircle className="w-3.5 h-3.5" />
+                                  </button>
+                                </div>
+
+                                {/* Lista de Citas del Día */}
+                                <div className="space-y-1 my-1 overflow-y-auto max-h-[85px] no-scrollbar">
+                                  {dayBookings.map((b) => {
+                                    const empColor = getEmployeeColor(b.assignedCleaner);
+                                    const st = getStatusBadge(b.status);
+
+                                    return (
+                                      <button
+                                        key={b.id}
+                                        type="button"
+                                        onClick={() => setEditingBooking(b)}
+                                        className={`w-full text-left p-1.5 rounded-lg border text-[10px] transition-all shadow-2xs hover:scale-[1.02] flex flex-col gap-0.5 ${
+                                          b.status === "CONFIRMED"
+                                            ? "bg-emerald-50/90 border-emerald-200/80 text-emerald-950"
+                                            : b.status === "IN_PROGRESS"
+                                            ? "bg-amber-50/90 border-amber-200/80 text-amber-950"
+                                            : b.status === "COMPLETED"
+                                            ? "bg-slate-100 border-slate-200 text-slate-800"
+                                            : b.status === "CANCELLED"
+                                            ? "bg-rose-50 border-rose-200 text-rose-800 line-through opacity-70"
+                                            : "bg-sky-50/90 border-sky-200/80 text-sky-950"
+                                        }`}
+                                        title={`${b.serviceTime} hs - ${b.customerName} (${b.serviceHours}h) - Personal: ${b.assignedCleaner || "Sin asignar"}`}
+                                      >
+                                        <div className="flex items-center justify-between font-bold">
+                                          <span className="truncate">{b.serviceTime} hs</span>
+                                          <span className="text-[9px] px-1 rounded bg-white/80 font-mono">
+                                            {b.serviceHours}h
+                                          </span>
+                                        </div>
+
+                                        <div className="flex items-center gap-1 truncate font-semibold">
+                                          <span
+                                            className={`w-1.5 h-1.5 rounded-full shrink-0 ${empColor.bg} ring-1 ring-white`}
+                                          />
+                                          <span className="truncate">{b.customerName}</span>
+                                        </div>
+
+                                        {b.assignedCleaner && (
+                                          <span className="text-[9px] text-slate-600 truncate flex items-center gap-0.5 font-medium">
+                                            👤 {b.assignedCleaner.split(" ")[0]}
+                                          </span>
+                                        )}
+                                      </button>
+                                    );
+                                  })}
+                                </div>
+
+                                <div className="text-[9px] text-slate-400 text-right font-medium">
+                                  {dayBookings.length > 0 && (
+                                    <span>{dayBookings.length} {dayBookings.length === 1 ? "cita" : "citas"}</span>
+                                  )}
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* ======================================================== */}
+                  {/* VISTA 2: LISTA / AGENDA CRONOLÓGICA */}
+                  {/* ======================================================== */}
+                  {calendarViewMode === "AGENDA" && (
+                    <div className="space-y-4">
+                      <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+                        <h3 className="text-sm font-black text-slate-900">
+                          Próximas Citas y Servicios Programados ({bookings.length})
+                        </h3>
+                        <p className="text-xs text-slate-500">Ordenadas por fecha de servicio</p>
+                      </div>
+
+                      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3.5">
+                        {bookings
+                          .slice()
+                          .sort((a, b) => (b.serviceDate || "").localeCompare(a.serviceDate || ""))
+                          .map((b) => {
+                            const empColor = getEmployeeColor(b.assignedCleaner);
+                            const st = getStatusBadge(b.status);
+                            const assignedEmp = employees.find((e) => e.name === b.assignedCleaner);
+
+                            return (
+                              <div
+                                key={b.id}
+                                className="bg-slate-50/60 hover:bg-white rounded-2xl border border-slate-200 p-4 space-y-3 shadow-2xs hover:shadow-xs transition-all"
+                              >
+                                <div className="flex items-center justify-between">
+                                  <div className="flex items-center gap-2">
+                                    <span className="px-2.5 py-1 rounded-xl bg-white border border-slate-200 font-bold text-xs text-slate-800 shadow-2xs">
+                                      📅 {b.serviceDate}
+                                    </span>
+                                    <span className="font-bold text-xs text-slate-700">
+                                      ⏰ {b.serviceTime} hs
+                                    </span>
+                                  </div>
+                                  
+                                  {/* Badge de Estatus Apple */}
+                                  <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-semibold border ${st.bg} ${st.text} ${st.border}`}>
+                                    <span className={`w-1.5 h-1.5 rounded-full ${st.dot}`} />
+                                    <span>{st.label}</span>
+                                  </span>
+                                </div>
+
+                                <div>
+                                  <h4 className="font-black text-slate-900 text-sm">{b.customerName}</h4>
+                                  <p className="text-xs text-slate-500 flex items-center gap-1 mt-0.5">
+                                    <Phone className="w-3 h-3 text-slate-400" />
+                                    <span>{b.customerPhone}</span>
+                                  </p>
+                                  <p className="text-xs text-slate-600 mt-1 line-clamp-2">
+                                    📍 {b.address}
+                                  </p>
+                                </div>
+
+                                <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-xs">
+                                  {/* Empleado Asignado Apple Pill */}
+                                  <div className="flex items-center gap-1.5">
+                                    <span className={`w-2 h-2 rounded-full ${empColor.bg} ring-2 ring-white`} />
+                                    <span className="font-bold text-slate-700 text-[11px] truncate max-w-[120px]">
+                                      {b.assignedCleaner || "Sin Asignar"}
+                                    </span>
+                                  </div>
+
+                                  <span className="font-extrabold text-electric-600">
+                                    {formatGs(b.totalPrice)}
+                                  </span>
+                                </div>
+
+                                {/* Acciones Rápidas */}
+                                <div className="pt-1 flex items-center justify-between gap-2">
+                                  <button
+                                    type="button"
+                                    onClick={() => setEditingBooking(b)}
+                                    className="flex-1 py-1.5 px-3 bg-white hover:bg-slate-100 text-slate-700 font-bold text-xs rounded-xl border border-slate-200 shadow-2xs text-center transition-all"
+                                  >
+                                    Editar Cita
+                                  </button>
+
+                                  <a
+                                    href={generateWhatsAppCustomerUrl(b)}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="p-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl shadow-2xs transition-all"
+                                    title="WhatsApp Cliente"
+                                  >
+                                    <MessageSquare className="w-3.5 h-3.5" />
+                                  </a>
+
+                                  {assignedEmp && (
+                                    <a
+                                      href={generateWhatsAppEmployeeUrl(b, assignedEmp)}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className="p-1.5 bg-slate-900 hover:bg-slate-800 text-white rounded-xl shadow-2xs transition-all"
+                                      title="WhatsApp Empleado con Ubicación"
+                                    >
+                                      <Send className="w-3.5 h-3.5" />
+                                    </a>
+                                  )}
+                                </div>
+                              </div>
+                            );
+                          })}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* ======================================================== */}
+                  {/* VISTA 3: GOOGLE CALENDAR EMBED & SINCRONIZACIÓN */}
+                  {/* ======================================================== */}
+                  {calendarViewMode === "GOOGLE" && (
+                    <div className="space-y-5">
+                      {/* Botones de Sincronización */}
+                      <div className="flex flex-wrap items-center justify-between gap-3 p-4 bg-slate-50 rounded-2xl border border-slate-200">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <a
+                            href="https://calendar.google.com/calendar/r?cid=https%3A%2F%2Fcalendar.google.com%2Fcalendar%2Fical%2F6995kk35n4bc196tnd07q3onahg0t2lh%40import.calendar.google.com%2Fpublic%2Fbasic.ics"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="flex items-center gap-1.5 px-3.5 py-2 bg-electric-600 hover:bg-electric-700 text-white font-bold text-xs rounded-xl shadow-xs transition-all active:scale-95"
+                          >
+                            <CalendarDays className="w-3.5 h-3.5" />
+                            <span>+ Suscribir en Google Calendar</span>
+                          </a>
+
+                          <a
+                            href="webcal://calendar.google.com/calendar/ical/6995kk35n4bc196tnd07q3onahg0t2lh%40import.calendar.google.com/public/basic.ics"
+                            className="flex items-center gap-1.5 px-3.5 py-2 bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs rounded-xl shadow-xs transition-all active:scale-95"
+                          >
+                            <span>🍏 Apple / Outlook</span>
+                          </a>
+
+                          <a
+                            href="/api/calendar/feed"
+                            download="aquiestamos-agenda.ics"
+                            className="flex items-center gap-1.5 px-3.5 py-2 bg-white hover:bg-slate-50 text-slate-700 font-bold text-xs rounded-xl border border-slate-200 shadow-xs transition-all active:scale-95"
+                          >
+                            <Download className="w-3.5 h-3.5 text-slate-500" />
+                            <span>Descargar .ics</span>
+                          </a>
+                        </div>
+                      </div>
+
+                      {/* Iframe Embebido */}
+                      <div className="w-full h-[650px] sm:h-[750px] rounded-2xl overflow-hidden border border-slate-200 shadow-inner bg-slate-50 relative">
+                        <iframe
+                          src="https://calendar.google.com/calendar/embed?src=6995kk35n4bc196tnd07q3onahg0t2lh%40import.calendar.google.com&ctz=America%2FAsuncion"
+                          style={{ border: 0 }}
+                          width="100%"
+                          height="100%"
+                          frameBorder="0"
+                          scrolling="no"
+                          className="w-full h-full"
+                          title="Calendario Operativo Aquí Estamos"
+                        />
+                      </div>
+                    </div>
+                  )}
                 </div>
-              </div>
-            )}
+              );
+            })()}
           </div>
         </main>
       </div>
