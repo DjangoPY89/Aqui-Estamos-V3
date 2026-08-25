@@ -14,7 +14,7 @@ export default function Hero() {
           loop
           muted
           playsInline
-          className="w-full h-full object-cover scale-105 opacity-75"
+          className="w-full h-full object-cover scale-105 opacity-50"
         />
         {/* Capas de Degradado Cinemático para Contraste y Legibilidad Premium */}
         <div className="absolute inset-0 bg-neutral-950/70 backdrop-brightness-75" />
