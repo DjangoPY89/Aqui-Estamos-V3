@@ -21,11 +21,35 @@ export async function GET(req: Request) {
     const { searchParams } = new URL(req.url);
     const status = searchParams.get("status") || undefined;
     const email = searchParams.get("email") || undefined;
+    const isSelfOnly = searchParams.get("self") === "true";
 
-    // Si el usuario es administrador, puede ver todas las reservas
     const userRole = (session?.user as any)?.role;
     const userId = (session?.user as any)?.id;
+    const userEmail = session?.user?.email?.toLowerCase();
 
+    // Si se consulta para el portal propio (self=true)
+    if (isSelfOnly && userEmail) {
+      let clientBookings: any[] = [];
+      try {
+        const all = await supabaseGetAllBookings();
+        clientBookings = all.filter((b) => 
+          (b.customerEmail && b.customerEmail.toLowerCase() === userEmail) ||
+          (userId && b.userId && b.userId === userId)
+        );
+        if (status && status !== "ALL") {
+          clientBookings = clientBookings.filter((b) => b.status === status);
+        }
+      } catch (e) {
+        clientBookings = getBookings({
+          userId: userId || undefined,
+          email: userEmail,
+          status,
+        });
+      }
+      return NextResponse.json({ bookings: clientBookings });
+    }
+
+    // Si el usuario es administrador (y no es consulta de portal propio), puede ver todas las reservas
     if (userRole === "ADMIN") {
       let allBookings: any[] = [];
       try {

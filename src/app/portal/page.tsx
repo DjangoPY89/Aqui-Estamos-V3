@@ -153,8 +153,8 @@ export default function CustomerPortalPage() {
     try {
       setIsLoading(true);
       const [bookingsRes, profileRes] = await Promise.all([
-        fetch("/api/bookings"),
-        fetch("/api/user/profile"),
+        fetch("/api/bookings?self=true", { cache: "no-store" }),
+        fetch("/api/user/profile", { cache: "no-store" }),
       ]);
 
       let loadedBookings: Booking[] = [];
@@ -162,7 +162,20 @@ export default function CustomerPortalPage() {
 
       if (bookingsRes.ok) {
         const data = await bookingsRes.json();
-        loadedBookings = data.bookings || [];
+        const rawBookings: Booking[] = data.bookings || [];
+        
+        // Filtro estricto por el email o ID del usuario actual
+        if (session?.user?.email) {
+          const myEmail = session.user.email.toLowerCase().trim();
+          const myId = (session.user as any)?.id;
+          loadedBookings = rawBookings.filter((b) => 
+            (b.customerEmail && b.customerEmail.toLowerCase().trim() === myEmail) ||
+            (myId && b.userId && b.userId === myId)
+          );
+        } else {
+          loadedBookings = rawBookings;
+        }
+        
         setBookings(loadedBookings);
       }
 
