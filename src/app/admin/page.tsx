@@ -1707,10 +1707,8 @@ export default function AdminDashboardPage() {
                   <table className="w-full text-left text-xs text-slate-700 border-collapse">
                     <thead className="bg-slate-50 text-slate-600 border-b border-slate-200 whitespace-nowrap sticky top-0 z-10">
                       <tr>
-                        {renderSortHeader("Fecha Registro", "createdAt", "left")}
                         {renderSortHeader("Cliente", "customerName", "left")}
                         {renderSortHeader("Teléfono", "customerPhone", "left")}
-                        {renderSortHeader("Email", "customerEmail", "left")}
                         {renderSortHeader("Horas", "serviceHours", "center")}
                         {renderSortHeader("Extras", "extras", "left")}
                         {renderSortHeader("Total", "totalPrice", "left")}
@@ -1723,8 +1721,6 @@ export default function AdminDashboardPage() {
                         {renderSortHeader("Frecuencia", "frequency", "center")}
                         {renderSortHeader("Empleado Asignado", "assignedCleaner", "left", "min-w-[190px]")}
                         {renderSortHeader("Estatus", "status", "center")}
-                        {renderSortHeader("Teléfono Empleado", "employeePhone", "left")}
-                        {renderSortHeader("E-mail Empleados", "employeeEmail", "left")}
                         <th className="px-4 py-3.5 border-r border-slate-200 text-center font-bold uppercase text-[11px] tracking-wider text-slate-600">
                           Enviar WhatsApp
                         </th>
@@ -1788,18 +1784,13 @@ export default function AdminDashboardPage() {
 
                         return (
                           <tr key={b.id} className="hover:bg-slate-50/80 transition-colors">
-                            {/* 1. Fecha Registro */}
-                            <td className="px-4 py-3 border-r border-slate-100 text-slate-500 font-mono text-[11px] whitespace-nowrap">
-                              {formatCreatedDate()}
-                            </td>
-
-                            {/* 2. Nombre */}
+                            {/* 1. Nombre */}
                             <td className="px-4 py-3 border-r border-slate-100 font-bold text-slate-900 whitespace-nowrap">
                               <p>{b.customerName}</p>
                               <span className="text-[10px] font-mono text-slate-400 font-normal">{b.bookingNumber}</span>
                             </td>
 
-                            {/* 3. Teléfono */}
+                            {/* 2. Teléfono */}
                             <td className="px-4 py-3 border-r border-slate-100 text-slate-700 whitespace-nowrap">
                               <a
                                 href={generateWhatsAppCustomerUrl(b)}
@@ -1813,48 +1804,41 @@ export default function AdminDashboardPage() {
                               </a>
                             </td>
 
-                            {/* 4. Email */}
-                            <td className="px-4 py-3 border-r border-slate-100 text-slate-600 truncate max-w-[150px]">
-                              <a href={`mailto:${b.customerEmail}`} className="hover:text-slate-900 hover:underline">
-                                {b.customerEmail}
-                              </a>
-                            </td>
-
-                            {/* 5. Horas */}
+                            {/* 3. Horas */}
                             <td className="px-3 py-3 border-r border-slate-100 text-center font-bold text-slate-900">
                               <span className="px-2 py-0.5 rounded-md bg-slate-100 text-slate-700 text-[11px]">
                                 {b.serviceHours} hs
                               </span>
                             </td>
 
-                            {/* 6. Extras */}
+                            {/* 4. Extras */}
                             <td className="px-4 py-3 border-r border-slate-100 max-w-[180px]">
                               {formatExtras()}
                             </td>
 
-                            {/* 7. Total */}
+                            {/* 5. Total */}
                             <td className="px-4 py-3 border-r border-slate-100 font-black text-slate-900 whitespace-nowrap">
                               {formatGs(b.totalPrice)}
                             </td>
 
-                            {/* 8. Fecha Servicio */}
+                            {/* 6. Fecha Servicio */}
                             <td className="px-4 py-3 border-r border-slate-100 font-bold text-slate-900 whitespace-nowrap">
                               {b.serviceDate}
                             </td>
 
-                            {/* 9. Hora */}
+                            {/* 7. Hora */}
                             <td className="px-3 py-3 border-r border-slate-100 text-center font-semibold text-slate-700 whitespace-nowrap">
                               {b.serviceTime} hs
                             </td>
 
-                            {/* 10. Dirección */}
+                            {/* 8. Dirección */}
                             <td className="px-4 py-3 border-r border-slate-100 text-slate-700">
                               <p className="line-clamp-2 max-w-[240px]" title={b.address}>
                                 {b.address}
                               </p>
                             </td>
 
-                            {/* 11. Ubicación Maps */}
+                            {/* 9. Ubicación Maps */}
                             <td className="px-3 py-3 border-r border-slate-100 text-center whitespace-nowrap">
                               <a
                                 href={mapsQueryUrl}
@@ -1867,12 +1851,12 @@ export default function AdminDashboardPage() {
                               </a>
                             </td>
 
-                            {/* 12. Frecuencia */}
+                            {/* 10. Frecuencia */}
                             <td className="px-3 py-3 border-r border-slate-100 text-center whitespace-nowrap">
                               {formatFrequency()}
                             </td>
 
-                            {/* 13. Empleado Asignado (Selector Apple Style con Punto de Color) */}
+                            {/* 11. Empleado Asignado (Selector Apple Style con Punto de Color) */}
                             <td className="px-3 py-2.5 border-r border-slate-100 min-w-[175px]">
                               {(() => {
                                 const empColor = getEmployeeColor(b.assignedCleaner);
@@ -1919,7 +1903,7 @@ export default function AdminDashboardPage() {
                               })()}
                             </td>
 
-                            {/* 14. Estatus (Selector Apple Style con Indicador LED) */}
+                            {/* 12. Estatus (Selector Apple Style con Indicador LED) */}
                             <td className="px-3 py-2.5 border-r border-slate-100 text-center whitespace-nowrap min-w-[130px]">
                               {(() => {
                                 const st = getStatusBadge(b.status);
@@ -1948,35 +1932,6 @@ export default function AdminDashboardPage() {
                                   </div>
                                 );
                               })()}
-                            </td>
-
-                            {/* 15. Teléfono del Empleado */}
-                            <td className="px-4 py-3 border-r border-slate-100 text-slate-700 whitespace-nowrap">
-                              {assignedEmp ? (
-                                <a
-                                  href={generateWhatsAppEmployeeUrl(b, assignedEmp)}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="text-emerald-700 hover:text-emerald-800 hover:underline flex items-center gap-1 font-medium"
-                                  title="Enviar orden con ubicación al empleado por WhatsApp"
-                                >
-                                  <MessageSquare className="w-3 h-3 text-emerald-600" />
-                                  <span>{assignedEmp.phone}</span>
-                                </a>
-                              ) : (
-                                <span className="text-slate-400">-</span>
-                              )}
-                            </td>
-
-                            {/* 16. E-mail Empleados */}
-                            <td className="px-4 py-3 border-r border-slate-100 text-slate-600 truncate max-w-[140px]">
-                              {assignedEmp?.email ? (
-                                <a href={`mailto:${assignedEmp.email}`} className="hover:text-slate-900 hover:underline">
-                                  {assignedEmp.email}
-                                </a>
-                              ) : (
-                                <span className="text-slate-400">-</span>
-                              )}
                             </td>
 
                             {/* 17. Enviar Mensaje WhatsApp */}
