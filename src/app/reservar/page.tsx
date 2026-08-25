@@ -82,6 +82,40 @@ function BookingContent() {
   const [completedBooking, setCompletedBooking] = useState<any | null>(null);
   const [hasSavedPhone, setHasSavedPhone] = useState(false);
 
+  // Estados de Gate de Autenticación Requerida
+  const [gateEmail, setGateEmail] = useState("");
+  const [gatePassword, setGatePassword] = useState("");
+  const [isGateLoading, setIsGateLoading] = useState(false);
+  const [gateError, setGateError] = useState<string | null>(null);
+
+  const handleGateLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setGateError(null);
+
+    if (!gateEmail || !gatePassword) {
+      setGateError("Ingresa tu correo y contraseña.");
+      return;
+    }
+
+    setIsGateLoading(true);
+
+    try {
+      const res = await signIn("credentials", {
+        redirect: false,
+        email: gateEmail.trim().toLowerCase(),
+        password: gatePassword,
+      });
+
+      if (res?.error) {
+        setGateError("Correo o contraseña incorrectos. Si no tienes cuenta, puedes registrarte abajo.");
+      }
+    } catch (err: any) {
+      setGateError(err.message || "Error al iniciar sesión.");
+    } finally {
+      setIsGateLoading(false);
+    }
+  };
+
   // Cargar parámetros de URL iniciales
   useEffect(() => {
     const hoursParam = searchParams.get("hours");
@@ -366,6 +400,132 @@ function BookingContent() {
     }
   };
 
+  // 1. Pantalla de Carga de Sesión
+  if (status === "loading") {
+    return (
+      <div className="bg-neutral-50 min-h-[80vh] flex flex-col items-center justify-center py-20 px-4">
+        <div className="w-10 h-10 border-3 border-electric-600 border-t-transparent rounded-full animate-spin mb-4" />
+        <p className="text-xs font-semibold text-neutral-600">Verificando sesión...</p>
+      </div>
+    );
+  }
+
+  // 2. Puerta de Autenticación Obligatoria (Si o Sí debe iniciar sesión)
+  if (status === "unauthenticated" || !session?.user) {
+    return (
+      <div className="min-h-[85vh] bg-gradient-to-b from-neutral-50 via-white to-electric-50/20 flex flex-col justify-center py-12 px-4 sm:px-6 lg:px-8">
+        <div className="sm:mx-auto sm:w-full sm:max-w-md text-center px-4">
+          <Link href="/" className="inline-block mb-4 transition-transform hover:scale-105">
+            <div className="relative h-11 w-48 mx-auto">
+              <Image
+                src="/images/logo.jpeg"
+                alt="Aquí Estamos Limpieza"
+                fill
+                className="object-contain"
+                priority
+              />
+            </div>
+          </Link>
+          <div className="inline-flex items-center justify-center w-12 h-12 rounded-2xl bg-electric-100 text-electric-700 mb-3 shadow-xs">
+            <Lock className="w-6 h-6" />
+          </div>
+          <h1 className="text-2xl sm:text-3xl font-extrabold text-neutral-900 tracking-tight">
+            Inicia Sesión para Reservar
+          </h1>
+          <p className="mt-1.5 text-xs text-neutral-500 max-w-sm mx-auto">
+            Para garantizar la seguridad de tus servicios y autocompletar tus datos, ingresa a tu cuenta.
+          </p>
+        </div>
+
+        <div className="mt-6 sm:mx-auto sm:w-full sm:max-w-md px-4 sm:px-0">
+          <div className="bg-white/95 backdrop-blur-xl py-7 px-6 sm:px-8 rounded-3xl border border-neutral-200 shadow-xl shadow-neutral-200/50 space-y-5">
+            {gateError && (
+              <div className="p-3.5 bg-rose-50 border border-rose-200 text-rose-700 text-xs rounded-2xl flex items-center gap-2">
+                <AlertCircle className="w-4 h-4 shrink-0 text-rose-500" />
+                <span>{gateError}</span>
+              </div>
+            )}
+
+            {/* Google 1-Click */}
+            <div className="space-y-3">
+              <div className="flex justify-center">
+                <GoogleSignInButton
+                  callbackUrl="/reservar"
+                  onError={(err) => setGateError(err)}
+                  text="Continuar con Google y Reservar"
+                />
+              </div>
+
+              <div className="relative flex items-center justify-center">
+                <div className="border-t border-neutral-200 w-full" />
+                <span className="bg-white px-3 text-[11px] font-bold text-neutral-400 uppercase tracking-wider">
+                  o ingresa con tu correo
+                </span>
+                <div className="border-t border-neutral-200 w-full" />
+              </div>
+            </div>
+
+            {/* Formulario de Login */}
+            <form onSubmit={handleGateLogin} className="space-y-3.5">
+              <div>
+                <label className="block text-xs font-medium text-neutral-700 mb-1">Correo Electrónico</label>
+                <div className="relative">
+                  <Mail className="w-4 h-4 text-neutral-400 absolute left-3 top-3" />
+                  <input
+                    type="email"
+                    required
+                    value={gateEmail}
+                    onChange={(e) => setGateEmail(e.target.value)}
+                    placeholder="tu@correo.com"
+                    className="w-full pl-9 pr-3 py-2 rounded-xl border border-neutral-300 text-xs focus:ring-1 focus:ring-neutral-900 focus:border-neutral-900 focus:outline-none"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <div className="flex items-center justify-between mb-1">
+                  <label className="block text-xs font-medium text-neutral-700">Contraseña</label>
+                  <Link href="/recuperar-password" className="text-[11px] text-electric-600 hover:underline">
+                    ¿Olvidaste tu contraseña?
+                  </Link>
+                </div>
+                <div className="relative">
+                  <Lock className="w-4 h-4 text-neutral-400 absolute left-3 top-3" />
+                  <input
+                    type="password"
+                    required
+                    value={gatePassword}
+                    onChange={(e) => setGatePassword(e.target.value)}
+                    placeholder="••••••••"
+                    className="w-full pl-9 pr-3 py-2 rounded-xl border border-neutral-300 text-xs focus:ring-1 focus:ring-neutral-900 focus:border-neutral-900 focus:outline-none"
+                  />
+                </div>
+              </div>
+
+              <button
+                type="submit"
+                disabled={isGateLoading}
+                className="w-full py-3 bg-electric-600 hover:bg-electric-700 text-white font-bold text-xs rounded-xl shadow-electric-sm transition-all active:scale-[0.99] disabled:opacity-50 mt-1"
+              >
+                {isGateLoading ? "Iniciando sesión..." : "Iniciar Sesión y Continuar a la Reserva"}
+              </button>
+            </form>
+
+            <div className="text-center text-xs text-neutral-500 pt-3 border-t border-neutral-100">
+              ¿Aún no tienes cuenta?{" "}
+              <Link
+                href="/register?callbackUrl=/reservar"
+                className="font-bold text-electric-600 hover:text-electric-700 hover:underline"
+              >
+                Crear una cuenta nueva
+              </Link>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="bg-neutral-50 min-h-screen py-12 border-b border-neutral-200">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -597,28 +757,11 @@ function BookingContent() {
                     <span className="font-mono text-xs font-bold text-electric-600">03</span>
                     <h3 className="text-sm font-bold text-neutral-900">Datos de Contacto y Ubicación</h3>
                   </div>
-                  {session?.user ? (
-                    <span className="text-[11px] font-medium text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
-                      ✓ Sesión: {session.user.name?.split(" ")[0]}
-                    </span>
-                  ) : (
-                    <Link href="/login?callbackUrl=/reservar" className="text-xs text-electric-600 hover:underline font-semibold">
-                      ¿Ya tienes cuenta? Iniciar sesión
-                    </Link>
-                  )}
+                  <span className="text-[11px] font-semibold text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-200 flex items-center gap-1.5 shadow-2xs">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                    <span>Cuenta: {session?.user?.name || session?.user?.email}</span>
+                  </span>
                 </div>
-
-                {/* Acceso Social Opcional si no está autenticado */}
-                {!session?.user && (
-                  <div className="p-3.5 bg-neutral-50 rounded-xl border border-neutral-200">
-                    <p className="text-xs font-semibold text-neutral-800 mb-2">
-                      Acceso rápido con 1 clic (opcional):
-                    </p>
-                    <div className="flex justify-center">
-                      <GoogleSignInButton callbackUrl="/reservar" text="Continuar con Google" />
-                    </div>
-                  </div>
-                )}
 
                 {/* Datos de Contacto */}
                 <div className="space-y-4">
