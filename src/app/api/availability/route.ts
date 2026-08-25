@@ -12,23 +12,41 @@ export async function GET(req: Request) {
     // Si se pasa una fecha puntual, devolver el análisis detallado de esa fecha
     if (date) {
       const check = await checkDateAvailability(date);
-      return NextResponse.json({ success: true, check });
+      return NextResponse.json(
+        { success: true, check },
+        {
+          headers: {
+            'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0',
+            Pragma: 'no-cache',
+            Expires: '0',
+          },
+        }
+      );
     }
 
     // Si no se especifica fecha, devolver las reglas generales de disponibilidad
     const settings = getAvailabilitySettings();
-    return NextResponse.json({
-      success: true,
-      settings: {
-        workingDays: settings.workingDays,
-        timeSlots: settings.timeSlots.filter(s => s.enabled),
-        blockedDates: settings.blockedDates.filter(b => b.enabled),
-        allowSundayBookings: settings.allowSundayBookings,
-        allowHolidayBookings: settings.allowHolidayBookings,
-        minAdvanceHours: settings.minAdvanceHours,
-        maxAdvanceDays: settings.maxAdvanceDays,
+    return NextResponse.json(
+      {
+        success: true,
+        settings: {
+          workingDays: settings.workingDays,
+          timeSlots: settings.timeSlots.filter((s) => s.enabled),
+          blockedDates: settings.blockedDates.filter((b) => b.enabled),
+          allowSundayBookings: settings.allowSundayBookings,
+          allowHolidayBookings: settings.allowHolidayBookings,
+          minAdvanceHours: settings.minAdvanceHours,
+          maxAdvanceDays: settings.maxAdvanceDays,
+        },
+      },
+      {
+        headers: {
+          'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0',
+          Pragma: 'no-cache',
+          Expires: '0',
+        },
       }
-    });
+    );
   } catch (error: any) {
     console.error('Error in availability API:', error);
     return NextResponse.json(

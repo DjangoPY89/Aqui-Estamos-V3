@@ -36,13 +36,35 @@ export default function BookingCalendarPicker({
   const initialDate = selectedDate ? new Date(selectedDate + 'T00:00:00') : new Date();
   const [currentYear, setCurrentYear] = useState(initialDate.getFullYear());
   const [currentMonth, setCurrentMonth] = useState(initialDate.getMonth());
-  const [localSettings, setLocalSettings] = useState<AvailabilitySettings | null>(availabilitySettings || null);
+  const [localSettings, setLocalSettings] = useState<AvailabilitySettings | null>(() => {
+    if (availabilitySettings) return availabilitySettings;
+    if (typeof window !== 'undefined') {
+      try {
+        const local = localStorage.getItem('aquiestamos_admin_availability_settings');
+        if (local) return JSON.parse(local);
+      } catch (e) {}
+    }
+    return null;
+  });
   const [isLoadingSettings, setIsLoadingSettings] = useState(!availabilitySettings);
 
-  // Cargar configuraciones si no vienen por props (con respaldo de localStorage)
+  // Sincronizar configuraciones en tiempo real
   useEffect(() => {
     if (availabilitySettings) {
-      setLocalSettings(availabilitySettings);
+      let mergedSettings = availabilitySettings;
+      try {
+        const local = localStorage.getItem('aquiestamos_admin_availability_settings');
+        if (local) {
+          const parsed = JSON.parse(local);
+          if (parsed?.blockedDates && Array.isArray(parsed.blockedDates)) {
+            const map = new Map<string, any>();
+            parsed.blockedDates.forEach((b: any) => map.set(b.id, b));
+            (mergedSettings.blockedDates || []).forEach((b: any) => map.set(b.id, b));
+            mergedSettings = { ...mergedSettings, blockedDates: Array.from(map.values()) };
+          }
+        }
+      } catch (e) {}
+      setLocalSettings(mergedSettings);
       setIsLoadingSettings(false);
       return;
     }

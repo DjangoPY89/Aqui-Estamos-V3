@@ -147,15 +147,43 @@ function BookingContent() {
     // No preseleccionar fecha para exigir que el cliente elija activamente
   }, [searchParams]);
 
-  // Cargar configuraciones de turnos y reglas de disponibilidad generales
+  // Cargar configuraciones de turnos y reglas de disponibilidad generales (con inicio instantáneo desde localStorage)
   useEffect(() => {
+    // 1. Carga instantánea desde localStorage si existe
+    try {
+      const local = localStorage.getItem("aquiestamos_admin_availability_settings");
+      if (local) {
+        const parsed = JSON.parse(local);
+        if (parsed) {
+          setAvailabilitySettings(parsed);
+          if (Array.isArray(parsed.timeSlots)) {
+            setConfiguredSlots(parsed.timeSlots.filter((s: any) => s.enabled));
+          }
+        }
+      }
+    } catch (e) {}
+
+    // 2. Sincronización en vivo con API
     fetch(`/api/availability?t=${Date.now()}`, { cache: "no-store" })
       .then((res) => res.json())
       .then((data) => {
         if (data?.settings) {
-          setAvailabilitySettings(data.settings);
-          if (Array.isArray(data.settings.timeSlots)) {
-            setConfiguredSlots(data.settings.timeSlots);
+          let finalSettings = data.settings;
+          try {
+            const local = localStorage.getItem("aquiestamos_admin_availability_settings");
+            if (local) {
+              const parsed = JSON.parse(local);
+              if (parsed?.blockedDates && Array.isArray(parsed.blockedDates)) {
+                const map = new Map<string, any>();
+                parsed.blockedDates.forEach((b: any) => map.set(b.id, b));
+                (finalSettings.blockedDates || []).forEach((b: any) => map.set(b.id, b));
+                finalSettings = { ...finalSettings, blockedDates: Array.from(map.values()) };
+              }
+            }
+          } catch (e) {}
+          setAvailabilitySettings(finalSettings);
+          if (Array.isArray(finalSettings.timeSlots)) {
+            setConfiguredSlots(finalSettings.timeSlots);
           }
         }
       })
