@@ -818,12 +818,12 @@ export default function AdminDashboardPage() {
       const q = searchTerm.toLowerCase().trim();
       const matchesSearch =
         !q ||
-        b.customerName.toLowerCase().includes(q) ||
-        b.bookingNumber.toLowerCase().includes(q) ||
-        b.customerEmail.toLowerCase().includes(q) ||
-        b.customerPhone.includes(q) ||
+        (b.customerName && b.customerName.toLowerCase().includes(q)) ||
+        (b.bookingNumber && b.bookingNumber.toLowerCase().includes(q)) ||
+        (b.customerEmail && b.customerEmail.toLowerCase().includes(q)) ||
+        (b.customerPhone && b.customerPhone.includes(q)) ||
         (b.assignedCleaner && b.assignedCleaner.toLowerCase().includes(q)) ||
-        b.address.toLowerCase().includes(q);
+        (b.address && b.address.toLowerCase().includes(q));
 
       return matchesStatus && matchesSearch;
     });
@@ -1673,14 +1673,37 @@ export default function AdminDashboardPage() {
                     </button>
                   </div>
 
-                  {/* Filtro por Estado y Opciones */}
+                  {/* Buscador de Clientes, Filtro por Estado y Opciones */}
                   <div className="flex flex-wrap items-center gap-2.5 w-full lg:w-auto">
-                    <div className="flex items-center gap-2">
+                    {/* Buscador de Clientes */}
+                    <div className="relative min-w-[220px] sm:min-w-[260px] flex-1 sm:flex-initial">
+                      <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+                      <input
+                        type="text"
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        placeholder="Buscar cliente, teléfono, dir..."
+                        className="w-full pl-9 pr-8 py-1.5 bg-white border border-slate-200 rounded-full text-xs text-slate-900 font-medium focus:outline-none focus:ring-2 focus:ring-electric-500 shadow-2xs placeholder:text-slate-400"
+                      />
+                      {searchTerm && (
+                        <button
+                          type="button"
+                          onClick={() => setSearchTerm("")}
+                          className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-0.5 rounded-full hover:bg-slate-100"
+                          title="Borrar búsqueda"
+                        >
+                          <X className="w-3 h-3" />
+                        </button>
+                      )}
+                    </div>
+
+                    {/* Selector de Estado */}
+                    <div className="flex items-center gap-1.5">
                       <Filter className="w-3.5 h-3.5 text-slate-400" />
                       <select
                         value={statusFilter}
                         onChange={(e) => setStatusFilter(e.target.value)}
-                        className="px-3 py-1.5 bg-white border border-slate-200 rounded-xl text-xs text-slate-700 font-semibold focus:outline-none focus:ring-2 focus:ring-electric-600 shadow-xs"
+                        className="px-3 py-1.5 bg-white border border-slate-200 rounded-full text-xs text-slate-700 font-semibold focus:outline-none focus:ring-2 focus:ring-electric-600 shadow-2xs"
                       >
                         <option value="ALL">Todos los estados</option>
                         <option value="PENDING">Pendientes</option>
@@ -1694,7 +1717,7 @@ export default function AdminDashboardPage() {
                     <button
                       type="button"
                       onClick={() => setShowCharts(!showCharts)}
-                      className="px-3 py-1.5 bg-white hover:bg-slate-50 text-slate-700 font-bold text-xs rounded-xl border border-slate-200 shadow-xs transition-all flex items-center gap-1.5"
+                      className="px-3 py-1.5 bg-white hover:bg-slate-50 text-slate-700 font-bold text-xs rounded-full border border-slate-200 shadow-2xs transition-all flex items-center gap-1.5"
                     >
                       <BarChart3 className="w-3.5 h-3.5 text-slate-500" />
                       <span>{showCharts ? "Ocultar Gráficos" : "Ver Gráficos"}</span>
