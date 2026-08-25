@@ -569,7 +569,7 @@ export default function AdminDashboardPage() {
     const mapsLink = b.latitude && b.longitude
       ? `https://www.google.com/maps?q=${b.latitude},${b.longitude}`
       : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(b.address)}`;
-    const msg = `¡Hola ${emp.name}! 👋 Tienes un nuevo servicio de limpieza asignado:\n\n📅 *Fecha:* ${b.serviceDate}\n⏰ *Hora:* ${b.serviceTime} hs (${b.serviceHours} Horas)\n👤 *Cliente:* ${b.customerName} (Tel: ${b.customerPhone})\n📍 *Dirección:* ${b.address}\n🗺️ *Ubicación en Google Maps:* ${mapsLink}\n✨ *Extras:* ${extrasStr}\n📝 *Notas:* ${b.notes || "Ninguna"}`;
+    const msg = `¡Hola ${emp.name}! 👋 Tienes un nuevo servicio de limpieza asignado:\n\n📅 *Fecha:* ${b.serviceDate}\n⏰ *Hora:* ${b.serviceTime} hs (${b.serviceHours} Horas)\n👤 *Cliente:* ${b.customerName} (Tel: ${b.customerPhone})\n📍 *Dirección:* ${b.address}\n🗺️ *Ubicación en Google Maps:* ${mapsLink}\n✨ *Extras:* ${extrasStr}\n📝 *Notas:* ${b.notes || "Ninguna"}\n\n❓ *¿Confirmas tu asistencia para esta cita?* Por favor responde *SÍ CONFIRMO* para asegurar el servicio.`;
     return `https://wa.me/${phone}?text=${encodeURIComponent(msg)}`;
   };
 
