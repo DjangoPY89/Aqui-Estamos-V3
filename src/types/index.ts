@@ -103,3 +103,71 @@ export interface PricingBreakdown {
   finalPrice: number;
   hoursTitle: string;
 }
+
+// -------------------------------------------------------------
+// Tipos para Gestión de Disponibilidad y Capacidad de Reservas
+// -------------------------------------------------------------
+
+export type DayOfWeek = 'monday' | 'tuesday' | 'wednesday' | 'thursday' | 'friday' | 'saturday' | 'sunday';
+
+export interface DaySchedule {
+  enabled: boolean;
+  name: string;
+  startTime: string; // ej: "07:00"
+  endTime: string;   // ej: "18:00"
+}
+
+export interface TimeSlotConfig {
+  id: string;
+  time: string; // "07:00", "08:00", "13:00", etc.
+  label: string; // "Turno Mañana (08:00 AM)"
+  period: 'morning' | 'afternoon' | 'evening';
+  enabled: boolean;
+  maxCapacityPerSlot?: number; // límite opcional por turno específico
+}
+
+export interface BlockedDate {
+  id: string;
+  date: string; // YYYY-MM-DD
+  reason: string; // "Año Nuevo", "Feriado Nacional", "Mantenimiento Operativo"
+  isHoliday: boolean;
+  enabled: boolean;
+}
+
+export type CapacityMode = 'AUTO_BY_EMPLOYEES' | 'MANUAL_LIMIT';
+
+export interface AvailabilitySettings {
+  workingDays: Record<DayOfWeek, DaySchedule>;
+  timeSlots: TimeSlotConfig[];
+  capacityMode: CapacityMode;
+  maxBookingsPerEmployeePerDay: number; // Por defecto: 1 o 2 turnos por empleado
+  manualDailyMaxBookings: number; // Por si se usa límite manual
+  blockedDates: BlockedDate[];
+  allowSundayBookings: boolean;
+  allowHolidayBookings: boolean;
+  minAdvanceHours: number; // Mínimo de horas previas para reservar (ej: 12h)
+  maxAdvanceDays: number; // Máximo de días hacia adelante para reservar (ej: 60 días)
+  updatedAt: string;
+}
+
+export interface DateAvailabilityCheck {
+  date: string;
+  isOpen: boolean;
+  isSunday: boolean;
+  isHoliday: boolean;
+  holidayReason?: string;
+  closedReason?: string;
+  totalActiveEmployees: number;
+  maxCapacity: number;
+  currentBookingsCount: number;
+  availableCapacity: number;
+  isFullyBooked: boolean;
+  slots: {
+    time: string;
+    label: string;
+    enabled: boolean;
+    currentBookings: number;
+    maxCapacity: number;
+    available: boolean;
+  }[];
+}

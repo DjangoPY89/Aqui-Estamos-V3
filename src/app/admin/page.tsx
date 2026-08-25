@@ -60,6 +60,7 @@ import {
 } from "lucide-react";
 import { Booking, CorporateLead, Employee, User } from "@/types";
 import { formatGs } from "@/lib/pricing";
+import AvailabilityManager from "@/components/admin/AvailabilityManager";
 
 interface AdminUser extends User {
   totalBookings: number;
@@ -85,7 +86,7 @@ export default function AdminDashboardPage() {
   const [users, setUsers] = useState<AdminUser[]>([]);
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<"BOOKINGS" | "EMPLOYEES" | "CUSTOMERS" | "LEADS" | "ANALYTICS" | "CALENDAR">("BOOKINGS");
+  const [activeTab, setActiveTab] = useState<"BOOKINGS" | "EMPLOYEES" | "CUSTOMERS" | "LEADS" | "ANALYTICS" | "CALENDAR" | "AVAILABILITY">("BOOKINGS");
   const [quickViewFilter, setQuickViewFilter] = useState<"ALL" | "TODAY" | "THIS_WEEK" | "UNASSIGNED" | "PENDING" | "CONFIRMED" | "COMPLETED">("ALL");
   const [statusFilter, setStatusFilter] = useState("ALL");
   const [searchTerm, setSearchTerm] = useState("");
@@ -1341,6 +1342,23 @@ export default function AdminDashboardPage() {
                   En Vivo
                 </span>
               </button>
+
+              <button
+                onClick={() => setActiveTab("AVAILABILITY")}
+                className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all ${
+                  activeTab === "AVAILABILITY"
+                    ? "bg-electric-50 text-electric-700 shadow-xs"
+                    : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
+                }`}
+              >
+                <div className="flex items-center gap-2.5">
+                  <Clock className={`w-4 h-4 ${activeTab === "AVAILABILITY" ? "text-electric-600" : "text-slate-400"}`} />
+                  <span>Disponibilidad & Turnos</span>
+                </div>
+                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-purple-50 text-purple-700 border border-purple-200">
+                  Capacidad
+                </span>
+              </button>
             </div>
 
             {/* Accesos Rápidos Operativos */}
@@ -1420,6 +1438,7 @@ export default function AdminDashboardPage() {
                   {activeTab === "CUSTOMERS" && "Directorio de Clientes"}
                   {activeTab === "LEADS" && "Solicitudes Empresas B2B"}
                   {activeTab === "CALENDAR" && "Google Calendar en Vivo"}
+                  {activeTab === "AVAILABILITY" && "Disponibilidad & Capacidad de Turnos"}
                 </h1>
                 <span className="px-2.5 py-0.5 rounded-full bg-slate-100 text-slate-600 text-[11px] font-bold">
                   En Vivo
@@ -2789,6 +2808,16 @@ export default function AdminDashboardPage() {
                 </div>
               );
             })()}
+
+            {/* ======================================================== */}
+            {/* PESTAÑA: DISPONIBILIDAD, TURNOS & CAPACIDAD */}
+            {/* ======================================================== */}
+            {activeTab === "AVAILABILITY" && (
+              <AvailabilityManager
+                employees={employees}
+                onNotice={(msg) => setActionNotice(msg)}
+              />
+            )}
           </div>
         </main>
       </div>

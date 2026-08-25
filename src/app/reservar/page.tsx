@@ -28,7 +28,7 @@ import {
   Compass
 } from "lucide-react";
 import { AVAILABLE_EXTRAS, calculatePricing, formatGs, SERVICE_PACKAGES } from "@/lib/pricing";
-import { FrequencyType, PaymentMethod, ServiceHour } from "@/types";
+import { FrequencyType, PaymentMethod, ServiceHour, TimeSlotConfig, DateAvailabilityCheck } from "@/types";
 import GoogleSignInButton from "@/components/auth/GoogleSignInButton";
 import GoogleMapPicker from "@/components/booking/GoogleMapPicker";
 
@@ -75,6 +75,15 @@ function BookingContent() {
   const [serviceTime, setServiceTime] = useState("08:00");
   const [notes, setNotes] = useState("");
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("cash");
+
+  // Estados de Disponibilidad en Vivo
+  const [configuredSlots, setConfiguredSlots] = useState<TimeSlotConfig[]>([
+    { id: "slot_0800", time: "08:00", label: "Mañana (08:00 AM)", period: "morning", enabled: true },
+    { id: "slot_1300", time: "13:00", label: "Tarde (13:00 PM)", period: "afternoon", enabled: true },
+  ]);
+  const [availabilityCheck, setAvailabilityCheck] = useState<DateAvailabilityCheck | null>(null);
+  const [isCheckingDate, setIsCheckingDate] = useState(false);
+  const [dateAvailabilityNotice, setDateAvailabilityNotice] = useState<string | null>(null);
 
   // Estado de envío y confirmación
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -133,6 +142,65 @@ function BookingContent() {
 
     // No preseleccionar fecha para exigir que el cliente elija activamente
   }, [searchParams]);
+
+  // Cargar configuraciones de turnos y reglas de disponibilidad generales
+  useEffect(() => {
+    fetch("/api/availability")
+      .then((res) => res.json())
+      .then((data) => {
+        if (data?.settings?.timeSlots && Array.isArray(data.settings.timeSlots)) {
+          setConfiguredSlots(data.settings.timeSlots);
+        }
+      })
+      .catch((err) => console.error("Error loading availability settings:", err));
+  }, []);
+
+  // Validar disponibilidad de fecha cuando el cliente selecciona o modifica el día
+  useEffect(() => {
+    if (!serviceDate) {
+      setAvailabilityCheck(null);
+      setDateAvailabilityNotice(null);
+      return;
+    }
+
+    let isMounted = true;
+    const checkDate = async () => {
+      setIsCheckingDate(true);
+      try {
+        const res = await fetch(`/api/availability?date=${serviceDate}`);
+        const data = await res.json();
+        if (!isMounted) return;
+
+        if (data.check) {
+          setAvailabilityCheck(data.check);
+          if (!data.check.isOpen) {
+            setDateAvailabilityNotice(data.check.closedReason || "Fecha no disponible para reservas.");
+          } else {
+            setDateAvailabilityNotice(null);
+            // Si el turno actualmente elegido no está habilitado o disponible en esta fecha, elegir el primero disponible
+            if (Array.isArray(data.check.slots) && data.check.slots.length > 0) {
+              const currentSlot = data.check.slots.find((s: any) => s.time === serviceTime);
+              if (!currentSlot || !currentSlot.available) {
+                const firstAvailable = data.check.slots.find((s: any) => s.available);
+                if (firstAvailable) {
+                  setServiceTime(firstAvailable.time);
+                }
+              }
+            }
+          }
+        }
+      } catch (err) {
+        console.error("Error verificando disponibilidad de fecha:", err);
+      } finally {
+        if (isMounted) setIsCheckingDate(false);
+      }
+    };
+
+    checkDate();
+    return () => {
+      isMounted = false;
+    };
+  }, [serviceDate]);
 
   // Cargar perfil y direcciones guardadas del cliente
   useEffect(() => {
@@ -330,6 +398,10 @@ function BookingContent() {
     }
     if (!serviceDate) {
       setErrorMsg("Por favor selecciona una fecha para el servicio.");
+      return;
+    }
+    if (availabilityCheck && !availabilityCheck.isOpen) {
+      setErrorMsg(availabilityCheck.closedReason || "La fecha seleccionada no se encuentra disponible para reservas.");
       return;
     }
 
@@ -1129,16 +1201,26 @@ function BookingContent() {
                   <h3 className="text-sm font-bold text-neutral-900">Fecha, Turno y Pago</h3>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  {/* Selector de Fecha con Validación de Capacidad */}
                   <div>
                     <label className="block text-xs font-bold text-neutral-800 mb-1 flex items-center justify-between">
                       <span>Fecha del Servicio *</span>
-                      {!serviceDate && (
+                      {!serviceDate ? (
                         <span className="text-[10px] font-bold text-amber-600 bg-amber-50 px-2 py-0.5 rounded-md border border-amber-200">
                           Selección Obligatoria
                         </span>
+                      ) : availabilityCheck && !availabilityCheck.isOpen ? (
+                        <span className="text-[10px] font-bold text-rose-600 bg-rose-50 px-2 py-0.5 rounded-md border border-rose-200">
+                          No Disponible
+                        </span>
+                      ) : (
+                        <span className="text-[10px] font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200">
+                          Disponible
+                        </span>
                       )}
                     </label>
+                    
                     <input
                       type="date"
                       required
@@ -1148,9 +1230,43 @@ function BookingContent() {
                       className={`w-full px-3 py-2.5 rounded-xl border text-xs focus:ring-2 focus:ring-electric-600 focus:outline-none transition-all ${
                         !serviceDate
                           ? "border-amber-300 bg-amber-50/20 text-neutral-600 font-medium"
+                          : availabilityCheck && !availabilityCheck.isOpen
+                          ? "border-rose-300 bg-rose-50/30 text-rose-900 font-bold"
                           : "border-emerald-300 bg-emerald-50/20 text-neutral-900 font-bold"
                       }`}
                     />
+
+                    {/* Feedback en vivo de la fecha */}
+                    {isCheckingDate && (
+                      <p className="text-[11px] text-neutral-500 font-medium mt-1.5 flex items-center gap-1.5">
+                        <span className="w-2.5 h-2.5 border-2 border-electric-600 border-t-transparent rounded-full animate-spin" />
+                        <span>Verificando disponibilidad de la cuadrilla...</span>
+                      </p>
+                    )}
+
+                    {!isCheckingDate && dateAvailabilityNotice && (
+                      <div className="mt-2 p-2.5 bg-rose-50 border border-rose-200 text-rose-800 text-[11px] rounded-xl flex items-start gap-2 animate-in fade-in">
+                        <AlertCircle className="w-4 h-4 text-rose-600 shrink-0 mt-0.5" />
+                        <div>
+                          <p className="font-bold">Fecha no disponible</p>
+                          <p className="text-rose-700">{dateAvailabilityNotice}</p>
+                          <p className="text-[10px] text-rose-600 font-medium mt-0.5">Por favor selecciona otro día en el calendario.</p>
+                        </div>
+                      </div>
+                    )}
+
+                    {!isCheckingDate && !dateAvailabilityNotice && serviceDate && availabilityCheck?.isOpen && (
+                      <div className="mt-2 p-2 bg-emerald-50 border border-emerald-200 text-emerald-800 text-[11px] rounded-xl flex items-center justify-between animate-in fade-in">
+                        <div className="flex items-center gap-1.5 font-bold">
+                          <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                          <span>¡Fecha Confirmada!</span>
+                        </div>
+                        <span className="text-[10px] font-bold text-emerald-700 bg-emerald-100/70 px-2 py-0.5 rounded-md">
+                          {availabilityCheck.availableCapacity} {availabilityCheck.availableCapacity === 1 ? "cupo disponible" : "cupos disponibles"}
+                        </span>
+                      </div>
+                    )}
+
                     {!serviceDate && (
                       <p className="text-[11px] text-amber-700 font-medium mt-1 flex items-center gap-1">
                         <AlertCircle className="w-3 h-3 text-amber-600 shrink-0" />
@@ -1159,33 +1275,49 @@ function BookingContent() {
                     )}
                   </div>
 
+                  {/* Selector Dinámico de Turno de Llegada */}
                   <div>
-                    <label className="block text-xs font-medium text-neutral-700 mb-1">
-                      Turno de Llegada *
+                    <label className="block text-xs font-bold text-neutral-800 mb-1 flex items-center justify-between">
+                      <span>Turno de Llegada *</span>
+                      <span className="text-[10px] font-semibold text-neutral-500">
+                        Hora estimada de arribo
+                      </span>
                     </label>
-                    <div className="grid grid-cols-2 gap-2">
-                      <button
-                        type="button"
-                        onClick={() => setServiceTime("08:00")}
-                        className={`py-2 px-2 rounded-lg border text-center text-xs font-medium transition-all ${
-                          serviceTime === "08:00"
-                            ? "bg-electric-600 text-white border-electric-600 shadow-electric-sm font-semibold"
-                            : "bg-white text-neutral-700 border-neutral-200 hover:bg-neutral-50"
-                        }`}
-                      >
-                        Mañana (08:00 AM)
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setServiceTime("13:00")}
-                        className={`py-2 px-2 rounded-lg border text-center text-xs font-medium transition-all ${
-                          serviceTime === "13:00"
-                            ? "bg-electric-600 text-white border-electric-600 shadow-electric-sm font-semibold"
-                            : "bg-white text-neutral-700 border-neutral-200 hover:bg-neutral-50"
-                        }`}
-                      >
-                        Tarde (13:00 PM)
-                      </button>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                      {(availabilityCheck?.slots || configuredSlots.filter((s) => s.enabled)).map((slot: any) => {
+                        const isSlotAvailable = availabilityCheck ? slot.available !== false && availabilityCheck.isOpen : true;
+                        const isSelected = serviceTime === slot.time;
+
+                        return (
+                          <button
+                            key={slot.time || slot.id}
+                            type="button"
+                            disabled={!isSlotAvailable}
+                            onClick={() => setServiceTime(slot.time)}
+                            className={`py-2 px-2.5 rounded-xl border text-left text-xs transition-all flex items-center justify-between gap-1.5 ${
+                              isSelected && isSlotAvailable
+                                ? "bg-electric-600 text-white border-electric-600 shadow-electric-sm font-bold"
+                                : !isSlotAvailable
+                                ? "bg-neutral-100 text-neutral-400 border-neutral-200 cursor-not-allowed opacity-60"
+                                : "bg-white text-neutral-700 border-neutral-200 hover:bg-neutral-50 hover:border-neutral-300 font-semibold"
+                            }`}
+                          >
+                            <div className="min-w-0">
+                              <p className="truncate font-bold">{slot.label || `Turno ${slot.time}`}</p>
+                              <p className={`text-[10px] ${isSelected ? "text-white/80" : "text-neutral-500"}`}>
+                                Llegada: {slot.time} hs
+                              </p>
+                            </div>
+
+                            {!isSlotAvailable && (
+                              <span className="text-[9px] font-black uppercase tracking-wider px-1.5 py-0.5 bg-neutral-200 text-neutral-600 rounded">
+                                Lleno
+                              </span>
+                            )}
+                          </button>
+                        );
+                      })}
                     </div>
                   </div>
                 </div>

@@ -1,0 +1,35 @@
+import { NextResponse } from 'next/server';
+import { getAvailabilitySettings, saveAvailabilitySettings } from '@/lib/availability';
+
+export const dynamic = 'force-dynamic';
+
+export async function GET() {
+  try {
+    const settings = getAvailabilitySettings();
+    return NextResponse.json({ success: true, settings });
+  } catch (error: any) {
+    console.error('Error fetching availability settings:', error);
+    return NextResponse.json(
+      { error: error.message || 'Error al obtener configuraciones de disponibilidad' },
+      { status: 500 }
+    );
+  }
+}
+
+export async function POST(req: Request) {
+  try {
+    const body = await req.json();
+    const updated = saveAvailabilitySettings(body);
+    return NextResponse.json({
+      success: true,
+      message: 'Configuraciones de disponibilidad guardadas con éxito.',
+      settings: updated,
+    });
+  } catch (error: any) {
+    console.error('Error saving availability settings:', error);
+    return NextResponse.json(
+      { error: error.message || 'Error al guardar configuraciones de disponibilidad' },
+      { status: 500 }
+    );
+  }
+}
