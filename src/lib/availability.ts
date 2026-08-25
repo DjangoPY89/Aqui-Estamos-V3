@@ -10,9 +10,7 @@ import {
 import { getAllEmployees, getBookings } from '@/lib/db';
 import { 
   supabaseGetAllEmployees, 
-  supabaseGetAllBookings,
-  supabaseGetAvailabilitySettings,
-  supabaseSaveAvailabilitySettings 
+  supabaseGetAllBookings 
 } from '@/lib/supabase-db';
 
 const SETTINGS_FILE_PATH = path.join(process.cwd(), 'src', 'data', 'availability-settings.json');
@@ -113,24 +111,6 @@ function mergeBlockedDates(existingList: BlockedDate[] = [], defaultHolidays: Bl
   return Array.from(map.values());
 }
 
-export async function fetchGlobalAvailabilitySettings(): Promise<AvailabilitySettings> {
-  // 1. Intentar cargar desde Supabase en la nube (fuente central compartida entre Desktop y Móvil)
-  try {
-    const supabaseSettings = await supabaseGetAvailabilitySettings();
-    if (supabaseSettings && typeof supabaseSettings === 'object' && Array.isArray(supabaseSettings.blockedDates)) {
-      const merged: AvailabilitySettings = {
-        ...DEFAULT_AVAILABILITY_SETTINGS,
-        ...supabaseSettings,
-        blockedDates: mergeBlockedDates(supabaseSettings.blockedDates, DEFAULT_PARAGUAY_HOLIDAYS),
-      };
-      globalThis.__aquiestamos_availability_settings = merged;
-      return merged;
-    }
-  } catch (e) {}
-
-  // 2. Fallback a almacenamiento local / memoria
-  return getAvailabilitySettings();
-}
 
 export function getAvailabilitySettings(): AvailabilitySettings {
   if (globalThis.__aquiestamos_availability_settings) {
@@ -208,12 +188,7 @@ export function saveAvailabilitySettings(newSettings: Partial<AvailabilitySettin
     fs.writeFileSync(SETTINGS_FILE_PATH, JSON.stringify(updated, null, 2), 'utf-8');
   } catch (error) {}
 
-  // Sincronizar en la nube en Supabase para todos los celulares y navegadores móviles
-  try {
-    supabaseSaveAvailabilitySettings(updated).catch((e) => {
-      console.error('Background sync to Supabase error:', e);
-    });
-  } catch (e) {}
+
 
   return updated;
 }
@@ -229,7 +204,7 @@ export const DAY_OF_WEEK_MAP: Record<number, DayOfWeek> = {
 };
 
 export async function checkDateAvailability(dateStr: string): Promise<DateAvailabilityCheck> {
-  const settings = await fetchGlobalAvailabilitySettings();
+  const settings = getAvailabilitySettings();
   
   // 1. Obtener empleados activos
   let employees: any[] = [];
