@@ -259,59 +259,47 @@ function BookingContent() {
         return deletedList.includes(norm) || (idText ? deletedList.includes(idText) : false);
       };
 
-      const normalizeAddr = (str: string) => {
-        return (str || "")
-          .toLowerCase()
-          .normalize("NFD")
-          .replace(/[\u0300-\u036f]/g, "")
-          .replace(/[^a-z0-9]/gi, "")
-          .trim();
-      };
-
       const addressesList: SavedAddress[] = [];
 
-      // 1. Cargar desde LocalStorage (direcciones explícitamente guardadas por el usuario en portal/reserva)
+      // 1. Cargar desde LocalStorage
       try {
         const localData = localStorage.getItem("aquiestamos_saved_addresses");
         if (localData) {
           const parsed = JSON.parse(localData);
           if (Array.isArray(parsed)) {
             parsed.forEach((a: SavedAddress) => {
-              if (a.address && !isDeleted(a.address, a.id)) {
-                const norm = normalizeAddr(a.address);
-                const exists = addressesList.some(
-                  (item) => normalizeAddr(item.address) === norm || item.id === a.id
-                );
-                if (!exists) {
-                  addressesList.push(a);
-                }
+              if (!isDeleted(a.address, a.id)) {
+                addressesList.push(a);
               }
             });
           }
         }
       } catch (e) {}
 
-      // 2. Cargar datos del perfil del usuario (si está autenticado)
+      // 2. Cargar desde perfil de usuario si está logueado
       if (session?.user) {
         try {
-          const profRes = await fetch("/api/user/profile");
+          const [profRes, bkRes] = await Promise.all([
+            fetch("/api/user/profile"),
+            fetch("/api/bookings"),
+          ]);
 
+          let profilePhone = "";
           if (profRes.ok) {
             const profData = await profRes.json();
             if (profData?.user) {
               if (profData.user.phone) {
+                profilePhone = profData.user.phone;
                 setCustomerPhone(profData.user.phone);
                 setHasSavedPhone(true);
               }
               if (profData.user.name && !customerName) setCustomerName(profData.user.name);
-
               if (profData.user.address && !isDeleted(profData.user.address, "profile_default")) {
-                const norm = normalizeAddr(profData.user.address);
-                const exists = addressesList.some((a) => normalizeAddr(a.address) === norm);
+                const exists = addressesList.some(a => a.address.toLowerCase().trim() === profData.user.address.toLowerCase().trim());
                 if (!exists) {
                   addressesList.unshift({
                     id: "profile_default",
-                    label: "🏠 Mi Hogar / Principal",
+                    label: "🏠 Dirección Habitual",
                     address: profData.user.address,
                     latitude: -25.2831,
                     longitude: -57.5612,
@@ -321,16 +309,50 @@ function BookingContent() {
               }
             }
           }
+
+          if (bkRes.ok) {
+            const bkData = await bkRes.json();
+            if (bkData?.bookings && Array.isArray(bkData.bookings) && bkData.bookings.length > 0) {
+              if (!profilePhone && bkData.bookings[0]?.customerPhone) {
+                setCustomerPhone(bkData.bookings[0].customerPhone);
+                setHasSavedPhone(true);
+              }
+            }
+
+            const hasInitialized = localStorage.getItem("aquiestamos_addresses_initialized") === "true";
+            if (!hasInitialized && bkData?.bookings && Array.isArray(bkData.bookings)) {
+              bkData.bookings.forEach((b: any) => {
+                if (b.address && !isDeleted(b.address, `bk_${b.id}`)) {
+                  const exists = addressesList.some(a => a.address.toLowerCase().trim() === b.address.toLowerCase().trim());
+                  if (!exists) {
+                    addressesList.push({
+                      id: `bk_${b.id}`,
+                      label: `📍 ${b.address.split(",")[0]}`,
+                      address: b.address,
+                      latitude: b.latitude || -25.2831,
+                      longitude: b.longitude || -57.5612,
+                    });
+                  }
+                }
+              });
+            }
+          }
         } catch (e) {
-          console.error("Error al cargar perfil de usuario:", e);
+          console.error("Error al cargar direcciones:", e);
         }
       }
 
-      // Si hay direcciones guardadas únicas, seleccionar la principal por defecto
+      // Si no hay ninguna dirección y no está logueado, agregar ejemplo amigable si el usuario es demo
       if (addressesList.length > 0) {
-        setSavedAddresses(addressesList);
+        // Ensure all addresses have valid numeric coords before setting them
+        const sanitized = addressesList.map((a) => ({
+          ...a,
+          latitude: (typeof a.latitude === 'number' && !isNaN(a.latitude)) ? a.latitude : -25.2831,
+          longitude: (typeof a.longitude === 'number' && !isNaN(a.longitude)) ? a.longitude : -57.5612,
+        }));
+        setSavedAddresses(sanitized);
         setAddressMode("SAVED");
-        const defaultAddr = addressesList[0];
+        const defaultAddr = sanitized[0];
         setSelectedAddressId(defaultAddr.id);
         setAddress(defaultAddr.address);
         setLatitude(defaultAddr.latitude);
@@ -404,9 +426,14 @@ function BookingContent() {
 
     let finalAddress = address.trim();
     if (addressMode === "NEW") {
-      const parts = [addressStreet.trim() || address.trim()];
+      const street = addressStreet.trim();
+      if (!street) {
+        setErrorMsg("Por favor ingresa la calle y numeración exacta de la propiedad a limpiar.");
+        return;
+      }
+      const parts = [street];
       if (addressApt.trim()) parts.push(addressApt.trim());
-      if (selectedZone.trim() && !parts.some((p) => p.includes(selectedZone.trim()))) {
+      if (selectedZone.trim() && !parts.some((p) => p.toLowerCase().includes(selectedZone.split("(")[0].trim().toLowerCase()))) {
         parts.push(selectedZone.trim());
       }
       if (addressRef.trim()) parts.push(`(Ref: ${addressRef.trim()})`);
@@ -931,7 +958,8 @@ function BookingContent() {
                             type="button"
                             onClick={() => {
                               setAddressMode("SAVED");
-                              if (savedAddresses.length > 0) {
+                              // Solo auto-seleccionar la primera si no hay ninguna seleccionada aún
+                              if (!selectedAddressId || selectedAddressId === "NEW") {
                                 handleSelectSavedAddress(savedAddresses[0]);
                               }
                             }}
@@ -949,8 +977,10 @@ function BookingContent() {
                             type="button"
                             onClick={() => {
                               setAddressMode("NEW");
-                              setSelectedAddressId("NEW");
                               setAddress("");
+                              setAddressStreet("");
+                              setAddressApt("");
+                              setAddressRef("");
                             }}
                             className={`px-2.5 py-1 rounded-md font-semibold transition-all flex items-center gap-1 ${
                               addressMode === "NEW"
@@ -1013,7 +1043,7 @@ function BookingContent() {
 
                                 <div className="mt-2.5 pt-2 border-t border-neutral-100/80 flex items-center justify-between text-[11px]">
                                   <span className="text-neutral-400 font-mono text-[10px]">
-                                    📍 GPS: {item.latitude.toFixed(4)}, {item.longitude.toFixed(4)}
+                                    📍 GPS: {(item.latitude ?? -25.2831).toFixed(4)}, {(item.longitude ?? -57.5612).toFixed(4)}
                                   </span>
                                   <a
                                     href={`https://www.google.com/maps?q=${item.latitude},${item.longitude}`}
@@ -1199,9 +1229,10 @@ function BookingContent() {
                               type="button"
                               onClick={() => {
                                 setAddressMode("SAVED");
-                                if (savedAddresses.length > 0) {
-                                  handleSelectSavedAddress(savedAddresses[0]);
-                                }
+                                // Intentar restaurar la última selección válida; si no, usar la primera
+                                const lastValid = savedAddresses.find((a) => a.id === selectedAddressId);
+                                const toRestore = lastValid || savedAddresses[0];
+                                handleSelectSavedAddress(toRestore);
                               }}
                               className="text-xs font-semibold text-neutral-600 hover:text-neutral-900 underline"
                             >

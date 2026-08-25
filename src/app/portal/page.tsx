@@ -145,15 +145,6 @@ export default function CustomerPortalPage() {
         return deletedList.includes(norm) || (idText ? deletedList.includes(idText) : false);
       };
 
-      const normalizeAddr = (str: string) => {
-        return (str || "")
-          .toLowerCase()
-          .normalize("NFD")
-          .replace(/[\u0300-\u036f]/g, "")
-          .replace(/[^a-z0-9]/gi, "")
-          .trim();
-      };
-
       const addrs: SavedPortalAddress[] = [];
 
       try {
@@ -162,14 +153,8 @@ export default function CustomerPortalPage() {
           const parsed = JSON.parse(local);
           if (Array.isArray(parsed)) {
             parsed.forEach((a: SavedPortalAddress) => {
-              if (a.address && !isDeleted(a.address, a.id)) {
-                const norm = normalizeAddr(a.address);
-                const exists = addrs.some(
-                  (item) => normalizeAddr(item.address) === norm || item.id === a.id
-                );
-                if (!exists) {
-                  addrs.push(a);
-                }
+              if (!isDeleted(a.address, a.id)) {
+                addrs.push(a);
               }
             });
           }
@@ -177,8 +162,7 @@ export default function CustomerPortalPage() {
       } catch (e) {}
 
       if (loadedProfile?.address && !isDeleted(loadedProfile.address, "profile_main")) {
-        const norm = normalizeAddr(loadedProfile.address);
-        const exists = addrs.some((a) => normalizeAddr(a.address) === norm);
+        const exists = addrs.some(a => a.address.toLowerCase().trim() === loadedProfile!.address!.toLowerCase().trim());
         if (!exists) {
           addrs.unshift({
             id: "profile_main",
