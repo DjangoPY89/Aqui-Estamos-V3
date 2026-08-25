@@ -28,9 +28,10 @@ import {
   Compass
 } from "lucide-react";
 import { AVAILABLE_EXTRAS, calculatePricing, formatGs, SERVICE_PACKAGES } from "@/lib/pricing";
-import { FrequencyType, PaymentMethod, ServiceHour, TimeSlotConfig, DateAvailabilityCheck } from "@/types";
+import { FrequencyType, PaymentMethod, ServiceHour, TimeSlotConfig, DateAvailabilityCheck, AvailabilitySettings } from "@/types";
 import GoogleSignInButton from "@/components/auth/GoogleSignInButton";
 import GoogleMapPicker from "@/components/booking/GoogleMapPicker";
+import BookingCalendarPicker from "@/components/BookingCalendarPicker";
 
 interface SavedAddress {
   id: string;
@@ -75,8 +76,9 @@ function BookingContent() {
   const [serviceTime, setServiceTime] = useState("08:00");
   const [notes, setNotes] = useState("");
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("cash");
-
+  
   // Estados de Disponibilidad en Vivo
+  const [availabilitySettings, setAvailabilitySettings] = useState<AvailabilitySettings | null>(null);
   const [configuredSlots, setConfiguredSlots] = useState<TimeSlotConfig[]>([
     { id: "slot_0800", time: "08:00", label: "Mañana (08:00 AM)", period: "morning", enabled: true },
     { id: "slot_1300", time: "13:00", label: "Tarde (13:00 PM)", period: "afternoon", enabled: true },
@@ -116,10 +118,12 @@ function BookingContent() {
       });
 
       if (res?.error) {
-        setGateError("Correo o contraseña incorrectos. Si no tienes cuenta, puedes registrarte abajo.");
+        setGateError("Correo o contraseña incorrectos.");
+      } else {
+        router.refresh();
       }
     } catch (err: any) {
-      setGateError(err.message || "Error al iniciar sesión.");
+      setGateError("Error al iniciar sesión. Inténtalo nuevamente.");
     } finally {
       setIsGateLoading(false);
     }
@@ -145,11 +149,14 @@ function BookingContent() {
 
   // Cargar configuraciones de turnos y reglas de disponibilidad generales
   useEffect(() => {
-    fetch("/api/availability")
+    fetch(`/api/availability?t=${Date.now()}`, { cache: "no-store" })
       .then((res) => res.json())
       .then((data) => {
-        if (data?.settings?.timeSlots && Array.isArray(data.settings.timeSlots)) {
-          setConfiguredSlots(data.settings.timeSlots);
+        if (data?.settings) {
+          setAvailabilitySettings(data.settings);
+          if (Array.isArray(data.settings.timeSlots)) {
+            setConfiguredSlots(data.settings.timeSlots);
+          }
         }
       })
       .catch((err) => console.error("Error loading availability settings:", err));
@@ -1197,90 +1204,74 @@ function BookingContent() {
               </div>
 
               {/* PASO 4: Fecha, Turno y Método de Pago */}
-              <div className="bg-white rounded-2xl p-6 sm:p-7 border border-neutral-200 shadow-xs space-y-4">
+              <div className="bg-white rounded-2xl p-6 sm:p-7 border border-neutral-200 shadow-xs space-y-5">
                 <div className="flex items-center gap-2 pb-3 border-b border-neutral-100">
                   <span className="font-mono text-xs font-bold text-electric-600">04</span>
                   <h3 className="text-sm font-bold text-neutral-900">Fecha, Turno y Pago</h3>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  {/* Selector de Fecha con Validación de Capacidad */}
-                  <div>
-                    <label className="block text-xs font-bold text-neutral-800 mb-1 flex items-center justify-between">
-                      <span>Fecha del Servicio *</span>
-                      {!serviceDate ? (
-                        <span className="text-[10px] font-bold text-amber-600 bg-amber-50 px-2 py-0.5 rounded-md border border-amber-200">
-                          Selección Obligatoria
-                        </span>
-                      ) : availabilityCheck && !availabilityCheck.isOpen ? (
-                        <span className="text-[10px] font-bold text-rose-600 bg-rose-50 px-2 py-0.5 rounded-md border border-rose-200">
-                          No Disponible
-                        </span>
-                      ) : (
-                        <span className="text-[10px] font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200">
-                          Disponible
-                        </span>
-                      )}
-                    </label>
-                    
-                    <input
-                      type="date"
-                      required
-                      min={new Date(Date.now() + 86400000).toISOString().split("T")[0]}
-                      value={serviceDate}
-                      onChange={(e) => setServiceDate(e.target.value)}
-                      className={`w-full px-3 py-2.5 rounded-xl border text-xs focus:ring-2 focus:ring-electric-600 focus:outline-none transition-all ${
-                        !serviceDate
-                          ? "border-amber-300 bg-amber-50/20 text-neutral-600 font-medium"
-                          : availabilityCheck && !availabilityCheck.isOpen
-                          ? "border-rose-300 bg-rose-50/30 text-rose-900 font-bold"
-                          : "border-emerald-300 bg-emerald-50/20 text-neutral-900 font-bold"
-                      }`}
-                    />
-
-                    {/* Feedback en vivo de la fecha */}
-                    {isCheckingDate && (
-                      <p className="text-[11px] text-neutral-500 font-medium mt-1.5 flex items-center gap-1.5">
-                        <span className="w-2.5 h-2.5 border-2 border-electric-600 border-t-transparent rounded-full animate-spin" />
-                        <span>Verificando disponibilidad de la cuadrilla...</span>
-                      </p>
+                {/* Calendario Visual e Interactivo */}
+                <div className="space-y-2">
+                  <label className="block text-xs font-bold text-neutral-800 flex items-center justify-between">
+                    <span>1. Selecciona la Fecha del Servicio *</span>
+                    {!serviceDate ? (
+                      <span className="text-[10px] font-bold text-amber-600 bg-amber-50 px-2 py-0.5 rounded-md border border-amber-200">
+                        Selección Obligatoria en Calendario
+                      </span>
+                    ) : availabilityCheck && !availabilityCheck.isOpen ? (
+                      <span className="text-[10px] font-bold text-rose-600 bg-rose-50 px-2 py-0.5 rounded-md border border-rose-200">
+                        Día No Disponible
+                      </span>
+                    ) : (
+                      <span className="text-[10px] font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200">
+                        Fecha Habilitada
+                      </span>
                     )}
+                  </label>
 
-                    {!isCheckingDate && dateAvailabilityNotice && (
-                      <div className="mt-2 p-2.5 bg-rose-50 border border-rose-200 text-rose-800 text-[11px] rounded-xl flex items-start gap-2 animate-in fade-in">
-                        <AlertCircle className="w-4 h-4 text-rose-600 shrink-0 mt-0.5" />
-                        <div>
-                          <p className="font-bold">Fecha no disponible</p>
-                          <p className="text-rose-700">{dateAvailabilityNotice}</p>
-                          <p className="text-[10px] text-rose-600 font-medium mt-0.5">Por favor selecciona otro día en el calendario.</p>
-                        </div>
+                  <BookingCalendarPicker
+                    selectedDate={serviceDate}
+                    onSelectDate={(newDate) => setServiceDate(newDate)}
+                    availabilitySettings={availabilitySettings}
+                  />
+
+                  {/* Feedback en vivo de la fecha */}
+                  {isCheckingDate && (
+                    <p className="text-[11px] text-neutral-500 font-medium mt-1.5 flex items-center gap-1.5">
+                      <span className="w-2.5 h-2.5 border-2 border-electric-600 border-t-transparent rounded-full animate-spin" />
+                      <span>Verificando disponibilidad de la cuadrilla para esta fecha...</span>
+                    </p>
+                  )}
+
+                  {!isCheckingDate && dateAvailabilityNotice && (
+                    <div className="mt-2 p-2.5 bg-rose-50 border border-rose-200 text-rose-800 text-[11px] rounded-xl flex items-start gap-2 animate-in fade-in">
+                      <AlertCircle className="w-4 h-4 text-rose-600 shrink-0 mt-0.5" />
+                      <div>
+                        <p className="font-bold">Fecha no disponible</p>
+                        <p className="text-rose-700">{dateAvailabilityNotice}</p>
+                        <p className="text-[10px] text-rose-600 font-medium mt-0.5">Por favor selecciona otro día habilitado en el calendario.</p>
                       </div>
-                    )}
+                    </div>
+                  )}
 
-                    {!isCheckingDate && !dateAvailabilityNotice && serviceDate && availabilityCheck?.isOpen && (
-                      <div className="mt-2 p-2 bg-emerald-50 border border-emerald-200 text-emerald-800 text-[11px] rounded-xl flex items-center justify-between animate-in fade-in">
-                        <div className="flex items-center gap-1.5 font-bold">
-                          <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
-                          <span>¡Fecha Confirmada!</span>
-                        </div>
-                        <span className="text-[10px] font-bold text-emerald-700 bg-emerald-100/70 px-2 py-0.5 rounded-md">
-                          {availabilityCheck.availableCapacity} {availabilityCheck.availableCapacity === 1 ? "cupo disponible" : "cupos disponibles"}
-                        </span>
+                  {!isCheckingDate && !dateAvailabilityNotice && serviceDate && availabilityCheck?.isOpen && (
+                    <div className="mt-2 p-3 bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs rounded-xl flex items-center justify-between animate-in fade-in shadow-2xs">
+                      <div className="flex items-center gap-2 font-bold">
+                        <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                        <span>Fecha Confirmada: <span className="font-extrabold text-emerald-950">{serviceDate}</span></span>
                       </div>
-                    )}
+                      <span className="text-[11px] font-extrabold text-emerald-700 bg-emerald-100/80 px-2.5 py-1 rounded-lg">
+                        {availabilityCheck.availableCapacity} {availabilityCheck.availableCapacity === 1 ? "cupo restante" : "cupos restantes hoy"}
+                      </span>
+                    </div>
+                  )}
+                </div>
 
-                    {!serviceDate && (
-                      <p className="text-[11px] text-amber-700 font-medium mt-1 flex items-center gap-1">
-                        <AlertCircle className="w-3 h-3 text-amber-600 shrink-0" />
-                        <span>Debes elegir el día para agendar tu limpieza</span>
-                      </p>
-                    )}
-                  </div>
-
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2 border-t border-neutral-100">
                   {/* Selector Dinámico de Turno de Llegada */}
                   <div>
                     <label className="block text-xs font-bold text-neutral-800 mb-1 flex items-center justify-between">
-                      <span>Turno de Llegada *</span>
+                      <span>2. Turno de Llegada *</span>
                       <span className="text-[10px] font-semibold text-neutral-500">
                         Hora estimada de arribo
                       </span>
@@ -1322,31 +1313,32 @@ function BookingContent() {
                       })}
                     </div>
                   </div>
-                </div>
 
-                <div>
-                  <label className="block text-xs font-medium text-neutral-700 mb-1">
-                    Método de Pago (al finalizar el servicio)
-                  </label>
-                  <div className="grid grid-cols-3 gap-2">
-                    {[
-                      { id: "cash", label: "Efectivo" },
-                      { id: "sipap", label: "SIPAP / Transf." },
-                      { id: "card", label: "Tarjeta" },
-                    ].map((m) => (
-                      <button
-                        key={m.id}
-                        type="button"
-                        onClick={() => setPaymentMethod(m.id as PaymentMethod)}
-                        className={`py-2 px-2 rounded-lg border text-center text-xs font-medium transition-all ${
-                          paymentMethod === m.id
-                            ? "bg-electric-50 border-electric-400 text-electric-900 font-semibold"
-                            : "bg-white text-neutral-600 border-neutral-200 hover:bg-neutral-50"
-                        }`}
-                      >
-                        {m.label}
-                      </button>
-                    ))}
+                  {/* Método de Pago */}
+                  <div>
+                    <label className="block text-xs font-bold text-neutral-800 mb-1">
+                      3. Método de Pago (al finalizar)
+                    </label>
+                    <div className="grid grid-cols-3 gap-2">
+                      {[
+                        { id: "cash", label: "Efectivo" },
+                        { id: "sipap", label: "SIPAP / Transf." },
+                        { id: "card", label: "Tarjeta" },
+                      ].map((m) => (
+                        <button
+                          key={m.id}
+                          type="button"
+                          onClick={() => setPaymentMethod(m.id as PaymentMethod)}
+                          className={`py-2 px-2 rounded-xl border text-center text-xs font-medium transition-all ${
+                            paymentMethod === m.id
+                              ? "bg-electric-50 border-electric-400 text-electric-900 font-bold shadow-2xs"
+                              : "bg-white text-neutral-600 border-neutral-200 hover:bg-neutral-50"
+                          }`}
+                        >
+                          {m.label}
+                        </button>
+                      ))}
+                    </div>
                   </div>
                 </div>
 
