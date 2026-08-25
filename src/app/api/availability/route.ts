@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { checkDateAvailability, getAvailabilitySettings } from '@/lib/availability';
+import { checkDateAvailability, getAvailabilitySettings, getAvailabilitySettingsAsync } from '@/lib/availability';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -24,8 +24,8 @@ export async function GET(req: Request) {
       );
     }
 
-    // Si no se especifica fecha, devolver las reglas generales de disponibilidad
-    const settings = getAvailabilitySettings();
+    // Si no se especifica fecha, devolver las reglas generales de disponibilidad desde la nube
+    const settings = await getAvailabilitySettingsAsync();
     return NextResponse.json(
       {
         success: true,

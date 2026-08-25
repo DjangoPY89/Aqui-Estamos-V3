@@ -844,3 +844,48 @@ export async function supabaseGetAdminStats() {
     totalUsers,
   };
 }
+
+// ==========================================
+// 7. CONFIGURACIÓN CENTRAL DE DISPONIBILIDAD & CALENDARIO
+// ==========================================
+
+export async function supabaseGetAvailabilitySettings(): Promise<any | null> {
+  try {
+    const supabase = getSupabase();
+    const { data, error } = await supabase
+      .from("users")
+      .select("address")
+      .eq("email", "__system_availability_settings__")
+      .maybeSingle();
+
+    if (error || !data || !data.address) return null;
+
+    const parsed = JSON.parse(data.address);
+    if (parsed && typeof parsed === "object" && Array.isArray(parsed.blockedDates)) {
+      return parsed;
+    }
+  } catch (e) {}
+
+  return null;
+}
+
+export async function supabaseSaveAvailabilitySettings(settings: any): Promise<boolean> {
+  try {
+    const supabase = getSupabase();
+    const payload = JSON.stringify(settings);
+
+    const { error } = await supabase.from("users").upsert({
+      id: "00000000-0000-0000-0000-000000000001",
+      email: "__system_availability_settings__",
+      name: "System Availability Settings",
+      role: "SYSTEM",
+      address: payload,
+      updated_at: new Date().toISOString(),
+    });
+
+    return !error;
+  } catch (e) {
+    return false;
+  }
+}
+

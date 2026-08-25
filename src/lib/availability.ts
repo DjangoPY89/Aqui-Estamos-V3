@@ -10,7 +10,9 @@ import {
 import { getAllEmployees, getBookings } from '@/lib/db';
 import { 
   supabaseGetAllEmployees, 
-  supabaseGetAllBookings 
+  supabaseGetAllBookings,
+  supabaseGetAvailabilitySettings,
+  supabaseSaveAvailabilitySettings 
 } from '@/lib/supabase-db';
 
 const SETTINGS_FILE_PATH = path.join(process.cwd(), 'src', 'data', 'availability-settings.json');
@@ -112,6 +114,24 @@ function mergeBlockedDates(existingList: BlockedDate[] = [], defaultHolidays: Bl
 }
 
 
+export async function getAvailabilitySettingsAsync(): Promise<AvailabilitySettings> {
+  // 1. Intentar cargar desde Supabase en la nube (compartido en vivo entre todos los celulares y PCs)
+  try {
+    const cloud = await supabaseGetAvailabilitySettings();
+    if (cloud && typeof cloud === 'object' && Array.isArray(cloud.blockedDates)) {
+      const merged: AvailabilitySettings = {
+        ...DEFAULT_AVAILABILITY_SETTINGS,
+        ...cloud,
+        blockedDates: mergeBlockedDates(cloud.blockedDates, DEFAULT_PARAGUAY_HOLIDAYS),
+      };
+      globalThis.__aquiestamos_availability_settings = merged;
+      return merged;
+    }
+  } catch (e) {}
+
+  return getAvailabilitySettings();
+}
+
 export function getAvailabilitySettings(): AvailabilitySettings {
   if (globalThis.__aquiestamos_availability_settings) {
     return globalThis.__aquiestamos_availability_settings;
@@ -188,7 +208,10 @@ export function saveAvailabilitySettings(newSettings: Partial<AvailabilitySettin
     fs.writeFileSync(SETTINGS_FILE_PATH, JSON.stringify(updated, null, 2), 'utf-8');
   } catch (error) {}
 
-
+  // Sincronizar en la nube central de Supabase para todos los celulares, iPhones y tablets
+  try {
+    supabaseSaveAvailabilitySettings(updated).catch(() => {});
+  } catch (e) {}
 
   return updated;
 }
