@@ -11,6 +11,7 @@ import { getAllEmployees, getBookings } from '@/lib/db';
 import { supabaseGetAllEmployees, supabaseGetAllBookings } from '@/lib/supabase-db';
 
 const SETTINGS_FILE_PATH = path.join(process.cwd(), 'src', 'data', 'availability-settings.json');
+const TMP_SETTINGS_FILE_PATH = path.join('/tmp', 'aquiestamos_availability_settings.json');
 
 // Feriados Oficiales de Paraguay Precargados
 export const DEFAULT_PARAGUAY_HOLIDAYS: BlockedDate[] = [
@@ -86,10 +87,25 @@ export const DEFAULT_AVAILABILITY_SETTINGS: AvailabilitySettings = {
   updatedAt: new Date().toISOString(),
 };
 
-const TMP_SETTINGS_FILE_PATH = path.join('/tmp', 'aquiestamos_availability_settings.json');
-
 declare global {
   var __aquiestamos_availability_settings: AvailabilitySettings | undefined;
+}
+
+// Función auxiliar para combinar listas de fechas bloqueadas sin duplicados
+function mergeBlockedDates(existingList: BlockedDate[] = [], defaultHolidays: BlockedDate[] = []): BlockedDate[] {
+  const map = new Map<string, BlockedDate>();
+
+  // 1. Insertar feriados por defecto
+  defaultHolidays.forEach((h) => {
+    map.set(h.id, h);
+  });
+
+  // 2. Insertar o sobreescribir con las fechas y rangos existentes
+  existingList.forEach((b) => {
+    map.set(b.id, b);
+  });
+
+  return Array.from(map.values());
 }
 
 export function getAvailabilitySettings(): AvailabilitySettings {
@@ -102,9 +118,15 @@ export function getAvailabilitySettings(): AvailabilitySettings {
     if (fs.existsSync(TMP_SETTINGS_FILE_PATH)) {
       const tmpData = fs.readFileSync(TMP_SETTINGS_FILE_PATH, 'utf-8');
       const parsed = JSON.parse(tmpData);
-      const merged = { ...DEFAULT_AVAILABILITY_SETTINGS, ...parsed };
-      globalThis.__aquiestamos_availability_settings = merged;
-      return merged;
+      if (parsed && typeof parsed === 'object') {
+        const merged: AvailabilitySettings = {
+          ...DEFAULT_AVAILABILITY_SETTINGS,
+          ...parsed,
+          blockedDates: mergeBlockedDates(parsed.blockedDates || [], DEFAULT_PARAGUAY_HOLIDAYS),
+        };
+        globalThis.__aquiestamos_availability_settings = merged;
+        return merged;
+      }
     }
   } catch (e) {}
 
@@ -113,9 +135,15 @@ export function getAvailabilitySettings(): AvailabilitySettings {
     if (fs.existsSync(SETTINGS_FILE_PATH)) {
       const data = fs.readFileSync(SETTINGS_FILE_PATH, 'utf-8');
       const parsed = JSON.parse(data);
-      const merged = { ...DEFAULT_AVAILABILITY_SETTINGS, ...parsed };
-      globalThis.__aquiestamos_availability_settings = merged;
-      return merged;
+      if (parsed && typeof parsed === 'object') {
+        const merged: AvailabilitySettings = {
+          ...DEFAULT_AVAILABILITY_SETTINGS,
+          ...parsed,
+          blockedDates: mergeBlockedDates(parsed.blockedDates || [], DEFAULT_PARAGUAY_HOLIDAYS),
+        };
+        globalThis.__aquiestamos_availability_settings = merged;
+        return merged;
+      }
     }
   } catch (error) {
     console.error('Error reading availability settings file:', error);
@@ -127,9 +155,15 @@ export function getAvailabilitySettings(): AvailabilitySettings {
 
 export function saveAvailabilitySettings(newSettings: Partial<AvailabilitySettings>): AvailabilitySettings {
   const current = getAvailabilitySettings();
+  
+  const mergedBlockedDates = newSettings.blockedDates !== undefined 
+    ? newSettings.blockedDates 
+    : current.blockedDates;
+
   const updated: AvailabilitySettings = {
     ...current,
     ...newSettings,
+    blockedDates: mergedBlockedDates,
     updatedAt: new Date().toISOString(),
   };
 
@@ -148,9 +182,7 @@ export function saveAvailabilitySettings(newSettings: Partial<AvailabilitySettin
       fs.mkdirSync(dataDir, { recursive: true });
     }
     fs.writeFileSync(SETTINGS_FILE_PATH, JSON.stringify(updated, null, 2), 'utf-8');
-  } catch (error) {
-    // En Vercel el filesystem raíz es read-only, lo cual es normal
-  }
+  } catch (error) {}
 
   return updated;
 }

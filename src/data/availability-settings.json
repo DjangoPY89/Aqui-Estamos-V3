@@ -1,0 +1,85 @@
+{
+  "workingDays": {
+    "monday": {
+      "enabled": true,
+      "name": "Lunes",
+      "startTime": "07:00",
+      "endTime": "18:00"
+    },
+    "tuesday": {
+      "enabled": true,
+      "name": "Martes",
+      "startTime": "07:00",
+      "endTime": "18:00"
+    },
+    "wednesday": {
+      "enabled": true,
+      "name": "Miércoles",
+      "startTime": "07:00",
+      "endTime": "18:00"
+    },
+    "thursday": {
+      "enabled": true,
+      "name": "Jueves",
+      "startTime": "07:00",
+      "endTime": "18:00"
+    },
+    "friday": {
+      "enabled": true,
+      "name": "Viernes",
+      "startTime": "07:00",
+      "endTime": "18:00"
+    },
+    "saturday": {
+      "enabled": true,
+      "name": "Sábado",
+      "startTime": "07:30",
+      "endTime": "15:00"
+    },
+    "sunday": {
+      "enabled": false,
+      "name": "Domingo",
+      "startTime": "08:00",
+      "endTime": "14:00"
+    }
+  },
+  "timeSlots": [
+    {
+      "id": "slot_0730",
+      "time": "07:30",
+      "label": "Temprano (07:30 AM)",
+      "period": "morning",
+      "enabled": false
+    },
+    {
+      "id": "slot_0800",
+      "time": "08:00",
+      "label": "Mañana (08:00 AM)",
+      "period": "morning",
+      "enabled": true
+    },
+    {
+      "id": "slot_1300",
+      "time": "13:00",
+      "label": "Tarde (13:00 PM)",
+      "period": "afternoon",
+      "enabled": true
+    },
+    {
+      "id": "slot_1400",
+      "time": "14:00",
+      "label": "Media Tarde (14:00 PM)",
+      "period": "afternoon",
+      "enabled": false
+    }
+  ],
+  "capacityMode": "AUTO_BY_EMPLOYEES",
+  "maxBookingsPerEmployeePerDay": 1,
+  "manualDailyMaxBookings": 4,
+  "blockedDates": [],
+  "allowSundayBookings": false,
+  "allowHolidayBookings": false,
+  "minAdvanceHours": 12,
+  "maxAdvanceDays": 60,
+  "updatedAt": "2026-08-25T16:00:00.000Z"
+}

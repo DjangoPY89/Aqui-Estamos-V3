@@ -39,7 +39,7 @@ export default function BookingCalendarPicker({
   const [localSettings, setLocalSettings] = useState<AvailabilitySettings | null>(availabilitySettings || null);
   const [isLoadingSettings, setIsLoadingSettings] = useState(!availabilitySettings);
 
-  // Cargar configuraciones si no vienen por props
+  // Cargar configuraciones si no vienen por props (con respaldo de localStorage)
   useEffect(() => {
     if (availabilitySettings) {
       setLocalSettings(availabilitySettings);
@@ -47,11 +47,32 @@ export default function BookingCalendarPicker({
       return;
     }
 
+    // Inicializar rápido con localStorage si existe
+    try {
+      const local = localStorage.getItem('aquiestamos_admin_availability_settings');
+      if (local) {
+        setLocalSettings(JSON.parse(local));
+      }
+    } catch (e) {}
+
     fetch(`/api/availability?t=${Date.now()}`, { cache: 'no-store' })
       .then((res) => res.json())
       .then((data) => {
         if (data?.settings) {
-          setLocalSettings(data.settings);
+          let mergedSettings = data.settings;
+          try {
+            const local = localStorage.getItem('aquiestamos_admin_availability_settings');
+            if (local) {
+              const parsed = JSON.parse(local);
+              if (parsed?.blockedDates && Array.isArray(parsed.blockedDates)) {
+                const map = new Map<string, any>();
+                parsed.blockedDates.forEach((b: any) => map.set(b.id, b));
+                (mergedSettings.blockedDates || []).forEach((b: any) => map.set(b.id, b));
+                mergedSettings = { ...mergedSettings, blockedDates: Array.from(map.values()) };
+              }
+            }
+          } catch (e) {}
+          setLocalSettings(mergedSettings);
         }
       })
       .catch((err) => console.error('Error loading calendar availability:', err))

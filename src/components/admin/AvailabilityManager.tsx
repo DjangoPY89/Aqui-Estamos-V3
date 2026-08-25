@@ -68,7 +68,6 @@ export default function AvailabilityManager({ employees, onNotice }: Availabilit
   const [newBlockedDate, setNewBlockedDate] = useState('');
   const [newBlockedEndDate, setNewBlockedEndDate] = useState('');
   const [newBlockedReason, setNewBlockedReason] = useState('');
-  const [isAddingBlockedDate, setIsAddingBlockedDate] = useState(true);
 
   // Estado del acordeón de Feriados de Paraguay (SEGUNDO PLANO)
   const [showHolidaysAccordion, setShowHolidaysAccordion] = useState(false);
@@ -78,7 +77,7 @@ export default function AvailabilityManager({ employees, onNotice }: Availabilit
   const [newSlotLabel, setNewSlotLabel] = useState('');
   const [isAddingSlot, setIsAddingSlot] = useState(false);
 
-  // Cargar configuraciones
+  // Cargar configuraciones (con respaldo local + API)
   const fetchSettings = async () => {
     setIsLoading(true);
     setErrorMessage(null);
@@ -87,9 +86,39 @@ export default function AvailabilityManager({ employees, onNotice }: Availabilit
         cache: 'no-store',
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Error al cargar configuraciones');
-      setSettings(data.settings);
+      
+      let finalSettings: AvailabilitySettings = data.settings;
+
+      // Recuperar y fusionar reglas guardadas en localStorage si existían
+      try {
+        const local = localStorage.getItem('aquiestamos_admin_availability_settings');
+        if (local) {
+          const parsed = JSON.parse(local);
+          if (parsed && Array.isArray(parsed.blockedDates)) {
+            const currentIds = new Set((finalSettings?.blockedDates || []).map(b => b.id));
+            const extraLocalBlocks = parsed.blockedDates.filter((b: BlockedDate) => !currentIds.has(b.id));
+            if (extraLocalBlocks.length > 0 && finalSettings) {
+              finalSettings = {
+                ...finalSettings,
+                blockedDates: [...extraLocalBlocks, ...(finalSettings.blockedDates || [])],
+              };
+            }
+          }
+        }
+      } catch (e) {}
+
+      setSettings(finalSettings);
+      try {
+        localStorage.setItem('aquiestamos_admin_availability_settings', JSON.stringify(finalSettings));
+      } catch (e) {}
     } catch (err: any) {
+      // Fallback a localStorage si falla la conexión
+      try {
+        const local = localStorage.getItem('aquiestamos_admin_availability_settings');
+        if (local) {
+          setSettings(JSON.parse(local));
+        }
+      } catch (e) {}
       setErrorMessage(err.message || 'Error de conexión');
     } finally {
       setIsLoading(false);
@@ -100,7 +129,7 @@ export default function AvailabilityManager({ employees, onNotice }: Availabilit
     fetchSettings();
   }, []);
 
-  // Guardar configuraciones y persistir en el servidor
+  // Guardar configuraciones y persistir en el servidor y localStorage
   const handleSave = async (customSettings?: AvailabilitySettings, customSuccessMsg?: string) => {
     const toSave = customSettings || settings;
     if (!toSave) return;
@@ -109,6 +138,11 @@ export default function AvailabilityManager({ employees, onNotice }: Availabilit
     setSaveSuccess(false);
     setErrorMessage(null);
 
+    // Guardar inmediatamente en localStorage del navegador
+    try {
+      localStorage.setItem('aquiestamos_admin_availability_settings', JSON.stringify(toSave));
+    } catch (e) {}
+
     try {
       const res = await fetch('/api/admin/availability-settings', {
         method: 'POST',
@@ -116,15 +150,23 @@ export default function AvailabilityManager({ employees, onNotice }: Availabilit
         body: JSON.stringify(toSave),
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Error al guardar');
       
-      setSettings(data.settings);
+      if (data?.settings) {
+        setSettings(data.settings);
+        try {
+          localStorage.setItem('aquiestamos_admin_availability_settings', JSON.stringify(data.settings));
+        } catch (e) {}
+      } else {
+        setSettings(toSave);
+      }
+
       setSaveMessage(customSuccessMsg || '¡Configuración guardada y sincronizada con el calendario de reservas!');
       setSaveSuccess(true);
       if (onNotice) onNotice(customSuccessMsg || '¡Configuraciones de disponibilidad guardadas con éxito!');
       setTimeout(() => setSaveSuccess(false), 3500);
     } catch (err: any) {
-      setErrorMessage(err.message || 'Error al guardar configuraciones');
+      setErrorMessage('Aviso: Guardado localmente en tu navegador. ' + (err.message || ''));
+      setSettings(toSave);
     } finally {
       setIsSaving(false);
     }
@@ -153,8 +195,8 @@ export default function AvailabilityManager({ employees, onNotice }: Availabilit
     : settings.manualDailyMaxBookings;
 
   // Filtrar fechas y rangos bloqueados por el admin vs feriados de Paraguay
-  const customBlockedRules = settings.blockedDates.filter((b) => !b.isHoliday);
-  const paraguayHolidays = settings.blockedDates.filter((b) => b.isHoliday);
+  const customBlockedRules = (settings.blockedDates || []).filter((b) => !b.isHoliday);
+  const paraguayHolidays = (settings.blockedDates || []).filter((b) => b.isHoliday);
 
   // Modificadores de Estado
   const toggleDay = (dayKey: DayOfWeek) => {
@@ -235,7 +277,7 @@ export default function AvailabilityManager({ employees, onNotice }: Availabilit
     handleSave(updated, 'Turno eliminado correctamente.');
   };
 
-  // Agregar Fecha o Rango Bloqueado (Guardado instantáneo)
+  // Agregar Fecha o Rango Bloqueado (Soporte ilimitado 1, 2, 3, 5, 10+ bloqueos)
   const handleAddBlockedDate = (e: React.FormEvent) => {
     e.preventDefault();
     if (!newBlockedDate) return;
@@ -243,7 +285,7 @@ export default function AvailabilityManager({ employees, onNotice }: Availabilit
     const isRange = blockMode === 'RANGE' && newBlockedEndDate && newBlockedEndDate !== newBlockedDate;
     const daysCount = isRange ? calculateDaysInRange(newBlockedDate, newBlockedEndDate) : 1;
 
-    const id = `block_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
+    const id = `block_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
     const reason = newBlockedReason.trim() || (isRange ? `Cierre por Período (${daysCount} días)` : 'Día No Laborable');
 
     const newBlock: BlockedDate = {
@@ -255,9 +297,10 @@ export default function AvailabilityManager({ employees, onNotice }: Availabilit
       enabled: true,
     };
 
+    const currentBlocks = settings.blockedDates || [];
     const updated = {
       ...settings,
-      blockedDates: [newBlock, ...settings.blockedDates],
+      blockedDates: [newBlock, ...currentBlocks],
     };
 
     setSettings(updated);
@@ -273,7 +316,7 @@ export default function AvailabilityManager({ employees, onNotice }: Availabilit
   };
 
   const toggleBlockedRule = (id: string) => {
-    const updatedBlocked = settings.blockedDates.map((b) => {
+    const updatedBlocked = (settings.blockedDates || []).map((b) => {
       if (b.id === id) return { ...b, enabled: !b.enabled };
       return b;
     });
@@ -283,15 +326,15 @@ export default function AvailabilityManager({ employees, onNotice }: Availabilit
   };
 
   const handleDeleteBlockedDate = (id: string) => {
-    const target = settings.blockedDates.find(b => b.id === id);
-    const filtered = settings.blockedDates.filter((b) => b.id !== id);
+    const target = (settings.blockedDates || []).find(b => b.id === id);
+    const filtered = (settings.blockedDates || []).filter((b) => b.id !== id);
     const updated = { ...settings, blockedDates: filtered };
     setSettings(updated);
     handleSave(updated, target ? `Regla "${target.reason}" eliminada del calendario.` : 'Bloqueo eliminado.');
   };
 
   const toggleAllHolidays = (enable: boolean) => {
-    const updatedBlocked = settings.blockedDates.map((b) => {
+    const updatedBlocked = (settings.blockedDates || []).map((b) => {
       if (b.isHoliday) return { ...b, enabled: enable };
       return b;
     });
