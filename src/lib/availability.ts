@@ -7,7 +7,7 @@ import {
   BlockedDate, 
   TimeSlotConfig 
 } from '@/types';
-import { getAllEmployees, getBookings } from '@/lib/db';
+import { getAllEmployees, getBookings, getAvailabilitySettingsFromDb, saveAvailabilitySettingsToDb } from '@/lib/db';
 import { 
   supabaseGetAllEmployees, 
   supabaseGetAllBookings 
@@ -117,6 +117,20 @@ export function getAvailabilitySettings(): AvailabilitySettings {
     return globalThis.__aquiestamos_availability_settings;
   }
 
+  // 0. Intentar leer desde el store compartido de db.ts (fuente más fiable cross-device en Vercel)
+  try {
+    const dbSettings = getAvailabilitySettingsFromDb();
+    if (dbSettings && typeof dbSettings === 'object' && dbSettings.workingDays) {
+      const merged: AvailabilitySettings = {
+        ...DEFAULT_AVAILABILITY_SETTINGS,
+        ...dbSettings,
+        blockedDates: mergeBlockedDates(dbSettings.blockedDates || [], DEFAULT_PARAGUAY_HOLIDAYS),
+      };
+      globalThis.__aquiestamos_availability_settings = merged;
+      return merged;
+    }
+  } catch (e) {}
+
   // 1. Intentar leer desde /tmp (Vercel serverless)
   try {
     if (fs.existsSync(TMP_SETTINGS_FILE_PATH)) {
@@ -129,6 +143,8 @@ export function getAvailabilitySettings(): AvailabilitySettings {
           blockedDates: mergeBlockedDates(parsed.blockedDates || [], DEFAULT_PARAGUAY_HOLIDAYS),
         };
         globalThis.__aquiestamos_availability_settings = merged;
+        // Back-fill to db store so future instances also get it
+        try { saveAvailabilitySettingsToDb(merged); } catch (e) {}
         return merged;
       }
     }
@@ -146,6 +162,7 @@ export function getAvailabilitySettings(): AvailabilitySettings {
           blockedDates: mergeBlockedDates(parsed.blockedDates || [], DEFAULT_PARAGUAY_HOLIDAYS),
         };
         globalThis.__aquiestamos_availability_settings = merged;
+        try { saveAvailabilitySettingsToDb(merged); } catch (e) {}
         return merged;
       }
     }
@@ -174,6 +191,9 @@ export function saveAvailabilitySettings(newSettings: Partial<AvailabilitySettin
   // Guardar en variable global de proceso
   globalThis.__aquiestamos_availability_settings = updated;
 
+  // Guardar en el store compartido de db.ts (cross-device — FUENTE PRINCIPAL en Vercel)
+  try { saveAvailabilitySettingsToDb(updated); } catch (e) {}
+
   // Guardar en /tmp (compatible con Vercel)
   try {
     fs.writeFileSync(TMP_SETTINGS_FILE_PATH, JSON.stringify(updated, null, 2), 'utf-8');
@@ -187,8 +207,6 @@ export function saveAvailabilitySettings(newSettings: Partial<AvailabilitySettin
     }
     fs.writeFileSync(SETTINGS_FILE_PATH, JSON.stringify(updated, null, 2), 'utf-8');
   } catch (error) {}
-
-
 
   return updated;
 }

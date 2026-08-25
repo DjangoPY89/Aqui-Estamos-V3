@@ -13,6 +13,7 @@ interface DbStore {
   bookings: Booking[];
   corporateLeads: CorporateLead[];
   reviews: Review[];
+  availabilitySettings?: any; // Persisted alongside all other data for cross-device sync
 }
 
 declare global {
@@ -744,3 +745,34 @@ export function autoAssignRandomEmployeesToPendingBookings(): {
 }
 
 export default getDb;
+
+// ==========================================
+// AVAILABILITY SETTINGS — Persisted in the shared store (cross-device on Vercel)
+// ==========================================
+
+/**
+ * Reads availability settings from the shared db store.
+ * Returns null if nothing has been saved yet (caller should use DEFAULT_AVAILABILITY_SETTINGS).
+ */
+export function getAvailabilitySettingsFromDb(): any | null {
+  try {
+    const store = getMemoryStore();
+    return store.availabilitySettings || null;
+  } catch (e) {
+    return null;
+  }
+}
+
+/**
+ * Saves availability settings into the shared db store (globalThis + /tmp JSON).
+ * This makes the settings immediately visible to all Vercel serverless instances
+ * that share the same /tmp filesystem, including mobile clients.
+ */
+export function saveAvailabilitySettingsToDb(settings: any): void {
+  try {
+    const store = getMemoryStore();
+    store.availabilitySettings = settings;
+    globalThis.__aquiestamos_db_store = store;
+    saveStoreToDisk(store);
+  } catch (e) {}
+}
