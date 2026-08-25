@@ -16,7 +16,12 @@ import {
   CalendarOff,
   Settings2,
   CalendarRange,
-  ArrowRight
+  ArrowRight,
+  ChevronDown,
+  ChevronUp,
+  Info,
+  Layers,
+  Flag
 } from 'lucide-react';
 import { 
   AvailabilitySettings, 
@@ -41,6 +46,15 @@ const DAY_LABELS: { id: DayOfWeek; label: string; desc: string }[] = [
   { id: 'sunday', label: 'Domingo', desc: 'Descanso semanal de la cuadrilla' },
 ];
 
+const QUICK_REASONS = [
+  "Vacaciones de Cuadrilla",
+  "Receso de Fin de Año",
+  "Mantenimiento General",
+  "Capacitación de Personal IPS",
+  "Feriado Puente",
+  "Inventario y Limpieza Interna"
+];
+
 export default function AvailabilityManager({ employees, onNotice }: AvailabilityManagerProps) {
   const [settings, setSettings] = useState<AvailabilitySettings | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -49,19 +63,22 @@ export default function AvailabilityManager({ employees, onNotice }: Availabilit
   const [saveMessage, setSaveMessage] = useState('¡Configuración guardada correctamente!');
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-  // Formulario para nuevo bloqueo de fecha o rango
-  const [blockMode, setBlockMode] = useState<'SINGLE' | 'RANGE'>('SINGLE');
+  // Formulario para Bloqueo de Fechas o Rangos (PROTAGONISTA)
+  const [blockMode, setBlockMode] = useState<'RANGE' | 'SINGLE'>('RANGE');
   const [newBlockedDate, setNewBlockedDate] = useState('');
   const [newBlockedEndDate, setNewBlockedEndDate] = useState('');
   const [newBlockedReason, setNewBlockedReason] = useState('');
-  const [isAddingBlockedDate, setIsAddingBlockedDate] = useState(false);
+  const [isAddingBlockedDate, setIsAddingBlockedDate] = useState(true);
+
+  // Estado del acordeón de Feriados de Paraguay (SEGUNDO PLANO)
+  const [showHolidaysAccordion, setShowHolidaysAccordion] = useState(false);
 
   // Formulario para nuevo turno
   const [newSlotTime, setNewSlotTime] = useState('');
   const [newSlotLabel, setNewSlotLabel] = useState('');
   const [isAddingSlot, setIsAddingSlot] = useState(false);
 
-  // Cargar configuraciones (con no-store para evitar caching)
+  // Cargar configuraciones
   const fetchSettings = async () => {
     setIsLoading(true);
     setErrorMessage(null);
@@ -102,7 +119,7 @@ export default function AvailabilityManager({ employees, onNotice }: Availabilit
       if (!res.ok) throw new Error(data.error || 'Error al guardar');
       
       setSettings(data.settings);
-      setSaveMessage(customSuccessMsg || '¡Configuración guardada y sincronizada con éxito!');
+      setSaveMessage(customSuccessMsg || '¡Configuración guardada y sincronizada con el calendario de reservas!');
       setSaveSuccess(true);
       if (onNotice) onNotice(customSuccessMsg || '¡Configuraciones de disponibilidad guardadas con éxito!');
       setTimeout(() => setSaveSuccess(false), 3500);
@@ -111,6 +128,13 @@ export default function AvailabilityManager({ employees, onNotice }: Availabilit
     } finally {
       setIsSaving(false);
     }
+  };
+
+  // Calcular cantidad de días en un rango
+  const calculateDaysInRange = (startDate: string, endDate?: string) => {
+    if (!endDate || endDate === startDate) return 1;
+    const diff = Math.round((new Date(endDate).getTime() - new Date(startDate).getTime()) / (1000 * 60 * 60 * 24)) + 1;
+    return Math.max(1, diff);
   };
 
   if (isLoading || !settings) {
@@ -128,7 +152,11 @@ export default function AvailabilityManager({ employees, onNotice }: Availabilit
     ? activeCount * (settings.maxBookingsPerEmployeePerDay || 1)
     : settings.manualDailyMaxBookings;
 
-  // Modificadores de Estado con Auto-Save
+  // Filtrar fechas y rangos bloqueados por el admin vs feriados de Paraguay
+  const customBlockedRules = settings.blockedDates.filter((b) => !b.isHoliday);
+  const paraguayHolidays = settings.blockedDates.filter((b) => b.isHoliday);
+
+  // Modificadores de Estado
   const toggleDay = (dayKey: DayOfWeek) => {
     const updated = {
       ...settings,
@@ -162,90 +190,42 @@ export default function AvailabilityManager({ employees, onNotice }: Availabilit
     setSettings(updated);
   };
 
-  const toggleTimeSlot = (slotId: string) => {
-    const updatedSlots = settings.timeSlots.map((s) =>
-      s.id === slotId ? { ...s, enabled: !s.enabled } : s
-    );
+  const toggleTimeSlot = (id: string) => {
+    const updatedSlots = settings.timeSlots.map((slot) => {
+      if (slot.id === id) return { ...slot, enabled: !slot.enabled };
+      return slot;
+    });
     const updated = { ...settings, timeSlots: updatedSlots };
     setSettings(updated);
-    handleSave(updated, 'Turno actualizado con éxito.');
-  };
-
-  const toggleHoliday = (holidayId: string) => {
-    const updatedHolidays = settings.blockedDates.map((h) =>
-      h.id === holidayId ? { ...h, enabled: !h.enabled } : h
-    );
-    const updated = { ...settings, blockedDates: updatedHolidays };
-    setSettings(updated);
-    handleSave(updated, 'Estado de fecha o feriado actualizado.');
-  };
-
-  const handleAddBlockedDate = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newBlockedDate) return;
-
-    let finalEndDate: string | undefined = undefined;
-    if (blockMode === 'RANGE' && newBlockedEndDate) {
-      if (newBlockedEndDate < newBlockedDate) {
-        setErrorMessage('La fecha de fin debe ser posterior o igual a la fecha de inicio.');
-        return;
-      }
-      finalEndDate = newBlockedEndDate;
-    }
-
-    const reasonLabel = newBlockedReason.trim() || (blockMode === 'RANGE' ? 'Receso / Rango Bloqueado' : 'Día No Laborable');
-
-    const newEntry: BlockedDate = {
-      id: `custom_${Date.now()}`,
-      date: newBlockedDate,
-      endDate: finalEndDate,
-      reason: reasonLabel,
-      isHoliday: false,
-      enabled: true,
-    };
-
-    const updatedBlocked = [newEntry, ...settings.blockedDates];
-    const updatedSettings = { ...settings, blockedDates: updatedBlocked };
-    
-    setSettings(updatedSettings);
-    setNewBlockedDate('');
-    setNewBlockedEndDate('');
-    setNewBlockedReason('');
-    setIsAddingBlockedDate(false);
-    setErrorMessage(null);
-
-    const msg = finalEndDate 
-      ? `¡Rango bloqueado del ${newEntry.date} al ${finalEndDate} guardado con éxito!`
-      : `¡Fecha ${newEntry.date} bloqueada y guardada con éxito!`;
-
-    await handleSave(updatedSettings, msg);
-  };
-
-  const handleDeleteBlockedDate = (id: string) => {
-    const filtered = settings.blockedDates.filter((b) => b.id !== id);
-    const updated = { ...settings, blockedDates: filtered };
-    setSettings(updated);
-    handleSave(updated, 'Fecha o rango eliminado con éxito.');
+    handleSave(updated, 'Turno horario actualizado correctamente.');
   };
 
   const handleAddCustomSlot = (e: React.FormEvent) => {
     e.preventDefault();
     if (!newSlotTime) return;
 
+    const id = `slot_${newSlotTime.replace(':', '')}_${Date.now()}`;
+    const period = parseInt(newSlotTime.split(':')[0], 10) < 12 ? 'morning' : 'afternoon';
+    const label = newSlotLabel || `Turno ${newSlotTime} hs`;
+
     const newSlot: TimeSlotConfig = {
-      id: `slot_${Date.now()}`,
+      id,
       time: newSlotTime,
-      label: newSlotLabel.trim() || `Turno ${newSlotTime}`,
-      period: parseInt(newSlotTime.split(':')[0], 10) < 12 ? 'morning' : 'afternoon',
+      label,
+      period,
       enabled: true,
     };
 
-    const updated = { ...settings, timeSlots: [...settings.timeSlots, newSlot] };
+    const updated = {
+      ...settings,
+      timeSlots: [...settings.timeSlots, newSlot].sort((a, b) => a.time.localeCompare(b.time)),
+    };
+
     setSettings(updated);
     setNewSlotTime('');
     setNewSlotLabel('');
     setIsAddingSlot(false);
-    handleSave(updated, 'Nuevo turno agregado y guardado con éxito.');
+    handleSave(updated, `Nuevo turno (${newSlotTime} hs) añadido y habilitado.`);
   };
 
   const handleDeleteSlot = (id: string) => {
@@ -255,11 +235,69 @@ export default function AvailabilityManager({ employees, onNotice }: Availabilit
     handleSave(updated, 'Turno eliminado correctamente.');
   };
 
-  // Calcular cantidad de días en un rango
-  const calculateDaysInRange = (startDate: string, endDate?: string) => {
-    if (!endDate || endDate === startDate) return 1;
-    const diff = Math.round((new Date(endDate).getTime() - new Date(startDate).getTime()) / (1000 * 60 * 60 * 24)) + 1;
-    return Math.max(1, diff);
+  // Agregar Fecha o Rango Bloqueado (Guardado instantáneo)
+  const handleAddBlockedDate = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newBlockedDate) return;
+
+    const isRange = blockMode === 'RANGE' && newBlockedEndDate && newBlockedEndDate !== newBlockedDate;
+    const daysCount = isRange ? calculateDaysInRange(newBlockedDate, newBlockedEndDate) : 1;
+
+    const id = `block_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
+    const reason = newBlockedReason.trim() || (isRange ? `Cierre por Período (${daysCount} días)` : 'Día No Laborable');
+
+    const newBlock: BlockedDate = {
+      id,
+      date: newBlockedDate,
+      endDate: isRange ? newBlockedEndDate : undefined,
+      reason,
+      isHoliday: false,
+      enabled: true,
+    };
+
+    const updated = {
+      ...settings,
+      blockedDates: [newBlock, ...settings.blockedDates],
+    };
+
+    setSettings(updated);
+    setNewBlockedDate('');
+    setNewBlockedEndDate('');
+    setNewBlockedReason('');
+    handleSave(
+      updated,
+      isRange 
+        ? `✓ Rango bloqueado con éxito (${daysCount} días: ${newBlock.date} al ${newBlock.endDate})`
+        : `✓ Fecha ${newBlock.date} bloqueada con éxito en el calendario.`
+    );
+  };
+
+  const toggleBlockedRule = (id: string) => {
+    const updatedBlocked = settings.blockedDates.map((b) => {
+      if (b.id === id) return { ...b, enabled: !b.enabled };
+      return b;
+    });
+    const updated = { ...settings, blockedDates: updatedBlocked };
+    setSettings(updated);
+    handleSave(updated, 'Estado de la regla de bloqueo actualizado.');
+  };
+
+  const handleDeleteBlockedDate = (id: string) => {
+    const target = settings.blockedDates.find(b => b.id === id);
+    const filtered = settings.blockedDates.filter((b) => b.id !== id);
+    const updated = { ...settings, blockedDates: filtered };
+    setSettings(updated);
+    handleSave(updated, target ? `Regla "${target.reason}" eliminada del calendario.` : 'Bloqueo eliminado.');
+  };
+
+  const toggleAllHolidays = (enable: boolean) => {
+    const updatedBlocked = settings.blockedDates.map((b) => {
+      if (b.isHoliday) return { ...b, enabled: enable };
+      return b;
+    });
+    const updated = { ...settings, blockedDates: updatedBlocked };
+    setSettings(updated);
+    handleSave(updated, enable ? 'Todos los feriados de Paraguay activados como cerrados.' : 'Feriados de Paraguay deshabilitados (se permite reservar).');
   };
 
   return (
@@ -270,13 +308,13 @@ export default function AvailabilityManager({ employees, onNotice }: Availabilit
         <div className="space-y-1.5">
           <div className="inline-flex items-center gap-2 px-3 py-1 bg-electric-500/20 text-electric-300 border border-electric-500/30 rounded-full text-xs font-bold">
             <Settings2 className="w-3.5 h-3.5" />
-            <span>Calendario Operativo & Cuadrilla</span>
+            <span>Control de Calendario en Vivo</span>
           </div>
           <h2 className="text-xl sm:text-2xl font-black tracking-tight text-white">
-            Gestión de Disponibilidad y Capacidad Diaria
+            Bloqueo de Fechas, Rangos y Capacidad Operativa
           </h2>
           <p className="text-xs text-slate-300 max-w-2xl leading-relaxed">
-            Controla qué días y turnos pueden elegir los clientes en el formulario de reservas, la capacidad máxima de solicitudes por día según las empleadas disponibles y el bloqueo de fechas individuales o rangos completos.
+            Bloquea días específicos o rangos continuos (vacaciones de cuadrilla, mantenimiento, recesos) para que queden físicamente inhabilitados en el calendario de reservas web.
           </p>
         </div>
 
@@ -305,7 +343,7 @@ export default function AvailabilityManager({ employees, onNotice }: Availabilit
           <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0" />
           <div>
             <p className="font-bold">{saveMessage}</p>
-            <p className="text-[11px] text-emerald-700">El cotizador web ahora refleja estos cambios inmediatamente para los clientes.</p>
+            <p className="text-[11px] text-emerald-700">El calendario del cotizador en línea ahora refleja estos cambios al instante.</p>
           </div>
         </div>
       )}
@@ -317,32 +355,29 @@ export default function AvailabilityManager({ employees, onNotice }: Availabilit
         </div>
       )}
 
-      {/* KPIs Rápidos de Capacidad */}
+      {/* KPIs Rápidos */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <div className="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200 shadow-xs space-y-1">
           <div className="flex items-center justify-between text-slate-500">
-            <span className="text-xs font-bold">Capacidad Diaria Máxima</span>
+            <span className="text-xs font-bold">Rangos y Fechas Bloqueadas</span>
+            <CalendarRange className="w-4 h-4 text-purple-600" />
+          </div>
+          <p className="text-2xl sm:text-3xl font-black text-purple-600">
+            {customBlockedRules.filter(b => b.enabled).length}{' '}
+            <span className="text-xs font-semibold text-slate-400">reglas activas</span>
+          </p>
+          <p className="text-[11px] text-slate-500">Bloqueos creados por la administración</p>
+        </div>
+
+        <div className="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200 shadow-xs space-y-1">
+          <div className="flex items-center justify-between text-slate-500">
+            <span className="text-xs font-bold">Capacidad Diaria</span>
             <Sparkles className="w-4 h-4 text-electric-600" />
           </div>
           <p className="text-2xl sm:text-3xl font-black text-slate-900">
             {calculatedDailyCapacity} <span className="text-xs font-semibold text-slate-400">citas / día</span>
           </p>
-          <p className="text-[11px] text-slate-500">
-            {settings.capacityMode === 'AUTO_BY_EMPLOYEES'
-              ? `${activeCount} empleadas activas × ${settings.maxBookingsPerEmployeePerDay || 1} servicio`
-              : 'Límite fijo manual'}
-          </p>
-        </div>
-
-        <div className="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200 shadow-xs space-y-1">
-          <div className="flex items-center justify-between text-slate-500">
-            <span className="text-xs font-bold">Personal IPS Activo</span>
-            <Users className="w-4 h-4 text-emerald-600" />
-          </div>
-          <p className="text-2xl sm:text-3xl font-black text-emerald-600">
-            {activeCount} <span className="text-xs font-semibold text-slate-400">empleadas</span>
-          </p>
-          <p className="text-[11px] text-slate-500">Listas para asignación de turnos</p>
+          <p className="text-[11px] text-slate-500">{activeCount} empleadas IPS activas</p>
         </div>
 
         <div className="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200 shadow-xs space-y-1">
@@ -358,24 +393,373 @@ export default function AvailabilityManager({ employees, onNotice }: Availabilit
             )}
           </p>
           <p className="text-[11px] text-slate-500">
-            {settings.workingDays.sunday.enabled ? 'Se reciben citas dominicales' : 'Descanso semanal obligatorio'}
+            {settings.workingDays.sunday.enabled ? 'Se reciben reservas' : 'Descanso semanal'}
           </p>
         </div>
 
         <div className="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200 shadow-xs space-y-1">
           <div className="flex items-center justify-between text-slate-500">
-            <span className="text-xs font-bold">Feriados & Bloqueos</span>
-            <Calendar className="w-4 h-4 text-purple-600" />
+            <span className="text-xs font-bold">Turnos Habilitados</span>
+            <Clock className="w-4 h-4 text-blue-600" />
           </div>
-          <p className="text-2xl sm:text-3xl font-black text-purple-600">
-            {settings.blockedDates.filter((b) => b.enabled).length}{' '}
-            <span className="text-xs font-semibold text-slate-400">reglas</span>
+          <p className="text-2xl sm:text-3xl font-black text-blue-600">
+            {settings.timeSlots.filter(s => s.enabled).length}{' '}
+            <span className="text-xs font-semibold text-slate-400">horarios</span>
           </p>
-          <p className="text-[11px] text-slate-500">Días o rangos bloqueados</p>
+          <p className="text-[11px] text-slate-500">Franjas de llegada al domicilio</p>
         </div>
       </div>
 
-      {/* SECCIÓN 1: REGLAS DE CAPACIDAD Y CUADRILLA */}
+      {/* ========================================================================= */}
+      {/* SECCIÓN 1 (PROTAGONISTA): BLOQUEO DE FECHAS O RANGOS COMPLETOS            */}
+      {/* ========================================================================= */}
+      <div className="bg-white rounded-3xl p-6 sm:p-7 border-2 border-purple-200 shadow-md space-y-6">
+        
+        {/* Encabezado Principal */}
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 border-b border-slate-100 pb-4">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-2xl bg-purple-100 text-purple-700 flex items-center justify-center font-black shadow-xs">
+              <CalendarRange className="w-6 h-6" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <h3 className="text-base sm:text-lg font-black text-slate-900">
+                  Bloqueo de Fechas y Rangos Operativos
+                </h3>
+                <span className="px-2 py-0.5 rounded-full bg-purple-100 text-purple-800 text-[10px] font-black uppercase">
+                  Control en Vivo
+                </span>
+              </div>
+              <p className="text-xs text-slate-500">
+                Bloquea días específicos o períodos completos (vacaciones de cuadrilla, mantenimiento, recesos).
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* Formulario de Bloqueo Destacado */}
+        <form onSubmit={handleAddBlockedDate} className="p-5 sm:p-6 bg-gradient-to-br from-purple-50/70 via-slate-50/50 to-purple-50/70 border border-purple-200/90 rounded-2xl space-y-4 shadow-xs">
+          
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pb-3 border-b border-purple-200/60">
+            <span className="text-xs font-black text-slate-800 uppercase tracking-wider flex items-center gap-2">
+              <Plus className="w-4 h-4 text-purple-600" />
+              <span>Crear Nuevo Bloqueo en Calendario:</span>
+            </span>
+
+            {/* Selector de Modalidad: Rango vs Fecha Única */}
+            <div className="flex bg-white p-1 rounded-xl border border-purple-200 shadow-2xs">
+              <button
+                type="button"
+                onClick={() => setBlockMode('RANGE')}
+                className={`px-3.5 py-1.5 text-xs font-black rounded-lg transition-all flex items-center gap-1.5 ${
+                  blockMode === 'RANGE'
+                    ? 'bg-purple-600 text-white shadow-xs'
+                    : 'text-slate-600 hover:text-slate-900'
+                }`}
+              >
+                <CalendarRange className="w-3.5 h-3.5" />
+                <span>🗓️ Rango de Fechas (Vacaciones / Receso)</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setBlockMode('SINGLE')}
+                className={`px-3.5 py-1.5 text-xs font-black rounded-lg transition-all flex items-center gap-1.5 ${
+                  blockMode === 'SINGLE'
+                    ? 'bg-purple-600 text-white shadow-xs'
+                    : 'text-slate-600 hover:text-slate-900'
+                }`}
+              >
+                <Calendar className="w-3.5 h-3.5" />
+                <span>📅 Fecha Única (Cierre Puntual)</span>
+              </button>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 items-start">
+            {/* Fecha Inicio */}
+            <div>
+              <label className="block text-xs font-bold text-slate-700 mb-1.5">
+                {blockMode === 'RANGE' ? 'Fecha de Inicio del Período *' : 'Fecha Específica a Bloquear *'}
+              </label>
+              <input
+                type="date"
+                required
+                value={newBlockedDate}
+                onChange={(e) => setNewBlockedDate(e.target.value)}
+                className="w-full px-3.5 py-2.5 bg-white border border-slate-300 rounded-xl text-xs font-bold text-slate-900 focus:ring-2 focus:ring-purple-600 focus:outline-none shadow-2xs"
+              />
+            </div>
+
+            {/* Fecha Fin (Solo en Modo Rango) */}
+            {blockMode === 'RANGE' && (
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1.5">
+                  Fecha de Fin del Período *
+                </label>
+                <input
+                  type="date"
+                  required
+                  min={newBlockedDate}
+                  value={newBlockedEndDate}
+                  onChange={(e) => setNewBlockedEndDate(e.target.value)}
+                  className="w-full px-3.5 py-2.5 bg-white border border-slate-300 rounded-xl text-xs font-bold text-slate-900 focus:ring-2 focus:ring-purple-600 focus:outline-none shadow-2xs"
+                />
+              </div>
+            )}
+
+            {/* Motivo */}
+            <div className={blockMode === 'RANGE' ? 'sm:col-span-2 lg:col-span-1' : 'sm:col-span-2'}>
+              <label className="block text-xs font-bold text-slate-700 mb-1.5">
+                Motivo Visible en Calendario *
+              </label>
+              <input
+                type="text"
+                required
+                placeholder={blockMode === 'RANGE' ? 'Ej: Vacaciones de Cuadrilla' : 'Ej: Mantenimiento de Equipos'}
+                value={newBlockedReason}
+                onChange={(e) => setNewBlockedReason(e.target.value)}
+                className="w-full px-3.5 py-2.5 bg-white border border-slate-300 rounded-xl text-xs font-bold text-slate-900 focus:ring-2 focus:ring-purple-600 focus:outline-none shadow-2xs"
+              />
+            </div>
+          </div>
+
+          {/* Sugerencias Rápidas de Motivos */}
+          <div className="flex flex-wrap items-center gap-1.5 pt-1">
+            <span className="text-[11px] font-bold text-slate-500">Sugerencias rápidas:</span>
+            {QUICK_REASONS.map((reason) => (
+              <button
+                key={reason}
+                type="button"
+                onClick={() => setNewBlockedReason(reason)}
+                className="px-2.5 py-1 bg-white hover:bg-purple-100/70 text-slate-700 hover:text-purple-900 text-[11px] font-semibold rounded-lg border border-slate-200 transition-colors shadow-2xs"
+              >
+                {reason}
+              </button>
+            ))}
+          </div>
+
+          {/* Previsualización del Período */}
+          {blockMode === 'RANGE' && newBlockedDate && newBlockedEndDate && (
+            <div className="p-3 bg-purple-100/80 text-purple-950 text-xs rounded-xl flex items-center justify-between font-bold border border-purple-200">
+              <span className="flex items-center gap-2">
+                <CalendarRange className="w-4 h-4 text-purple-700 shrink-0" />
+                <span>
+                  Se bloquearán {calculateDaysInRange(newBlockedDate, newBlockedEndDate)} días consecutivos ({newBlockedDate} al {newBlockedEndDate}) en el formulario de reservas.
+                </span>
+              </span>
+            </div>
+          )}
+
+          {/* Botón de Envío */}
+          <div className="pt-2">
+            <button
+              type="submit"
+              disabled={isSaving}
+              className="w-full sm:w-auto px-7 py-3 bg-purple-600 hover:bg-purple-700 text-white font-extrabold text-xs rounded-xl shadow-md shadow-purple-600/20 transition-all active:scale-98 disabled:opacity-50 flex items-center justify-center gap-2"
+            >
+              {isSaving ? (
+                <>
+                  <RefreshCw className="w-4 h-4 animate-spin" />
+                  <span>Guardando Bloqueo...</span>
+                </>
+              ) : (
+                <>
+                  <CalendarRange className="w-4 h-4" />
+                  <span>{blockMode === 'RANGE' ? 'Guardar y Bloquear Rango de Fechas' : 'Guardar y Bloquear Fecha'}</span>
+                </>
+              )}
+            </button>
+          </div>
+
+        </form>
+
+        {/* Tabla / Lista de Bloqueos Creados por la Administración */}
+        <div className="space-y-3">
+          <div className="flex items-center justify-between">
+            <h4 className="text-xs font-black text-slate-900 uppercase tracking-wider flex items-center gap-2">
+              <span>Bloqueos Activos de la Administración ({customBlockedRules.length})</span>
+            </h4>
+            <span className="text-[11px] text-slate-500 font-medium hidden sm:inline">
+              Sincronizado con el componente de reservas
+            </span>
+          </div>
+
+          {customBlockedRules.length === 0 ? (
+            <div className="text-center py-8 bg-slate-50 rounded-2xl border border-slate-200 space-y-2">
+              <CalendarRange className="w-8 h-8 text-slate-400 mx-auto" />
+              <p className="text-xs font-bold text-slate-700">No hay rangos ni fechas bloqueadas manualmente</p>
+              <p className="text-[11px] text-slate-500">Utiliza el formulario superior para programar vacaciones o días cerrados.</p>
+            </div>
+          ) : (
+            <div className="overflow-x-auto rounded-2xl border border-slate-200">
+              <table className="w-full text-left text-xs">
+                <thead className="bg-slate-50 text-slate-600 border-b border-slate-200 font-extrabold uppercase text-[10px] tracking-wider">
+                  <tr>
+                    <th className="py-3 px-4">Período / Fecha</th>
+                    <th className="py-3 px-4">Motivo del Bloqueo</th>
+                    <th className="py-3 px-4">Tipo</th>
+                    <th className="py-3 px-4">En Reservas</th>
+                    <th className="py-3 px-4 text-right">Eliminar</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100 font-medium text-slate-800">
+                  {customBlockedRules.map((b) => {
+                    const isRange = !!b.endDate && b.endDate !== b.date;
+                    const daysCount = isRange ? calculateDaysInRange(b.date, b.endDate) : 1;
+
+                    return (
+                      <tr key={b.id} className="hover:bg-slate-50/70 transition-colors">
+                        <td className="py-3 px-4 font-mono font-bold text-slate-900">
+                          {isRange ? (
+                            <div className="flex items-center gap-1.5">
+                              <span className="text-purple-700 font-black">{b.date}</span>
+                              <ArrowRight className="w-3.5 h-3.5 text-slate-400" />
+                              <span className="text-purple-700 font-black">{b.endDate}</span>
+                              <span className="text-[10px] font-bold text-slate-500 ml-1">({daysCount} días)</span>
+                            </div>
+                          ) : (
+                            <span className="text-slate-900">{b.date}</span>
+                          )}
+                        </td>
+                        <td className="py-3 px-4 font-bold text-slate-800">
+                          {b.reason}
+                        </td>
+                        <td className="py-3 px-4">
+                          {isRange ? (
+                            <span className="px-2.5 py-0.5 bg-purple-100 text-purple-800 border border-purple-200 text-[10px] font-black rounded-lg">
+                              🗓️ Rango ({daysCount} días)
+                            </span>
+                          ) : (
+                            <span className="px-2.5 py-0.5 bg-amber-50 text-amber-800 border border-amber-200 text-[10px] font-black rounded-lg">
+                              📅 Fecha Única
+                            </span>
+                          )}
+                        </td>
+                        <td className="py-3 px-4">
+                          <label className="relative inline-flex items-center cursor-pointer">
+                            <input
+                              type="checkbox"
+                              checked={b.enabled}
+                              onChange={() => toggleBlockedRule(b.id)}
+                              className="sr-only peer"
+                            />
+                            <div className="w-9 h-5 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-purple-600"></div>
+                          </label>
+                        </td>
+                        <td className="py-3 px-4 text-right">
+                          <button
+                            type="button"
+                            onClick={() => handleDeleteBlockedDate(b.id)}
+                            className="p-1.5 text-slate-400 hover:text-rose-600 transition-colors rounded-lg hover:bg-rose-50"
+                            title="Eliminar regla de bloqueo"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+
+      </div>
+
+      {/* ========================================================================= */}
+      {/* SECCIÓN 2 (SEGUNDO PLANO): FERIADOS DE PARAGUAY EN ACORDEÓN               */}
+      {/* ========================================================================= */}
+      <div className="bg-white rounded-3xl border border-slate-200 shadow-xs overflow-hidden">
+        <button
+          type="button"
+          onClick={() => setShowHolidaysAccordion(!showHolidaysAccordion)}
+          className="w-full p-5 sm:p-6 flex items-center justify-between text-left hover:bg-slate-50/70 transition-colors"
+        >
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-2xl bg-slate-100 text-slate-600 flex items-center justify-center font-bold">
+              <Flag className="w-4 h-4 text-slate-700" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <h3 className="text-sm font-bold text-slate-800">
+                  🇵🇾 Feriados Nacionales de Paraguay (Segundo Plano / Opcional)
+                </h3>
+                <span className="px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 text-[10px] font-bold">
+                  {paraguayHolidays.length} Feriados Registrados
+                </span>
+              </div>
+              <p className="text-xs text-slate-500">
+                Festividades oficiales de Paraguay precargadas (Año Nuevo, Semana Santa, Día de la Independencia, etc.).
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2 text-xs font-bold text-slate-600">
+            <span>{showHolidaysAccordion ? "Ocultar" : "Ver Feriados"}</span>
+            {showHolidaysAccordion ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+          </div>
+        </button>
+
+        {showHolidaysAccordion && (
+          <div className="p-6 pt-0 border-t border-slate-100 space-y-4 animate-in fade-in">
+            <div className="flex items-center justify-between pt-4">
+              <span className="text-xs text-slate-600 font-medium">
+                Activa o desactiva si deseas recibir reservas durante los feriados oficiales nacionales.
+              </span>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => toggleAllHolidays(true)}
+                  className="px-2.5 py-1 bg-purple-50 text-purple-700 text-[11px] font-bold rounded-lg border border-purple-200 hover:bg-purple-100"
+                >
+                  Bloquear Todos
+                </button>
+                <button
+                  type="button"
+                  onClick={() => toggleAllHolidays(false)}
+                  className="px-2.5 py-1 bg-slate-100 text-slate-700 text-[11px] font-bold rounded-lg hover:bg-slate-200"
+                >
+                  Permitir Reservas
+                </button>
+              </div>
+            </div>
+
+            <div className="overflow-x-auto rounded-2xl border border-slate-200 max-h-96 overflow-y-auto">
+              <table className="w-full text-left text-xs">
+                <thead className="bg-slate-50 text-slate-600 border-b border-slate-200 font-extrabold uppercase text-[10px] tracking-wider sticky top-0">
+                  <tr>
+                    <th className="py-2.5 px-4">Fecha</th>
+                    <th className="py-2.5 px-4">Festividad</th>
+                    <th className="py-2.5 px-4">Cerrar en Calendario</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100 font-medium text-slate-800">
+                  {paraguayHolidays.map((b) => (
+                    <tr key={b.id} className="hover:bg-slate-50/70 transition-colors">
+                      <td className="py-2 px-4 font-mono font-bold text-slate-900">{b.date}</td>
+                      <td className="py-2 px-4 text-slate-800">{b.reason}</td>
+                      <td className="py-2 px-4">
+                        <label className="relative inline-flex items-center cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={b.enabled}
+                            onChange={() => toggleBlockedRule(b.id)}
+                            className="sr-only peer"
+                          />
+                          <div className="w-8 h-4 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:bg-purple-600"></div>
+                        </label>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* SECCIÓN 3: REGLAS DE CAPACIDAD Y CUADRILLA */}
       <div className="bg-white rounded-3xl p-6 sm:p-7 border border-slate-200 shadow-xs space-y-5">
         <div className="flex items-center justify-between border-b border-slate-100 pb-4">
           <div className="flex items-center gap-3">
@@ -394,7 +778,6 @@ export default function AvailabilityManager({ employees, onNotice }: Availabilit
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-          {/* Opción 1: Capacidad Automática por Empleados */}
           <div
             onClick={() => {
               const updated = { ...settings, capacityMode: 'AUTO_BY_EMPLOYEES' as const };
@@ -441,7 +824,6 @@ export default function AvailabilityManager({ employees, onNotice }: Availabilit
             </div>
           </div>
 
-          {/* Opción 2: Límite Manual Fijo */}
           <div
             onClick={() => {
               const updated = { ...settings, capacityMode: 'MANUAL_LIMIT' as const };
@@ -490,7 +872,7 @@ export default function AvailabilityManager({ employees, onNotice }: Availabilit
         </div>
       </div>
 
-      {/* SECCIÓN 2: DÍAS DE LA SEMANA Y DOMINGOS */}
+      {/* SECCIÓN 4: DÍAS DE LA SEMANA Y DOMINGOS */}
       <div className="bg-white rounded-3xl p-6 sm:p-7 border border-slate-200 shadow-xs space-y-5">
         <div className="flex items-center justify-between border-b border-slate-100 pb-4">
           <div className="flex items-center gap-3">
@@ -546,7 +928,6 @@ export default function AvailabilityManager({ employees, onNotice }: Availabilit
                     )}
                   </div>
                   
-                  {/* Switch Toggle */}
                   <label className="relative inline-flex items-center cursor-pointer">
                     <input
                       type="checkbox"
@@ -594,7 +975,7 @@ export default function AvailabilityManager({ employees, onNotice }: Availabilit
         </div>
       </div>
 
-      {/* SECCIÓN 3: HORARIOS Y TURNOS DE LLEGADA */}
+      {/* SECCIÓN 5: HORARIOS Y TURNOS DE LLEGADA */}
       <div className="bg-white rounded-3xl p-6 sm:p-7 border border-slate-200 shadow-xs space-y-5">
         <div className="flex items-center justify-between border-b border-slate-100 pb-4">
           <div className="flex items-center gap-3">
@@ -621,7 +1002,6 @@ export default function AvailabilityManager({ employees, onNotice }: Availabilit
           </button>
         </div>
 
-        {/* Formulario para nuevo turno */}
         {isAddingSlot && (
           <form onSubmit={handleAddCustomSlot} className="p-4 bg-slate-50 border border-slate-200 rounded-2xl grid grid-cols-1 sm:grid-cols-3 gap-3 items-end animate-in fade-in">
             <div>
@@ -708,216 +1088,6 @@ export default function AvailabilityManager({ employees, onNotice }: Availabilit
               </div>
             </div>
           ))}
-        </div>
-      </div>
-
-      {/* SECCIÓN 4: FERIADOS Y BLOQUEO DE FECHAS / RANGOS */}
-      <div className="bg-white rounded-3xl p-6 sm:p-7 border border-slate-200 shadow-xs space-y-5">
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 border-b border-slate-100 pb-4">
-          <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-2xl bg-purple-50 text-purple-600 flex items-center justify-center font-bold">
-              <CalendarOff className="w-5 h-5" />
-            </div>
-            <div>
-              <h3 className="text-sm font-extrabold text-slate-900">
-                Feriados de Paraguay y Bloqueo de Fechas o Rangos
-              </h3>
-              <p className="text-xs text-slate-500">
-                Bloquea días específicos o rangos de fechas completas (vacaciones, mantenimiento, receso).
-              </p>
-            </div>
-          </div>
-
-          <button
-            type="button"
-            onClick={() => setIsAddingBlockedDate(!isAddingBlockedDate)}
-            className="px-3 py-1.5 bg-purple-50 hover:bg-purple-100 text-purple-700 border border-purple-200 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-colors"
-          >
-            <Plus className="w-3.5 h-3.5" />
-            <span>Bloquear Fecha o Rango</span>
-          </button>
-        </div>
-
-        {/* Formulario para bloquear fecha única o rango de fechas */}
-        {isAddingBlockedDate && (
-          <form onSubmit={handleAddBlockedDate} className="p-5 bg-purple-50/50 border border-purple-200 rounded-2xl space-y-4 animate-in fade-in">
-            {/* Selector de Modo: Fecha Única vs Rango */}
-            <div className="flex items-center gap-2">
-              <span className="text-xs font-bold text-slate-700">Tipo de Bloqueo:</span>
-              <div className="flex bg-white p-1 rounded-xl border border-purple-200 shadow-2xs">
-                <button
-                  type="button"
-                  onClick={() => setBlockMode('SINGLE')}
-                  className={`px-3 py-1 text-xs font-bold rounded-lg transition-all ${
-                    blockMode === 'SINGLE'
-                      ? 'bg-purple-600 text-white shadow-2xs'
-                      : 'text-slate-600 hover:text-slate-900'
-                  }`}
-                >
-                  📅 Fecha Única
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setBlockMode('RANGE')}
-                  className={`px-3 py-1 text-xs font-bold rounded-lg transition-all ${
-                    blockMode === 'RANGE'
-                      ? 'bg-purple-600 text-white shadow-2xs'
-                      : 'text-slate-600 hover:text-slate-900'
-                  }`}
-                >
-                  🗓️ Rango de Fechas
-                </button>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 items-end">
-              <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">
-                  {blockMode === 'RANGE' ? 'Fecha de Inicio *' : 'Fecha a Bloquear *'}
-                </label>
-                <input
-                  type="date"
-                  required
-                  value={newBlockedDate}
-                  onChange={(e) => setNewBlockedDate(e.target.value)}
-                  className="w-full px-3 py-2 bg-white border border-slate-300 rounded-xl text-xs font-bold text-slate-900 focus:ring-1 focus:ring-purple-600"
-                />
-              </div>
-
-              {blockMode === 'RANGE' && (
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">
-                    Fecha de Fin *
-                  </label>
-                  <input
-                    type="date"
-                    required
-                    min={newBlockedDate}
-                    value={newBlockedEndDate}
-                    onChange={(e) => setNewBlockedEndDate(e.target.value)}
-                    className="w-full px-3 py-2 bg-white border border-slate-300 rounded-xl text-xs font-bold text-slate-900 focus:ring-1 focus:ring-purple-600"
-                  />
-                </div>
-              )}
-
-              <div className={blockMode === 'RANGE' ? 'sm:col-span-1' : 'sm:col-span-2'}>
-                <label className="block text-xs font-bold text-slate-700 mb-1">Motivo del Cierre</label>
-                <input
-                  type="text"
-                  placeholder={blockMode === 'RANGE' ? 'Ej: Vacaciones de Cuadrilla / Receso' : 'Ej: Feriado Extraordinario / Inventario'}
-                  value={newBlockedReason}
-                  onChange={(e) => setNewBlockedReason(e.target.value)}
-                  className="w-full px-3 py-2 bg-white border border-slate-300 rounded-xl text-xs font-medium text-slate-900 focus:ring-1 focus:ring-purple-600"
-                />
-              </div>
-            </div>
-
-            {blockMode === 'RANGE' && newBlockedDate && newBlockedEndDate && (
-              <div className="p-2.5 bg-purple-100/60 text-purple-900 text-xs rounded-xl flex items-center justify-between font-semibold">
-                <span className="flex items-center gap-1.5">
-                  <CalendarRange className="w-4 h-4 text-purple-700" />
-                  <span>Bloqueará {calculateDaysInRange(newBlockedDate, newBlockedEndDate)} días consecutivos ({newBlockedDate} al {newBlockedEndDate})</span>
-                </span>
-              </div>
-            )}
-
-            <div className="flex items-center gap-2 pt-1">
-              <button
-                type="submit"
-                disabled={isSaving}
-                className="px-5 py-2.5 bg-purple-600 text-white rounded-xl text-xs font-bold hover:bg-purple-700 shadow-sm transition-all active:scale-98 disabled:opacity-50 flex items-center gap-2"
-              >
-                {isSaving && <RefreshCw className="w-3.5 h-3.5 animate-spin" />}
-                <span>{blockMode === 'RANGE' ? 'Guardar y Bloquear Rango' : 'Guardar y Bloquear Fecha'}</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => setIsAddingBlockedDate(false)}
-                className="py-2.5 px-4 bg-slate-200 text-slate-700 rounded-xl text-xs font-bold hover:bg-slate-300"
-              >
-                Cancelar
-              </button>
-            </div>
-          </form>
-        )}
-
-        {/* Tabla de Feriados y Bloqueos */}
-        <div className="overflow-x-auto rounded-2xl border border-slate-200">
-          <table className="w-full text-left text-xs">
-            <thead className="bg-slate-50 text-slate-600 border-b border-slate-200 font-extrabold uppercase text-[10px] tracking-wider">
-              <tr>
-                <th className="py-3 px-4">Fecha / Período</th>
-                <th className="py-3 px-4">Motivo / Festividad</th>
-                <th className="py-3 px-4">Tipo</th>
-                <th className="py-3 px-4">Estado</th>
-                <th className="py-3 px-4 text-right">Acciones</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100 font-medium text-slate-800">
-              {settings.blockedDates.map((b) => {
-                const isRange = !!b.endDate && b.endDate !== b.date;
-                const daysCount = isRange ? calculateDaysInRange(b.date, b.endDate) : 1;
-
-                return (
-                  <tr key={b.id} className="hover:bg-slate-50/70 transition-colors">
-                    <td className="py-2.5 px-4 font-mono font-bold text-slate-900">
-                      {isRange ? (
-                        <div className="flex items-center gap-1.5">
-                          <span className="text-purple-700 font-black">{b.date}</span>
-                          <ArrowRight className="w-3 h-3 text-slate-400" />
-                          <span className="text-purple-700 font-black">{b.endDate}</span>
-                          <span className="text-[10px] font-bold text-slate-500 ml-1">({daysCount} días)</span>
-                        </div>
-                      ) : (
-                        <span>{b.date}</span>
-                      )}
-                    </td>
-                    <td className="py-2.5 px-4 font-semibold text-slate-800">
-                      {b.reason}
-                    </td>
-                    <td className="py-2.5 px-4">
-                      {b.isHoliday ? (
-                        <span className="px-2 py-0.5 bg-purple-50 text-purple-700 border border-purple-200 text-[10px] font-bold rounded-md">
-                          Feriado Oficial PY
-                        </span>
-                      ) : isRange ? (
-                        <span className="px-2 py-0.5 bg-indigo-50 text-indigo-700 border border-indigo-200 text-[10px] font-bold rounded-md">
-                          🗓️ Rango de Fechas
-                        </span>
-                      ) : (
-                        <span className="px-2 py-0.5 bg-amber-50 text-amber-700 border border-amber-200 text-[10px] font-bold rounded-md">
-                          📅 Fecha Puntual
-                        </span>
-                      )}
-                    </td>
-                    <td className="py-2.5 px-4">
-                      <label className="relative inline-flex items-center cursor-pointer">
-                        <input
-                          type="checkbox"
-                          checked={b.enabled}
-                          onChange={() => toggleHoliday(b.id)}
-                          className="sr-only peer"
-                        />
-                        <div className="w-9 h-5 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-purple-600"></div>
-                      </label>
-                    </td>
-                    <td className="py-2.5 px-4 text-right">
-                      {!b.isHoliday && (
-                        <button
-                          type="button"
-                          onClick={() => handleDeleteBlockedDate(b.id)}
-                          className="p-1.5 text-slate-400 hover:text-rose-600 transition-colors rounded-lg hover:bg-rose-50"
-                          title="Eliminar fecha o rango bloqueado"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
-                      )}
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
         </div>
       </div>
 
