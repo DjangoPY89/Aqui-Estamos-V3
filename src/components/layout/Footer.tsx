@@ -11,12 +11,12 @@ export default function Footer() {
           
           {/* Marca */}
           <div className="lg:col-span-2 space-y-4">
-            <div className="relative h-9 w-36 bg-white p-1 rounded-md">
+            <div className="relative h-10 w-40">
               <Image
-                src="/images/logo.jpeg"
+                src="/images/logo-white.svg"
                 alt="Aquí Estamos"
                 fill
-                className="object-contain"
+                className="object-contain object-left"
               />
             </div>
             <p className="text-xs text-neutral-400 leading-relaxed max-w-sm">

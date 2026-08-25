@@ -147,7 +147,7 @@ function RegisterForm() {
         <Link href="/" className="inline-block mb-4 transition-transform hover:scale-105">
           <div className="relative h-11 w-48 mx-auto">
             <Image
-              src="/images/logo.jpeg"
+              src="/images/logo.svg"
               alt="Aquí Estamos Limpieza"
               fill
               className="object-contain"

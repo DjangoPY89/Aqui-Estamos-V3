@@ -143,7 +143,7 @@ function RecuperarPasswordContent() {
           <Link href="/" className="inline-block transition-transform hover:scale-105">
             <div className="relative h-12 w-48 mx-auto">
               <Image
-                src="/images/logo.jpeg"
+                src="/images/logo.svg"
                 alt="Aquí Estamos Limpieza"
                 fill
                 className="object-contain"

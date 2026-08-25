@@ -9,14 +9,14 @@ export const metadata: Metadata = {
   title: "Aquí Estamos | Servicios Profesionales de Limpieza en Asunción",
   description: "Limpieza profesional de casas y oficinas en Asunción y Gran Asunción. Reserva tu limpieza estándar, profunda o de mudanza en 60 segundos con personal verificado y garantía 200%.",
   icons: {
-    icon: "/images/favicon.jpeg",
-    shortcut: "/images/favicon.jpeg",
-    apple: "/images/favicon.jpeg",
+    icon: "/images/favicon.png",
+    shortcut: "/images/favicon.png",
+    apple: "/images/favicon.png",
   },
   openGraph: {
     title: "Aquí Estamos | Limpieza Profesional en Asunción",
     description: "Reserva tu limpieza de hogar en 60 segundos. Garantía de satisfacción total en Asunción y Gran Asunción.",
-    images: ["/images/favicon.jpeg"],
+    images: ["/images/logo.png"],
   },
 };
 

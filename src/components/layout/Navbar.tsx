@@ -38,7 +38,7 @@ export default function Navbar() {
           <Link href="/" className="flex items-center gap-3">
             <div className="relative h-10 w-40 flex items-center">
               <Image
-                src="/images/logo.jpeg"
+                src="/images/logo.svg"
                 alt="Aquí Estamos"
                 fill
                 className="object-contain object-left"

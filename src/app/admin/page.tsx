@@ -1062,7 +1062,7 @@ export default function AdminDashboardPage() {
             <Link href="/" className="inline-block">
               <div className="relative h-14 w-52 mx-auto">
                 <Image
-                  src="/images/logo.jpeg"
+                  src="/images/logo.svg"
                   alt="Aquí Estamos Limpieza"
                   fill
                   className="object-contain"
