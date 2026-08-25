@@ -1,12 +1,12 @@
 import { NextResponse } from 'next/server';
-import { getAvailabilitySettings, getAvailabilitySettingsAsync, saveAvailabilitySettings } from '@/lib/availability';
+import { getAvailabilitySettings, saveAvailabilitySettings } from '@/lib/availability';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
 export async function GET() {
   try {
-    const settings = await getAvailabilitySettingsAsync();
+    const settings = getAvailabilitySettings();
     return NextResponse.json(
       { success: true, settings },
       {

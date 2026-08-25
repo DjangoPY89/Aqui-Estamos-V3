@@ -259,47 +259,59 @@ function BookingContent() {
         return deletedList.includes(norm) || (idText ? deletedList.includes(idText) : false);
       };
 
+      const normalizeAddr = (str: string) => {
+        return (str || "")
+          .toLowerCase()
+          .normalize("NFD")
+          .replace(/[\u0300-\u036f]/g, "")
+          .replace(/[^a-z0-9]/gi, "")
+          .trim();
+      };
+
       const addressesList: SavedAddress[] = [];
 
-      // 1. Cargar desde LocalStorage
+      // 1. Cargar desde LocalStorage (direcciones explícitamente guardadas por el usuario en portal/reserva)
       try {
         const localData = localStorage.getItem("aquiestamos_saved_addresses");
         if (localData) {
           const parsed = JSON.parse(localData);
           if (Array.isArray(parsed)) {
             parsed.forEach((a: SavedAddress) => {
-              if (!isDeleted(a.address, a.id)) {
-                addressesList.push(a);
+              if (a.address && !isDeleted(a.address, a.id)) {
+                const norm = normalizeAddr(a.address);
+                const exists = addressesList.some(
+                  (item) => normalizeAddr(item.address) === norm || item.id === a.id
+                );
+                if (!exists) {
+                  addressesList.push(a);
+                }
               }
             });
           }
         }
       } catch (e) {}
 
-      // 2. Cargar desde perfil de usuario si está logueado
+      // 2. Cargar datos del perfil del usuario (si está autenticado)
       if (session?.user) {
         try {
-          const [profRes, bkRes] = await Promise.all([
-            fetch("/api/user/profile"),
-            fetch("/api/bookings"),
-          ]);
+          const profRes = await fetch("/api/user/profile");
 
-          let profilePhone = "";
           if (profRes.ok) {
             const profData = await profRes.json();
             if (profData?.user) {
               if (profData.user.phone) {
-                profilePhone = profData.user.phone;
                 setCustomerPhone(profData.user.phone);
                 setHasSavedPhone(true);
               }
               if (profData.user.name && !customerName) setCustomerName(profData.user.name);
+
               if (profData.user.address && !isDeleted(profData.user.address, "profile_default")) {
-                const exists = addressesList.some(a => a.address.toLowerCase().trim() === profData.user.address.toLowerCase().trim());
+                const norm = normalizeAddr(profData.user.address);
+                const exists = addressesList.some((a) => normalizeAddr(a.address) === norm);
                 if (!exists) {
                   addressesList.unshift({
                     id: "profile_default",
-                    label: "🏠 Dirección Habitual",
+                    label: "🏠 Mi Hogar / Principal",
                     address: profData.user.address,
                     latitude: -25.2831,
                     longitude: -57.5612,
@@ -309,40 +321,12 @@ function BookingContent() {
               }
             }
           }
-
-          if (bkRes.ok) {
-            const bkData = await bkRes.json();
-            if (bkData?.bookings && Array.isArray(bkData.bookings) && bkData.bookings.length > 0) {
-              if (!profilePhone && bkData.bookings[0]?.customerPhone) {
-                setCustomerPhone(bkData.bookings[0].customerPhone);
-                setHasSavedPhone(true);
-              }
-            }
-
-            const hasInitialized = localStorage.getItem("aquiestamos_addresses_initialized") === "true";
-            if (!hasInitialized && bkData?.bookings && Array.isArray(bkData.bookings)) {
-              bkData.bookings.forEach((b: any) => {
-                if (b.address && !isDeleted(b.address, `bk_${b.id}`)) {
-                  const exists = addressesList.some(a => a.address.toLowerCase().trim() === b.address.toLowerCase().trim());
-                  if (!exists) {
-                    addressesList.push({
-                      id: `bk_${b.id}`,
-                      label: `📍 ${b.address.split(",")[0]}`,
-                      address: b.address,
-                      latitude: b.latitude || -25.2831,
-                      longitude: b.longitude || -57.5612,
-                    });
-                  }
-                }
-              });
-            }
-          }
         } catch (e) {
-          console.error("Error al cargar direcciones:", e);
+          console.error("Error al cargar perfil de usuario:", e);
         }
       }
 
-      // Si no hay ninguna dirección y no está logueado, agregar ejemplo amigable si el usuario es demo
+      // Si hay direcciones guardadas únicas, seleccionar la principal por defecto
       if (addressesList.length > 0) {
         setSavedAddresses(addressesList);
         setAddressMode("SAVED");
