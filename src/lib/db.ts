@@ -137,6 +137,13 @@ function initSchema(db: Database.Database) {
       is_published INTEGER DEFAULT 1,
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP
     );
+
+    CREATE TABLE IF NOT EXISTS site_visits (
+      id TEXT PRIMARY KEY,
+      date_str TEXT NOT NULL,
+      path TEXT,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    );
   `);
 
   try {
@@ -1121,6 +1128,61 @@ export function autoAssignRandomEmployeesToPendingBookings(): {
     assignedCount: assignments.length,
     assignments,
   };
+}
+
+// ==========================================
+// REGISTRO Y CONTEO DE VISITAS EN VIVO
+// ==========================================
+
+export function recordPageVisit(path: string = "/"): number {
+  try {
+    const db = getDb();
+    const id = `vis_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
+    const todayStr = new Date().toISOString().slice(0, 10);
+
+    db.prepare(`
+      INSERT INTO site_visits (id, date_str, path, created_at)
+      VALUES (?, ?, ?, CURRENT_TIMESTAMP)
+    `).run(id, todayStr, path);
+
+    const todayCount = db.prepare("SELECT COUNT(*) as count FROM site_visits WHERE date_str = ?").get(todayStr) as any;
+    return todayCount?.count || 1;
+  } catch (e) {
+    return 1;
+  }
+}
+
+export function getSiteVisitsStats(): { totalVisits: number; todayVisits: number; dailyVisits: { [date: string]: number } } {
+  try {
+    const db = getDb();
+    const todayStr = new Date().toISOString().slice(0, 10);
+    const totalRow = db.prepare("SELECT COUNT(*) as count FROM site_visits").get() as any;
+    const todayRow = db.prepare("SELECT COUNT(*) as count FROM site_visits WHERE date_str = ?").get(todayStr) as any;
+
+    const rows = db.prepare(`
+      SELECT date_str, COUNT(*) as count 
+      FROM site_visits 
+      GROUP BY date_str 
+      ORDER BY date_str ASC
+    `).all() as { date_str: string; count: number }[];
+
+    const dailyVisits: { [date: string]: number } = {};
+    rows.forEach(r => {
+      if (r.date_str) dailyVisits[r.date_str] = r.count;
+    });
+
+    return {
+      totalVisits: totalRow?.count || 0,
+      todayVisits: todayRow?.count || 0,
+      dailyVisits,
+    };
+  } catch (e) {
+    return {
+      totalVisits: 0,
+      todayVisits: 0,
+      dailyVisits: {},
+    };
+  }
 }
 
 export default getDb;

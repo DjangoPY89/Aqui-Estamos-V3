@@ -4,6 +4,7 @@ import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
 import WhatsAppFloat from "@/components/layout/WhatsAppFloat";
 import AuthProvider from "@/components/providers/AuthProvider";
+import { PageVisitTracker } from "@/components/analytics/PageVisitTracker";
 
 export const metadata: Metadata = {
   title: "Aquí Estamos | Servicios Profesionales de Limpieza en Asunción",
@@ -29,6 +30,7 @@ export default function RootLayout({
     <html lang="es" className="scroll-smooth">
       <body className="min-h-screen flex flex-col antialiased bg-slate-50 text-slate-900 font-sans">
         <AuthProvider>
+          <PageVisitTracker />
           <Navbar />
           <div className="flex-1">
             {children}
