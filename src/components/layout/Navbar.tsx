@@ -3,6 +3,7 @@
 import React, { useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
+import { usePathname } from "next/navigation";
 import { useSession, signOut } from "next-auth/react";
 import { 
   User as UserIcon, 
@@ -27,16 +28,18 @@ export default function Navbar() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [userDropdownOpen, setUserDropdownOpen] = useState(false);
 
+  const pathname = usePathname();
   const isAdmin = (session?.user as any)?.role === "ADMIN";
+  const isReservarPage = pathname === "/reservar";
 
   return (
     <header className="sticky top-0 z-50 bg-white/90 backdrop-blur-md border-b border-neutral-200">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between h-18 py-3">
+        <div className="flex items-center justify-between h-16 py-2.5">
           
           {/* Logo */}
-          <Link href="/" className="flex items-center gap-3">
-            <div className="relative h-10 w-40 flex items-center">
+          <Link href="/" className="flex items-center shrink-0">
+            <div className="relative h-8 sm:h-9 w-28 sm:w-36 flex items-center">
               <Image
                 src="/images/logo.svg"
                 alt="Aquí Estamos"
@@ -158,15 +161,17 @@ export default function Navbar() {
 
           {/* Menú Móvil Botón */}
           <div className="flex lg:hidden items-center gap-2">
-            <Link
-              href="/reservar"
-              className="bg-electric-600 text-white text-xs font-medium px-3 py-1.5 rounded-md shadow-xs"
-            >
-              Reservar
-            </Link>
+            {!isReservarPage && (
+              <Link
+                href="/reservar"
+                className="bg-electric-600 active:bg-electric-700 text-white text-xs font-semibold px-3 py-1.5 rounded-lg shadow-xs transition-colors"
+              >
+                Reservar
+              </Link>
+            )}
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="p-1.5 text-neutral-700 rounded-md hover:bg-neutral-100 focus:outline-none"
+              className="p-2 text-neutral-700 rounded-xl hover:bg-neutral-100 active:bg-neutral-200 focus:outline-none transition-colors"
               aria-label="Abrir menú"
             >
               {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}

@@ -415,13 +415,13 @@ function BookingContent() {
     return (
       <div className="min-h-[85vh] bg-gradient-to-b from-neutral-50 via-white to-electric-50/20 flex flex-col justify-center py-12 px-4 sm:px-6 lg:px-8">
         <div className="sm:mx-auto sm:w-full sm:max-w-md text-center px-4">
-          <Link href="/" className="inline-block mb-4 transition-transform hover:scale-105">
-            <div className="relative h-11 w-48 mx-auto">
+          <Link href="/" className="inline-flex items-center justify-center mb-4 transition-transform hover:scale-105">
+            <div className="relative h-10 sm:h-12 w-36 sm:w-44 mx-auto flex items-center justify-center">
               <Image
                 src="/images/logo.svg"
                 alt="Aquí Estamos Limpieza"
                 fill
-                className="object-contain"
+                className="object-contain object-center"
                 priority
               />
             </div>
