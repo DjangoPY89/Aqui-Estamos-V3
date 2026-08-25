@@ -226,39 +226,36 @@ export default function AdminDashboardPage() {
       const emailClean = adminEmail.trim().toLowerCase();
       const passClean = adminPassword.trim();
 
-      const res = await fetch("/api/admin/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          email: emailClean,
-          password: passClean,
-        }),
+      // Autenticación directa a través del motor oficial de NextAuth
+      const loginRes = await signIn("credentials", {
+        redirect: false,
+        email: emailClean,
+        password: passClean,
+        callbackUrl: "/admin",
       });
 
-      let data: any = {};
-      try {
-        const text = await res.text();
-        data = text ? JSON.parse(text) : {};
-      } catch (e) {
-        data = { error: "No se pudo procesar la respuesta del servidor." };
-      }
-
-      if (res.ok && data.ok) {
-        await signIn("credentials", {
-          redirect: false,
-          email: emailClean,
-          password: passClean,
-          callbackUrl: "/admin",
-        });
+      if (loginRes?.error) {
+        setAdminAuthError(
+          loginRes.error === "CredentialsSignin" || loginRes.error.includes("CredentialsSignin")
+            ? "Correo o contraseña incorrectos. Verifica que el correo sea juanas89@gmail.com y la contraseña DjangoPY89."
+            : loginRes.error
+        );
+        setAdminAuthLoading(false);
+      } else {
+        // Establecer cookies administrativas adicionales en background
+        try {
+          fetch("/api/admin/login", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ email: emailClean, password: passClean }),
+          }).catch(() => {});
+        } catch (e) {}
 
         window.location.href = "/admin";
-      } else {
-        setAdminAuthError(data.error || "Credenciales incorrectas. Verifica que el correo sea juanas89@gmail.com y la contraseña DjangoPY89.");
-        setAdminAuthLoading(false);
       }
     } catch (err: any) {
       console.error("Error en login admin:", err);
-      setAdminAuthError("No se pudo alcanzar el servidor. Verifica tu conexión e intenta de nuevo.");
+      setAdminAuthError("Ocurrió un error inesperado al conectar. Por favor intenta de nuevo.");
       setAdminAuthLoading(false);
     }
   };
