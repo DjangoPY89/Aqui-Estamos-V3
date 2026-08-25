@@ -167,7 +167,9 @@ function BookingContent() {
     const checkDate = async () => {
       setIsCheckingDate(true);
       try {
-        const res = await fetch(`/api/availability?date=${serviceDate}`);
+        const res = await fetch(`/api/availability?date=${serviceDate}&t=${Date.now()}`, {
+          cache: "no-store",
+        });
         const data = await res.json();
         if (!isMounted) return;
 

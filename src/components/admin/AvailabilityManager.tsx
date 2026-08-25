@@ -46,6 +46,7 @@ export default function AvailabilityManager({ employees, onNotice }: Availabilit
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
+  const [saveMessage, setSaveMessage] = useState('¡Configuración guardada correctamente!');
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   // Formulario para nuevo bloqueo de fecha o rango
@@ -60,12 +61,14 @@ export default function AvailabilityManager({ employees, onNotice }: Availabilit
   const [newSlotLabel, setNewSlotLabel] = useState('');
   const [isAddingSlot, setIsAddingSlot] = useState(false);
 
-  // Cargar configuraciones
+  // Cargar configuraciones (con no-store para evitar caching)
   const fetchSettings = async () => {
     setIsLoading(true);
     setErrorMessage(null);
     try {
-      const res = await fetch('/api/admin/availability-settings');
+      const res = await fetch(`/api/admin/availability-settings?t=${Date.now()}`, {
+        cache: 'no-store',
+      });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Error al cargar configuraciones');
       setSettings(data.settings);
@@ -80,8 +83,8 @@ export default function AvailabilityManager({ employees, onNotice }: Availabilit
     fetchSettings();
   }, []);
 
-  // Guardar configuraciones
-  const handleSave = async (customSettings?: AvailabilitySettings) => {
+  // Guardar configuraciones y persistir en el servidor
+  const handleSave = async (customSettings?: AvailabilitySettings, customSuccessMsg?: string) => {
     const toSave = customSettings || settings;
     if (!toSave) return;
 
@@ -99,8 +102,9 @@ export default function AvailabilityManager({ employees, onNotice }: Availabilit
       if (!res.ok) throw new Error(data.error || 'Error al guardar');
       
       setSettings(data.settings);
+      setSaveMessage(customSuccessMsg || '¡Configuración guardada y sincronizada con éxito!');
       setSaveSuccess(true);
-      if (onNotice) onNotice('¡Configuraciones de disponibilidad guardadas con éxito!');
+      if (onNotice) onNotice(customSuccessMsg || '¡Configuraciones de disponibilidad guardadas con éxito!');
       setTimeout(() => setSaveSuccess(false), 3500);
     } catch (err: any) {
       setErrorMessage(err.message || 'Error al guardar configuraciones');
@@ -124,7 +128,7 @@ export default function AvailabilityManager({ employees, onNotice }: Availabilit
     ? activeCount * (settings.maxBookingsPerEmployeePerDay || 1)
     : settings.manualDailyMaxBookings;
 
-  // Modificadores de Estado
+  // Modificadores de Estado con Auto-Save
   const toggleDay = (dayKey: DayOfWeek) => {
     const updated = {
       ...settings,
@@ -140,10 +144,11 @@ export default function AvailabilityManager({ employees, onNotice }: Availabilit
       updated.allowSundayBookings = !settings.workingDays.sunday.enabled;
     }
     setSettings(updated);
+    handleSave(updated, `Día ${updated.workingDays[dayKey].name} ${updated.workingDays[dayKey].enabled ? 'habilitado' : 'cerrado'} correctamente.`);
   };
 
   const updateDayTimes = (dayKey: DayOfWeek, startTime: string, endTime: string) => {
-    setSettings({
+    const updated = {
       ...settings,
       workingDays: {
         ...settings.workingDays,
@@ -153,24 +158,29 @@ export default function AvailabilityManager({ employees, onNotice }: Availabilit
           endTime,
         },
       },
-    });
+    };
+    setSettings(updated);
   };
 
   const toggleTimeSlot = (slotId: string) => {
     const updatedSlots = settings.timeSlots.map((s) =>
       s.id === slotId ? { ...s, enabled: !s.enabled } : s
     );
-    setSettings({ ...settings, timeSlots: updatedSlots });
+    const updated = { ...settings, timeSlots: updatedSlots };
+    setSettings(updated);
+    handleSave(updated, 'Turno actualizado con éxito.');
   };
 
   const toggleHoliday = (holidayId: string) => {
     const updatedHolidays = settings.blockedDates.map((h) =>
       h.id === holidayId ? { ...h, enabled: !h.enabled } : h
     );
-    setSettings({ ...settings, blockedDates: updatedHolidays });
+    const updated = { ...settings, blockedDates: updatedHolidays };
+    setSettings(updated);
+    handleSave(updated, 'Estado de fecha o feriado actualizado.');
   };
 
-  const handleAddBlockedDate = (e: React.FormEvent) => {
+  const handleAddBlockedDate = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newBlockedDate) return;
 
@@ -183,27 +193,39 @@ export default function AvailabilityManager({ employees, onNotice }: Availabilit
       finalEndDate = newBlockedEndDate;
     }
 
+    const reasonLabel = newBlockedReason.trim() || (blockMode === 'RANGE' ? 'Receso / Rango Bloqueado' : 'Día No Laborable');
+
     const newEntry: BlockedDate = {
       id: `custom_${Date.now()}`,
       date: newBlockedDate,
       endDate: finalEndDate,
-      reason: newBlockedReason.trim() || (blockMode === 'RANGE' ? 'Receso / Rango Bloqueado' : 'Día No Laborable'),
+      reason: reasonLabel,
       isHoliday: false,
       enabled: true,
     };
 
     const updatedBlocked = [newEntry, ...settings.blockedDates];
-    setSettings({ ...settings, blockedDates: updatedBlocked });
+    const updatedSettings = { ...settings, blockedDates: updatedBlocked };
+    
+    setSettings(updatedSettings);
     setNewBlockedDate('');
     setNewBlockedEndDate('');
     setNewBlockedReason('');
     setIsAddingBlockedDate(false);
     setErrorMessage(null);
+
+    const msg = finalEndDate 
+      ? `¡Rango bloqueado del ${newEntry.date} al ${finalEndDate} guardado con éxito!`
+      : `¡Fecha ${newEntry.date} bloqueada y guardada con éxito!`;
+
+    await handleSave(updatedSettings, msg);
   };
 
   const handleDeleteBlockedDate = (id: string) => {
     const filtered = settings.blockedDates.filter((b) => b.id !== id);
-    setSettings({ ...settings, blockedDates: filtered });
+    const updated = { ...settings, blockedDates: filtered };
+    setSettings(updated);
+    handleSave(updated, 'Fecha o rango eliminado con éxito.');
   };
 
   const handleAddCustomSlot = (e: React.FormEvent) => {
@@ -218,15 +240,19 @@ export default function AvailabilityManager({ employees, onNotice }: Availabilit
       enabled: true,
     };
 
-    setSettings({ ...settings, timeSlots: [...settings.timeSlots, newSlot] });
+    const updated = { ...settings, timeSlots: [...settings.timeSlots, newSlot] };
+    setSettings(updated);
     setNewSlotTime('');
     setNewSlotLabel('');
     setIsAddingSlot(false);
+    handleSave(updated, 'Nuevo turno agregado y guardado con éxito.');
   };
 
   const handleDeleteSlot = (id: string) => {
     const filtered = settings.timeSlots.filter((s) => s.id !== id);
-    setSettings({ ...settings, timeSlots: filtered });
+    const updated = { ...settings, timeSlots: filtered };
+    setSettings(updated);
+    handleSave(updated, 'Turno eliminado correctamente.');
   };
 
   // Calcular cantidad de días en un rango
@@ -278,8 +304,8 @@ export default function AvailabilityManager({ employees, onNotice }: Availabilit
         <div className="p-4 bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs rounded-2xl flex items-center gap-3 animate-in fade-in shadow-xs">
           <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0" />
           <div>
-            <p className="font-bold">¡Configuración guardada correctamente!</p>
-            <p className="text-[11px] text-emerald-700">Los clientes ahora verán las nuevas reglas de turnos y días habilitados en tiempo real.</p>
+            <p className="font-bold">{saveMessage}</p>
+            <p className="text-[11px] text-emerald-700">El cotizador web ahora refleja estos cambios inmediatamente para los clientes.</p>
           </div>
         </div>
       )}
@@ -370,7 +396,11 @@ export default function AvailabilityManager({ employees, onNotice }: Availabilit
         <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
           {/* Opción 1: Capacidad Automática por Empleados */}
           <div
-            onClick={() => setSettings({ ...settings, capacityMode: 'AUTO_BY_EMPLOYEES' })}
+            onClick={() => {
+              const updated = { ...settings, capacityMode: 'AUTO_BY_EMPLOYEES' as const };
+              setSettings(updated);
+              handleSave(updated, 'Modo de capacidad automática por cuadrilla activado.');
+            }}
             className={`p-5 rounded-2xl border-2 cursor-pointer transition-all ${
               settings.capacityMode === 'AUTO_BY_EMPLOYEES'
                 ? 'border-electric-600 bg-electric-50/40 shadow-xs'
@@ -397,7 +427,12 @@ export default function AvailabilityManager({ employees, onNotice }: Availabilit
               </label>
               <select
                 value={settings.maxBookingsPerEmployeePerDay || 1}
-                onChange={(e) => setSettings({ ...settings, maxBookingsPerEmployeePerDay: Number(e.target.value) })}
+                onChange={(e) => {
+                  const val = Number(e.target.value);
+                  const updated = { ...settings, maxBookingsPerEmployeePerDay: val };
+                  setSettings(updated);
+                  handleSave(updated);
+                }}
                 className="text-xs font-bold border border-slate-300 rounded-lg px-2.5 py-1 bg-white text-slate-900 focus:outline-none focus:ring-1 focus:ring-electric-600"
               >
                 <option value={1}>1 servicio por empleada (Recomendado para 6h/8h)</option>
@@ -408,7 +443,11 @@ export default function AvailabilityManager({ employees, onNotice }: Availabilit
 
           {/* Opción 2: Límite Manual Fijo */}
           <div
-            onClick={() => setSettings({ ...settings, capacityMode: 'MANUAL_LIMIT' })}
+            onClick={() => {
+              const updated = { ...settings, capacityMode: 'MANUAL_LIMIT' as const };
+              setSettings(updated);
+              handleSave(updated, 'Modo de límite manual fijo activado.');
+            }}
             className={`p-5 rounded-2xl border-2 cursor-pointer transition-all ${
               settings.capacityMode === 'MANUAL_LIMIT'
                 ? 'border-electric-600 bg-electric-50/40 shadow-xs'
@@ -438,7 +477,12 @@ export default function AvailabilityManager({ employees, onNotice }: Availabilit
                 min={1}
                 max={50}
                 value={settings.manualDailyMaxBookings || 4}
-                onChange={(e) => setSettings({ ...settings, manualDailyMaxBookings: Math.max(1, parseInt(e.target.value, 10) || 1) })}
+                onChange={(e) => {
+                  const val = Math.max(1, parseInt(e.target.value, 10) || 1);
+                  const updated = { ...settings, manualDailyMaxBookings: val };
+                  setSettings(updated);
+                }}
+                onBlur={() => handleSave(settings)}
                 className="w-20 text-xs font-bold border border-slate-300 rounded-lg px-2 py-1 bg-white text-slate-900 text-center focus:outline-none focus:ring-1 focus:ring-electric-600"
               />
             </div>
@@ -524,6 +568,7 @@ export default function AvailabilityManager({ employees, onNotice }: Availabilit
                         type="time"
                         value={day.startTime}
                         onChange={(e) => updateDayTimes(id, e.target.value, day.endTime)}
+                        onBlur={() => handleSave(settings)}
                         className="w-full text-xs font-bold bg-white border border-slate-200 rounded-lg px-2 py-1 text-slate-800"
                       />
                     </div>
@@ -533,6 +578,7 @@ export default function AvailabilityManager({ employees, onNotice }: Availabilit
                         type="time"
                         value={day.endTime}
                         onChange={(e) => updateDayTimes(id, day.startTime, e.target.value)}
+                        onBlur={() => handleSave(settings)}
                         className="w-full text-xs font-bold bg-white border border-slate-200 rounded-lg px-2 py-1 text-slate-800"
                       />
                     </div>
@@ -778,9 +824,11 @@ export default function AvailabilityManager({ employees, onNotice }: Availabilit
             <div className="flex items-center gap-2 pt-1">
               <button
                 type="submit"
-                className="px-5 py-2.5 bg-purple-600 text-white rounded-xl text-xs font-bold hover:bg-purple-700 shadow-sm transition-all active:scale-98"
+                disabled={isSaving}
+                className="px-5 py-2.5 bg-purple-600 text-white rounded-xl text-xs font-bold hover:bg-purple-700 shadow-sm transition-all active:scale-98 disabled:opacity-50 flex items-center gap-2"
               >
-                {blockMode === 'RANGE' ? 'Guardar Rango Bloqueado' : 'Guardar Fecha Bloqueada'}
+                {isSaving && <RefreshCw className="w-3.5 h-3.5 animate-spin" />}
+                <span>{blockMode === 'RANGE' ? 'Guardar y Bloquear Rango' : 'Guardar y Bloquear Fecha'}</span>
               </button>
               <button
                 type="button"

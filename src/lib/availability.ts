@@ -86,24 +86,43 @@ export const DEFAULT_AVAILABILITY_SETTINGS: AvailabilitySettings = {
   updatedAt: new Date().toISOString(),
 };
 
-let cachedSettings: AvailabilitySettings | null = null;
+const TMP_SETTINGS_FILE_PATH = path.join('/tmp', 'aquiestamos_availability_settings.json');
+
+declare global {
+  var __aquiestamos_availability_settings: AvailabilitySettings | undefined;
+}
 
 export function getAvailabilitySettings(): AvailabilitySettings {
-  if (cachedSettings) return cachedSettings;
+  if (globalThis.__aquiestamos_availability_settings) {
+    return globalThis.__aquiestamos_availability_settings;
+  }
 
+  // 1. Intentar leer desde /tmp (Vercel serverless)
+  try {
+    if (fs.existsSync(TMP_SETTINGS_FILE_PATH)) {
+      const tmpData = fs.readFileSync(TMP_SETTINGS_FILE_PATH, 'utf-8');
+      const parsed = JSON.parse(tmpData);
+      const merged = { ...DEFAULT_AVAILABILITY_SETTINGS, ...parsed };
+      globalThis.__aquiestamos_availability_settings = merged;
+      return merged;
+    }
+  } catch (e) {}
+
+  // 2. Intentar leer desde src/data/availability-settings.json
   try {
     if (fs.existsSync(SETTINGS_FILE_PATH)) {
       const data = fs.readFileSync(SETTINGS_FILE_PATH, 'utf-8');
       const parsed = JSON.parse(data);
-      cachedSettings = { ...DEFAULT_AVAILABILITY_SETTINGS, ...parsed };
-      return cachedSettings!;
+      const merged = { ...DEFAULT_AVAILABILITY_SETTINGS, ...parsed };
+      globalThis.__aquiestamos_availability_settings = merged;
+      return merged;
     }
   } catch (error) {
     console.error('Error reading availability settings file:', error);
   }
 
-  cachedSettings = DEFAULT_AVAILABILITY_SETTINGS;
-  return cachedSettings;
+  globalThis.__aquiestamos_availability_settings = DEFAULT_AVAILABILITY_SETTINGS;
+  return DEFAULT_AVAILABILITY_SETTINGS;
 }
 
 export function saveAvailabilitySettings(newSettings: Partial<AvailabilitySettings>): AvailabilitySettings {
@@ -114,6 +133,15 @@ export function saveAvailabilitySettings(newSettings: Partial<AvailabilitySettin
     updatedAt: new Date().toISOString(),
   };
 
+  // Guardar en variable global de proceso
+  globalThis.__aquiestamos_availability_settings = updated;
+
+  // Guardar en /tmp (compatible con Vercel)
+  try {
+    fs.writeFileSync(TMP_SETTINGS_FILE_PATH, JSON.stringify(updated, null, 2), 'utf-8');
+  } catch (e) {}
+
+  // Guardar en src/data si está en entorno con permisos de escritura
   try {
     const dataDir = path.dirname(SETTINGS_FILE_PATH);
     if (!fs.existsSync(dataDir)) {
@@ -121,10 +149,9 @@ export function saveAvailabilitySettings(newSettings: Partial<AvailabilitySettin
     }
     fs.writeFileSync(SETTINGS_FILE_PATH, JSON.stringify(updated, null, 2), 'utf-8');
   } catch (error) {
-    console.error('Error saving availability settings to file:', error);
+    // En Vercel el filesystem raíz es read-only, lo cual es normal
   }
 
-  cachedSettings = updated;
   return updated;
 }
 
