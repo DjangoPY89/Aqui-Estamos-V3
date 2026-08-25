@@ -1443,41 +1443,41 @@ export default function AdminDashboardPage() {
             {/* SECCIÓN DE ACTIVIDAD & SPARKLINE CARDS (Estilo Screenshot Linear/GitHub/Raycast) */}
             {/* ======================================================== */}
             {showCharts && (
-              <div className="bg-[#080c14] text-white p-6 sm:p-10 rounded-[2.5rem] border border-slate-800/80 shadow-2xl space-y-12 animate-in fade-in duration-300 font-sans">
+              <div className="bg-[#080c14] text-white p-5 sm:p-6 rounded-2xl border border-slate-800/80 shadow-xl space-y-6 animate-in fade-in duration-300 font-sans">
                 
                 {/* ======================================================== */}
                 {/* FILA 1: ACTIVIDAD OPERATIVA / MÉTRICAS CON SPARKLINES */}
                 {/* ======================================================== */}
-                <div className="flex flex-col lg:flex-row items-start lg:items-center gap-8 lg:gap-12">
+                <div className="flex flex-col lg:flex-row items-start lg:items-center gap-4 lg:gap-8">
                   
                   {/* Título de la fila */}
-                  <div className="w-full lg:w-44 shrink-0">
-                    <h2 className="text-2xl font-bold tracking-tight text-white">Actividad</h2>
-                    <p className="text-xs text-slate-400 font-medium mt-0.5">Métricas de limpieza</p>
+                  <div className="w-full lg:w-40 shrink-0">
+                    <h2 className="text-lg font-bold tracking-tight text-white">Actividad</h2>
+                    <p className="text-[11px] text-slate-400 font-medium mt-0.5">Métricas de limpieza</p>
                   </div>
 
                   {/* 4 Columnas de Métricas con Sparklines para Empresa de Limpieza */}
-                  <div className="flex-1 grid grid-cols-2 lg:grid-cols-4 gap-6 lg:gap-8 w-full">
+                  <div className="flex-1 grid grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6 w-full">
                     
                     {/* Métrica 1: Facturación Total */}
-                    <div className="space-y-1.5">
-                      <div className="flex items-center gap-2 text-slate-400">
-                        <div className="w-5 h-5 rounded-full bg-slate-800/80 border border-slate-700/60 flex items-center justify-center text-emerald-400">
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-1.5 text-slate-400">
+                        <div className="w-4 h-4 rounded-full bg-slate-800/80 border border-slate-700/60 flex items-center justify-center text-emerald-400">
                           <DollarSign className="w-2.5 h-2.5" />
                         </div>
-                        <span className="text-xs font-semibold text-slate-300">Ingresos Totales</span>
+                        <span className="text-[11px] font-semibold text-slate-300">Ingresos Totales</span>
                       </div>
-                      <p className="text-2xl sm:text-3xl font-extrabold tracking-tight text-white truncate" title={formatGs(totalRevenue)}>
+                      <p className="text-lg sm:text-xl font-extrabold tracking-tight text-white truncate" title={formatGs(totalRevenue)}>
                         {formatGs(totalRevenue)}
                       </p>
-                      <p className="text-[11px] font-bold text-[#22c55e] pb-1">+120% este mes</p>
-                      <div className="h-7 w-full">
+                      <p className="text-[10px] font-bold text-[#22c55e] pb-0.5">+120% este mes</p>
+                      <div className="h-5 w-full">
                         <svg className="w-full h-full overflow-visible" viewBox="0 0 200 30" preserveAspectRatio="none">
                           <path
                             d="M 0 24 C 20 25, 35 22, 50 18 C 65 14, 80 20, 95 16 C 110 12, 125 10, 140 8 C 155 6, 170 12, 185 7 L 200 4"
                             fill="none"
                             stroke="#22c55e"
-                            strokeWidth="2.2"
+                            strokeWidth="2"
                             strokeLinecap="round"
                             strokeLinejoin="round"
                           />
@@ -1486,24 +1486,24 @@ export default function AdminDashboardPage() {
                     </div>
 
                     {/* Métrica 2: Servicios Confirmados */}
-                    <div className="space-y-1.5">
-                      <div className="flex items-center gap-2 text-slate-400">
-                        <div className="w-5 h-5 rounded-full bg-slate-800/80 border border-slate-700/60 flex items-center justify-center text-cyan-400">
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-1.5 text-slate-400">
+                        <div className="w-4 h-4 rounded-full bg-slate-800/80 border border-slate-700/60 flex items-center justify-center text-cyan-400">
                           <CheckCircle2 className="w-2.5 h-2.5" />
                         </div>
-                        <span className="text-xs font-semibold text-slate-300">Servicios Confirmados</span>
+                        <span className="text-[11px] font-semibold text-slate-300">Servicios Confirmados</span>
                       </div>
-                      <p className="text-2xl sm:text-3xl font-extrabold tracking-tight text-white">
+                      <p className="text-lg sm:text-xl font-extrabold tracking-tight text-white">
                         {bookings.filter(b => b.status === "CONFIRMED" || b.status === "COMPLETED").length} Citas
                       </p>
-                      <p className="text-[11px] font-bold text-[#22c55e] pb-1">+238% de demanda</p>
-                      <div className="h-7 w-full">
+                      <p className="text-[10px] font-bold text-[#22c55e] pb-0.5">+238% de demanda</p>
+                      <div className="h-5 w-full">
                         <svg className="w-full h-full overflow-visible" viewBox="0 0 200 30" preserveAspectRatio="none">
                           <path
                             d="M 0 26 C 20 28, 35 22, 50 25 C 65 28, 75 14, 90 6 C 105 16, 120 8, 135 12 C 150 16, 170 8, 185 10 L 200 5"
                             fill="none"
                             stroke="#22c55e"
-                            strokeWidth="2.2"
+                            strokeWidth="2"
                             strokeLinecap="round"
                             strokeLinejoin="round"
                           />
@@ -1512,24 +1512,24 @@ export default function AdminDashboardPage() {
                     </div>
 
                     {/* Métrica 3: Clientes Registrados */}
-                    <div className="space-y-1.5">
-                      <div className="flex items-center gap-2 text-slate-400">
-                        <div className="w-5 h-5 rounded-full bg-slate-800/80 border border-slate-700/60 flex items-center justify-center text-purple-400">
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-1.5 text-slate-400">
+                        <div className="w-4 h-4 rounded-full bg-slate-800/80 border border-slate-700/60 flex items-center justify-center text-purple-400">
                           <Users className="w-2.5 h-2.5" />
                         </div>
-                        <span className="text-xs font-semibold text-slate-300">Clientes Registrados</span>
+                        <span className="text-[11px] font-semibold text-slate-300">Clientes Registrados</span>
                       </div>
-                      <p className="text-2xl sm:text-3xl font-extrabold tracking-tight text-white">
+                      <p className="text-lg sm:text-xl font-extrabold tracking-tight text-white">
                         {users.length} Clientes
                       </p>
-                      <p className="text-[11px] font-bold text-[#22c55e] pb-1">+34% este mes</p>
-                      <div className="h-7 w-full">
+                      <p className="text-[10px] font-bold text-[#22c55e] pb-0.5">+34% este mes</p>
+                      <div className="h-5 w-full">
                         <svg className="w-full h-full overflow-visible" viewBox="0 0 200 30" preserveAspectRatio="none">
                           <path
                             d="M 0 26 C 25 24, 45 28, 70 18 C 95 8, 120 16, 145 10 C 170 4, 185 8, 200 3"
                             fill="none"
                             stroke="#22c55e"
-                            strokeWidth="2.2"
+                            strokeWidth="2"
                             strokeLinecap="round"
                             strokeLinejoin="round"
                           />
@@ -1538,24 +1538,24 @@ export default function AdminDashboardPage() {
                     </div>
 
                     {/* Métrica 4: Visitas a la página (Últimos 7 días) */}
-                    <div className="space-y-1.5">
-                      <div className="flex items-center gap-2 text-slate-400">
-                        <div className="w-5 h-5 rounded-full bg-slate-800/80 border border-slate-700/60 flex items-center justify-center text-cyan-400">
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-1.5 text-slate-400">
+                        <div className="w-4 h-4 rounded-full bg-slate-800/80 border border-slate-700/60 flex items-center justify-center text-cyan-400">
                           <Eye className="w-2.5 h-2.5" />
                         </div>
-                        <span className="text-xs font-semibold text-slate-300">Visitas (Últimos 7 días)</span>
+                        <span className="text-[11px] font-semibold text-slate-300">Visitas (7 días)</span>
                       </div>
-                      <p className="text-2xl sm:text-3xl font-extrabold tracking-tight text-white">
+                      <p className="text-lg sm:text-xl font-extrabold tracking-tight text-white">
                         1.8K Visitas
                       </p>
-                      <p className="text-[11px] font-bold text-[#22c55e] pb-1">+18% esta semana</p>
-                      <div className="h-7 w-full">
+                      <p className="text-[10px] font-bold text-[#22c55e] pb-0.5">+18% esta semana</p>
+                      <div className="h-5 w-full">
                         <svg className="w-full h-full overflow-visible" viewBox="0 0 200 30" preserveAspectRatio="none">
                           <path
                             d="M 0 25 C 30 22, 60 18, 90 16 C 120 14, 150 10, 175 8 L 200 5"
                             fill="none"
                             stroke="#22c55e"
-                            strokeWidth="2.2"
+                            strokeWidth="2"
                             strokeLinecap="round"
                             strokeLinejoin="round"
                           />
@@ -1569,51 +1569,51 @@ export default function AdminDashboardPage() {
                 {/* ======================================================== */}
                 {/* FILA 2: OPERACIONES / ONDA DE PILARES MULTI-CAPA */}
                 {/* ======================================================== */}
-                <div className="flex flex-col lg:flex-row items-start gap-8 lg:gap-12 pt-4">
+                <div className="flex flex-col lg:flex-row items-start gap-4 lg:gap-8 pt-1">
                   
                   {/* Columna Izquierda: Título Operaciones + Menú Tipo de Servicio + Leyenda */}
-                  <div className="w-full lg:w-44 shrink-0 space-y-6">
+                  <div className="w-full lg:w-40 shrink-0 space-y-3">
                     <div>
-                      <h2 className="text-2xl font-bold tracking-tight text-white">Operaciones</h2>
-                      <p className="text-xs text-slate-400 font-medium mt-0.5">Distribución de demanda</p>
+                      <h2 className="text-lg font-bold tracking-tight text-white">Operaciones</h2>
+                      <p className="text-[11px] text-slate-400 font-medium mt-0.5">Distribución de demanda</p>
                     </div>
 
-                    <div className="space-y-3">
+                    <div className="space-y-2">
                       {/* Botón Selector con Icono y Caret */}
-                      <div className="inline-flex items-center gap-2 text-xs font-semibold text-slate-300 hover:text-white cursor-pointer transition-colors">
-                        <div className="w-5 h-5 rounded-full bg-slate-800/80 border border-slate-700/60 flex items-center justify-center text-slate-300">
-                          <SlidersHorizontal className="w-2.5 h-2.5" />
+                      <div className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-slate-300 hover:text-white cursor-pointer transition-colors">
+                        <div className="w-4 h-4 rounded-full bg-slate-800/80 border border-slate-700/60 flex items-center justify-center text-slate-300">
+                          <SlidersHorizontal className="w-2 h-2" />
                         </div>
                         <span>Servicios & Citas</span>
-                        <ChevronDown className="w-3.5 h-3.5 text-slate-400" />
+                        <ChevronDown className="w-3 h-3 text-slate-400" />
                       </div>
 
                       {/* Lista de Leyendas de Limpieza */}
-                      <div className="space-y-1.5 pl-1 text-[11px] font-medium text-slate-400">
-                        <div className="flex items-center gap-2">
-                          <span className="w-2 h-2 rounded-full bg-[#9333ea]" />
-                          <span className="text-slate-300">Finalizadas / Premium</span>
+                      <div className="space-y-1 pl-1 text-[10px] font-medium text-slate-400">
+                        <div className="flex items-center gap-1.5">
+                          <span className="w-1.5 h-1.5 rounded-full bg-[#9333ea]" />
+                          <span className="text-slate-300">Finalizadas</span>
                         </div>
-                        <div className="flex items-center gap-2">
-                          <span className="w-2 h-2 rounded-full bg-[#334155]" />
-                          <span className="text-slate-400">En Curso / Regulares</span>
+                        <div className="flex items-center gap-1.5">
+                          <span className="w-1.5 h-1.5 rounded-full bg-[#334155]" />
+                          <span className="text-slate-400">En Curso</span>
                         </div>
-                        <div className="flex items-center gap-2">
-                          <span className="w-2 h-2 rounded-full bg-[#22c55e]" />
-                          <span className="text-slate-300">Confirmadas & Nuevas</span>
+                        <div className="flex items-center gap-1.5">
+                          <span className="w-1.5 h-1.5 rounded-full bg-[#22c55e]" />
+                          <span className="text-slate-300">Confirmadas</span>
                         </div>
                       </div>
                     </div>
                   </div>
 
-                  {/* Onda de 58 Pilares Segmentados (Curva Exacta de la Imagen) */}
+                  {/* Onda de 58 Pilares Segmentados con Altura Reducida */}
                   <div className="flex-1 w-full">
-                    <div className="h-64 sm:h-72 w-full flex items-end justify-between gap-[3px] sm:gap-[4px] px-1 select-none overflow-x-auto">
+                    <div className="h-28 sm:h-32 w-full flex items-end justify-between gap-[3px] sm:gap-[4px] px-1 select-none overflow-x-auto">
                       {[52, 46, 44, 40, 41, 45, 47, 48, 42, 36, 34, 35, 38, 41, 43, 45, 47, 50, 53, 56, 58, 61, 64, 67, 70, 73, 76, 78, 81, 84, 86, 88, 90, 93, 95, 97, 96, 94, 92, 95, 97, 98, 96, 93, 95, 97, 98, 96, 94, 92, 95, 97, 96, 94, 96, 98, 99, 100].map((heightPct, i) => {
-                        const totalHeightPx = Math.round((heightPct / 100) * 250);
-                        const topH = Math.max(10, Math.round(totalHeightPx * 0.28));
-                        const midH = Math.max(6, Math.round(totalHeightPx * 0.20));
-                        const botH = Math.max(12, Math.round(totalHeightPx * 0.52));
+                        const totalHeightPx = Math.round((heightPct / 100) * 110);
+                        const topH = Math.max(3, Math.round(totalHeightPx * 0.28));
+                        const midH = Math.max(2, Math.round(totalHeightPx * 0.20));
+                        const botH = Math.max(4, Math.round(totalHeightPx * 0.52));
 
                         const dayNum = (i % 30) + 1;
                         const estAmount = Math.round((heightPct / 100) * 950000);
@@ -1624,13 +1624,13 @@ export default function AdminDashboardPage() {
                             className="flex-1 min-w-[5px] max-w-[12px] flex flex-col items-center justify-end gap-[2px] group relative cursor-pointer h-full"
                           >
                             {/* Tooltip Interactivo */}
-                            <div className="absolute -top-20 opacity-0 group-hover:opacity-100 transition-all duration-150 pointer-events-none z-30 bg-slate-900/95 text-white text-[10px] font-bold px-3 py-2 rounded-xl shadow-2xl whitespace-nowrap -translate-x-1/2 left-1/2 border border-slate-700">
-                              <p className="text-slate-400 font-normal">Día {dayNum} de Servicios</p>
+                            <div className="absolute -top-16 opacity-0 group-hover:opacity-100 transition-all duration-150 pointer-events-none z-30 bg-slate-900/95 text-white text-[10px] font-bold px-2.5 py-1.5 rounded-xl shadow-2xl whitespace-nowrap -translate-x-1/2 left-1/2 border border-slate-700">
+                              <p className="text-slate-400 font-normal">Día {dayNum}</p>
                               <p className="text-emerald-400 font-extrabold text-xs">{formatGs(estAmount)}</p>
-                              <div className="flex items-center gap-2 mt-0.5 text-[9px]">
-                                <span className="text-[#c084fc]">🟣 {Math.round(topH / 4)} Fin.</span>
-                                <span className="text-slate-400">⚫ {Math.round(midH / 3)} Cur.</span>
-                                <span className="text-[#22c55e]">🟢 {Math.round(botH / 3)} Conf.</span>
+                              <div className="flex items-center gap-1.5 mt-0.5 text-[8px]">
+                                <span className="text-[#c084fc]">🟣 {Math.round(topH / 2)} Fin.</span>
+                                <span className="text-slate-400">⚫ {Math.round(midH / 2)} Cur.</span>
+                                <span className="text-[#22c55e]">🟢 {Math.round(botH / 2)} Conf.</span>
                               </div>
                             </div>
 
