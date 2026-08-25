@@ -5,7 +5,6 @@ import { signIn } from "next-auth/react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
-import dynamic from "next/dynamic";
 import { 
   Lock, 
   Mail, 
@@ -18,21 +17,9 @@ import {
   User as UserIcon,
   Phone,
   UserPlus,
-  LogIn,
-  MapPin,
-  Navigation,
-  Map
+  LogIn
 } from "lucide-react";
 import GoogleSignInButton from "@/components/auth/GoogleSignInButton";
-
-const GoogleMapPicker = dynamic(() => import("@/components/booking/GoogleMapPicker"), {
-  ssr: false,
-  loading: () => (
-    <div className="h-52 bg-neutral-100 animate-pulse rounded-2xl flex items-center justify-center text-xs text-neutral-400 font-medium">
-      Cargando Mapa Satelital...
-    </div>
-  ),
-});
 
 function LoginContent() {
   const searchParams = useSearchParams();
@@ -52,59 +39,14 @@ function LoginContent() {
   const [regName, setRegName] = useState("");
   const [regEmail, setRegEmail] = useState("");
   const [regPhone, setRegPhone] = useState("");
-  const [regAddress, setRegAddress] = useState("");
   const [regPassword, setRegPassword] = useState("");
   const [showRegPassword, setShowRegPassword] = useState(false);
-
-  // Estados de Ubicación Satelital GPS
-  const [latitude, setLatitude] = useState(-25.2831);
-  const [longitude, setLongitude] = useState(-57.5612);
-  const [showMap, setShowMap] = useState(false);
-  const [isLocating, setIsLocating] = useState(false);
-  const [locationSuccess, setLocationSuccess] = useState(false);
 
   const [isLoading, setIsLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(
     wasRegistered ? "¡Cuenta creada con éxito! Ingresa con tus credenciales a continuación." : null
   );
-
-  // Geolocalización Automática por GPS del Navegador
-  const handleGetCurrentLocation = () => {
-    if (!navigator.geolocation) {
-      setErrorMsg("Tu navegador no soporta geolocalización GPS.");
-      return;
-    }
-
-    setIsLocating(true);
-    setErrorMsg(null);
-
-    navigator.geolocation.getCurrentPosition(
-      (pos) => {
-        const lat = pos.coords.latitude;
-        const lng = pos.coords.longitude;
-        setLatitude(lat);
-        setLongitude(lng);
-        setIsLocating(false);
-        setLocationSuccess(true);
-        setShowMap(true);
-      },
-      (err) => {
-        setIsLocating(false);
-        setErrorMsg("No se pudo obtener tu ubicación automática. Puedes escribir tu dirección o seleccionarla en el mapa interactivo.");
-      },
-      { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
-    );
-  };
-
-  const handleLocationChange = (coords: { lat: number; lng: number; addressSuggestion?: string }) => {
-    setLatitude(coords.lat);
-    setLongitude(coords.lng);
-    setLocationSuccess(true);
-    if (coords.addressSuggestion && (!regAddress || regAddress.length < 5)) {
-      setRegAddress(coords.addressSuggestion);
-    }
-  };
 
   // Manejo de Inicio de Sesión
   const handleLoginSubmit = async (e: React.FormEvent) => {
@@ -144,14 +86,14 @@ function LoginContent() {
     }
   };
 
-  // Manejo de Registro de Nuevo Cliente con Dirección y Ubicación GPS
+  // Manejo de Registro de Nuevo Cliente
   const handleRegisterSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMsg(null);
     setSuccessMsg(null);
 
-    if (!regName.trim() || !regEmail.trim() || !regPhone.trim() || !regPassword || !regAddress.trim()) {
-      setErrorMsg("Por favor completa todos los campos obligatorios, incluyendo tu dirección.");
+    if (!regName.trim() || !regEmail.trim() || !regPhone.trim() || !regPassword) {
+      setErrorMsg("Por favor completa todos los campos del registro.");
       return;
     }
 
@@ -170,10 +112,7 @@ function LoginContent() {
           name: regName.trim(),
           email: regEmail.trim().toLowerCase(),
           phone: regPhone.trim(),
-          address: regAddress.trim(),
           password: regPassword,
-          latitude,
-          longitude,
         }),
       });
 
@@ -187,21 +126,6 @@ function LoginContent() {
 
       if (!res.ok) {
         throw new Error(data.error || "Error al crear la cuenta.");
-      }
-
-      // Guardar dirección en LocalStorage para autocompletar reservas de inmediato
-      if (regAddress.trim()) {
-        try {
-          const initialAddress = {
-            id: `addr_init_${Date.now()}`,
-            label: "🏠 Domicilio Principal",
-            address: regAddress.trim(),
-            latitude,
-            longitude,
-            isDefault: true,
-          };
-          localStorage.setItem("aquiestamos_saved_addresses", JSON.stringify([initialAddress]));
-        } catch (e) {}
       }
 
       // Iniciar sesión automáticamente tras el registro exitoso
@@ -494,68 +418,6 @@ function LoginContent() {
                     className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-neutral-300 text-xs text-neutral-900 placeholder:text-neutral-400 focus:ring-2 focus:ring-electric-600 focus:border-electric-600 focus:outline-none transition-all"
                   />
                 </div>
-              </div>
-
-              {/* Dirección y Ubicación GPS */}
-              <div className="space-y-2 pt-0.5">
-                <div className="flex items-center justify-between">
-                  <label className="block text-xs font-bold text-neutral-700">
-                    Dirección del Domicilio *
-                  </label>
-                  <button
-                    type="button"
-                    onClick={handleGetCurrentLocation}
-                    disabled={isLocating}
-                    className="inline-flex items-center gap-1 text-[11px] font-bold text-electric-600 hover:text-electric-700 active:scale-95 transition-all cursor-pointer"
-                  >
-                    <Navigation className={`w-3 h-3 ${isLocating ? "animate-spin text-amber-500" : ""}`} />
-                    <span>{isLocating ? "Detectando GPS..." : "📍 Usar GPS actual"}</span>
-                  </button>
-                </div>
-
-                <div className="relative">
-                  <MapPin className="w-4 h-4 text-neutral-400 absolute left-3.5 top-3" />
-                  <input
-                    type="text"
-                    required
-                    value={regAddress}
-                    onChange={(e) => setRegAddress(e.target.value)}
-                    placeholder="Ej: Av. Santa Teresa casi Denis Roa, Asunción"
-                    className="w-full pl-10 pr-24 py-2.5 rounded-xl border border-neutral-300 text-xs text-neutral-900 placeholder:text-neutral-400 focus:ring-2 focus:ring-electric-600 focus:border-electric-600 focus:outline-none transition-all"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowMap(!showMap)}
-                    className="absolute right-2 top-2 px-2.5 py-1 bg-neutral-100 hover:bg-neutral-200 text-neutral-700 rounded-lg text-[10px] font-bold transition-colors flex items-center gap-1"
-                  >
-                    <Map className="w-3 h-3 text-electric-600" />
-                    <span>{showMap ? "Ocultar" : "Mapa"}</span>
-                  </button>
-                </div>
-
-                {locationSuccess && (
-                  <p className="text-[11px] text-emerald-600 font-semibold flex items-center gap-1 pl-1">
-                    <CheckCircle2 className="w-3 h-3" />
-                    <span>Ubicación GPS fijada ({latitude.toFixed(4)}, {longitude.toFixed(4)})</span>
-                  </p>
-                )}
-
-                {/* Selector Interactivo en Mapa */}
-                {showMap && (
-                  <div className="pt-2">
-                    <p className="text-[10px] text-neutral-500 mb-1.5 font-medium">
-                      Arrastra el marcador o haz clic en tu casa/edificio para precisión exacta:
-                    </p>
-                    <div className="h-56 rounded-2xl overflow-hidden border border-neutral-300 shadow-inner">
-                      <GoogleMapPicker
-                        latitude={latitude}
-                        longitude={longitude}
-                        onLocationChange={handleLocationChange}
-                        currentAddress={regAddress}
-                      />
-                    </div>
-                  </div>
-                )}
               </div>
 
               <div>
