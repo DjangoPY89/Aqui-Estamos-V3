@@ -9,7 +9,7 @@ import { FrequencyType, ServiceHour } from "@/types";
 export default function QuickCalculator() {
   const router = useRouter();
   const [hours, setHours] = useState<ServiceHour>(6);
-  const [frequency, setFrequency] = useState<FrequencyType>("weekly_2_4");
+  const [frequency, setFrequency] = useState<FrequencyType>("once");
   const [selectedExtras, setSelectedExtras] = useState<string[]>(["nevera"]);
 
   const pricing = calculatePricing(hours, frequency, selectedExtras);

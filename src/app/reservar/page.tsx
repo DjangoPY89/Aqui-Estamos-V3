@@ -48,7 +48,7 @@ function BookingContent() {
 
   // Estados del Formulario
   const [serviceHours, setServiceHours] = useState<ServiceHour>(6);
-  const [frequency, setFrequency] = useState<FrequencyType>("weekly_2_4");
+  const [frequency, setFrequency] = useState<FrequencyType>("once");
   const [selectedExtras, setSelectedExtras] = useState<string[]>([]);
   
   // Datos del Cliente
