@@ -178,10 +178,14 @@ export async function checkDateAvailability(dateStr: string): Promise<DateAvaila
   const daySchedule = settings.workingDays[dayKey];
   const isSunday = dayKey === 'sunday';
 
-  // 5. Analizar si es Feriado o Fecha Bloqueada
-  const blockedEntry = settings.blockedDates.find(
-    (b) => b.date === dateStr && b.enabled
-  );
+  // 5. Analizar si es Feriado o Fecha Bloqueada (fecha puntual o rango de fechas)
+  const blockedEntry = settings.blockedDates.find((b) => {
+    if (!b.enabled) return false;
+    if (b.endDate) {
+      return dateStr >= b.date && dateStr <= b.endDate;
+    }
+    return b.date === dateStr;
+  });
   const isHoliday = !!blockedEntry?.isHoliday;
   const holidayReason = blockedEntry?.reason;
 

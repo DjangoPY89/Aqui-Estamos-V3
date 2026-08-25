@@ -128,8 +128,9 @@ export interface TimeSlotConfig {
 
 export interface BlockedDate {
   id: string;
-  date: string; // YYYY-MM-DD
-  reason: string; // "Año Nuevo", "Feriado Nacional", "Mantenimiento Operativo"
+  date: string; // YYYY-MM-DD (fecha puntual o fecha de inicio)
+  endDate?: string; // YYYY-MM-DD (opcional para rangos de fechas)
+  reason: string; // "Año Nuevo", "Feriado Nacional", "Mantenimiento Operativo", "Vacaciones"
   isHoliday: boolean;
   enabled: boolean;
 }
