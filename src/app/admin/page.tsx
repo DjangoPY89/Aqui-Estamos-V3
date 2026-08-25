@@ -65,52 +65,6 @@ interface AdminUser extends User {
   totalSpentGs: number;
 }
 
-const PALETTE = [
-  { dot: "bg-emerald-500", bg: "bg-emerald-50/90", text: "text-emerald-800", border: "border-emerald-200", hex: "#10b981" },
-  { dot: "bg-purple-500", bg: "bg-purple-50/90", text: "text-purple-800", border: "border-purple-200", hex: "#a855f7" },
-  { dot: "bg-blue-500", bg: "bg-blue-50/90", text: "text-blue-800", border: "border-blue-200", hex: "#3b82f6" },
-  { dot: "bg-rose-500", bg: "bg-rose-50/90", text: "text-rose-800", border: "border-rose-200", hex: "#f43f5e" },
-  { dot: "bg-amber-500", bg: "bg-amber-50/90", text: "text-amber-800", border: "border-amber-200", hex: "#f59e0b" },
-  { dot: "bg-cyan-500", bg: "bg-cyan-50/90", text: "text-cyan-800", border: "border-cyan-200", hex: "#06b6d4" },
-  { dot: "bg-indigo-500", bg: "bg-indigo-50/90", text: "text-indigo-800", border: "border-indigo-200", hex: "#6366f1" },
-  { dot: "bg-teal-500", bg: "bg-teal-50/90", text: "text-teal-800", border: "border-teal-200", hex: "#14b8a6" },
-  { dot: "bg-orange-500", bg: "bg-orange-50/90", text: "text-orange-800", border: "border-orange-200", hex: "#f97316" },
-  { dot: "bg-fuchsia-500", bg: "bg-fuchsia-50/90", text: "text-fuchsia-800", border: "border-fuchsia-200", hex: "#d946ef" },
-];
-
-function getEmployeeColor(name?: string | null) {
-  if (!name || name === "UNASSIGNED" || name === "Sin Asignar") {
-    return {
-      dot: "bg-slate-300",
-      bg: "bg-slate-50",
-      text: "text-slate-500",
-      border: "border-slate-200",
-      hex: "#94a3b8",
-    };
-  }
-  let hash = 0;
-  for (let i = 0; i < name.length; i++) {
-    hash = name.charCodeAt(i) + ((hash << 5) - hash);
-  }
-  const index = Math.abs(hash) % PALETTE.length;
-  return PALETTE[index];
-}
-
-function getStatusAppleStyle(status: string) {
-  switch (status) {
-    case "CONFIRMED":
-      return { dot: "bg-emerald-500", bg: "bg-emerald-50/90", text: "text-emerald-800", border: "border-emerald-200", label: "Confirmado" };
-    case "IN_PROGRESS":
-      return { dot: "bg-blue-500", bg: "bg-blue-50/90", text: "text-blue-800", border: "border-blue-200", label: "En Curso" };
-    case "COMPLETED":
-      return { dot: "bg-purple-500", bg: "bg-purple-50/90", text: "text-purple-800", border: "border-purple-200", label: "Finalizado" };
-    case "CANCELLED":
-      return { dot: "bg-rose-500", bg: "bg-rose-50/90", text: "text-rose-800", border: "border-rose-200", label: "Cancelado" };
-    default:
-      return { dot: "bg-amber-500", bg: "bg-amber-50/90", text: "text-amber-800", border: "border-amber-200", label: "Pendiente" };
-  }
-}
-
 export default function AdminDashboardPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
@@ -557,6 +511,45 @@ export default function AdminDashboardPage() {
     }
   };
 
+  const EMPLOYEE_COLORS = [
+    { bg: "bg-emerald-500", text: "text-emerald-700", border: "border-emerald-200", dot: "bg-emerald-500" },
+    { bg: "bg-purple-500", text: "text-purple-700", border: "border-purple-200", dot: "bg-purple-500" },
+    { bg: "bg-sky-500", text: "text-sky-700", border: "border-sky-200", dot: "bg-sky-500" },
+    { bg: "bg-amber-500", text: "text-amber-700", border: "border-amber-200", dot: "bg-amber-500" },
+    { bg: "bg-rose-500", text: "text-rose-700", border: "border-rose-200", dot: "bg-rose-500" },
+    { bg: "bg-indigo-500", text: "text-indigo-700", border: "border-indigo-200", dot: "bg-indigo-500" },
+    { bg: "bg-teal-500", text: "text-teal-700", border: "border-teal-200", dot: "bg-teal-500" },
+    { bg: "bg-orange-500", text: "text-orange-700", border: "border-orange-200", dot: "bg-orange-500" },
+    { bg: "bg-cyan-500", text: "text-cyan-700", border: "border-cyan-200", dot: "bg-cyan-500" },
+  ];
+
+  const getEmployeeColor = (name?: string | null) => {
+    if (!name || name === "UNASSIGNED" || name === "Sin Asignar") {
+      return { bg: "bg-slate-300", text: "text-slate-500", border: "border-slate-200", dot: "bg-slate-300" };
+    }
+    let hash = 0;
+    for (let i = 0; i < name.length; i++) {
+      hash = name.charCodeAt(i) + ((hash << 5) - hash);
+    }
+    const index = Math.abs(hash) % EMPLOYEE_COLORS.length;
+    return EMPLOYEE_COLORS[index];
+  };
+
+  const getStatusBadge = (status: string) => {
+    switch (status) {
+      case "CONFIRMED":
+        return { label: "Confirmado", bg: "bg-emerald-50/90 hover:bg-emerald-100/80", text: "text-emerald-800", dot: "bg-emerald-500", border: "border-emerald-200/80" };
+      case "IN_PROGRESS":
+        return { label: "En Curso", bg: "bg-amber-50/90 hover:bg-amber-100/80", text: "text-amber-800", dot: "bg-amber-500", border: "border-amber-200/80" };
+      case "COMPLETED":
+        return { label: "Finalizado", bg: "bg-slate-100/90 hover:bg-slate-200/80", text: "text-slate-800", dot: "bg-slate-500", border: "border-slate-300/80" };
+      case "CANCELLED":
+        return { label: "Cancelado", bg: "bg-rose-50/90 hover:bg-rose-100/80", text: "text-rose-800", dot: "bg-rose-500", border: "border-rose-200/80" };
+      default:
+        return { label: "Pendiente", bg: "bg-sky-50/90 hover:bg-sky-100/80", text: "text-sky-800", dot: "bg-sky-500", border: "border-sky-200/80" };
+    }
+  };
+
   const generateWhatsAppCustomerUrl = (b: Booking) => {
     const raw = (b.customerPhone || "").replace(/\D/g, "");
     const phone = raw.startsWith("595") ? raw : raw.startsWith("0") ? `595${raw.substring(1)}` : `595${raw}`;
@@ -589,14 +582,9 @@ export default function AdminDashboardPage() {
     const startIso = `${dateFormatted}T${startHour.toString().padStart(2, "0")}${startMin}00`;
     const endIso = `${dateFormatted}T${endHour.toString().padStart(2, "0")}${startMin}00`;
     
-    const isAssigned = Boolean(b.assignedCleaner && b.assignedCleaner !== "UNASSIGNED" && b.assignedCleaner !== "Sin Asignar");
-    const title = isAssigned 
-      ? `Limpieza: ${b.customerName} [${b.assignedCleaner}]` 
-      : `[Pendiente Asignación] Limpieza: ${b.customerName}`;
-    const details = `Servicio de Limpieza (${b.serviceHours} Horas)\nCliente: ${b.customerName}\nTeléfono: ${b.customerPhone}\nEmail: ${b.customerEmail}\nPersonal: ${isAssigned ? b.assignedCleaner : "⚠️ Pendiente de Asignación"}\nTotal: ${formatGs(b.totalPrice)}`;
-    
-    // Asignar lugar en el calendario solo y cuando el empleado se encuentre asignado
-    const location = isAssigned ? b.address : "Pendiente de Asignación de Personal (Asunción)";
+    const title = `Limpieza Aquí Estamos - ${b.customerName} (${b.bookingNumber})`;
+    const details = `Servicio de Limpieza (${b.serviceHours} Horas)\nCliente: ${b.customerName}\nTeléfono: ${b.customerPhone}\nEmail: ${b.customerEmail}\nPersonal: ${b.assignedCleaner || "Por confirmar"}\nTotal: ${formatGs(b.totalPrice)}`;
+    const location = b.address;
     const calId = "6995kk35n4bc196tnd07q3onahg0t2lh@import.calendar.google.com";
     
     return `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(title)}&dates=${startIso}/${endIso}&details=${encodeURIComponent(details)}&location=${encodeURIComponent(location)}&src=${encodeURIComponent(calId)}&add=${encodeURIComponent(calId)}&ctz=America/Asuncion`;
@@ -1879,27 +1867,30 @@ export default function AdminDashboardPage() {
                               {formatFrequency()}
                             </td>
 
-                            {/* 13. Empleado Asignado (Estilo Apple con Punto de Color) */}
-                            <td className="px-4 py-3 border-r border-slate-100 whitespace-nowrap">
+                            {/* 13. Empleado Asignado (Selector Apple Style con Punto de Color) */}
+                            <td className="px-3 py-2.5 border-r border-slate-100 min-w-[175px]">
                               {(() => {
                                 const empColor = getEmployeeColor(b.assignedCleaner);
-                                const isAssigned = Boolean(b.assignedCleaner && b.assignedCleaner !== "UNASSIGNED" && b.assignedCleaner !== "Sin Asignar");
                                 return (
-                                  <div className="relative inline-flex items-center group">
-                                    <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full border text-xs font-semibold shadow-2xs transition-all cursor-pointer hover:shadow-xs hover:scale-[1.02] active:scale-[0.98] ${empColor.bg} ${empColor.border} ${empColor.text}`}>
-                                      <span className={`w-2 h-2 rounded-full ${empColor.dot} ring-2 ring-white shadow-2xs shrink-0`} />
-                                      <span className="truncate max-w-[130px]">
-                                        {isAssigned ? b.assignedCleaner : "Sin Asignar"}
-                                      </span>
-                                      {assignedEmp?.ipsVerified && (
-                                        <span className="text-[9px] font-black bg-white text-emerald-700 px-1 py-0.2 rounded-full border border-emerald-200 ml-0.5">
-                                          IPS
+                                  <div className="relative inline-block w-full">
+                                    {/* Apple Pill Presentation */}
+                                    <div className={`w-full flex items-center justify-between gap-2 px-3 py-1.5 rounded-full border shadow-2xs transition-all duration-150 ${
+                                      b.assignedCleaner
+                                        ? "bg-white/95 hover:bg-slate-50 border-slate-200/90 text-slate-800"
+                                        : "bg-slate-50/80 hover:bg-slate-100/80 border-dashed border-slate-300 text-slate-500"
+                                    }`}>
+                                      <div className="flex items-center gap-2 truncate min-w-0">
+                                        <span
+                                          className={`w-2 h-2 rounded-full shrink-0 ${empColor.bg} ring-2 ring-white shadow-2xs`}
+                                        />
+                                        <span className="text-xs font-semibold tracking-tight truncate">
+                                          {b.assignedCleaner || "Sin Asignar"}
                                         </span>
-                                      )}
-                                      <ChevronDown className="w-3 h-3 opacity-40 ml-0.5 shrink-0" />
+                                      </div>
+                                      <ChevronDown className="w-3 h-3 text-slate-400 shrink-0 ml-1" />
                                     </div>
 
-                                    {/* Selector Nativo Overlay */}
+                                    {/* Native Select Overlay */}
                                     <select
                                       value={b.assignedCleaner || "UNASSIGNED"}
                                       onChange={(e) => handleQuickAssignCleaner(b.id, e.target.value)}
@@ -1912,8 +1903,8 @@ export default function AdminDashboardPage() {
                                         {employees
                                           .filter((e) => e.status === "ACTIVE")
                                           .map((emp) => (
-                                            <option key={emp.id} value={emp.name}>
-                                              ● {emp.name} ({emp.zone.split(" ")[0]}) {emp.ipsVerified ? "[IPS]" : ""}
+                                            <option key={emp.id} value={`${emp.name}`}>
+                                              ● {emp.name} ({emp.zone.split(" ")[0]})
                                             </option>
                                           ))}
                                       </optgroup>
@@ -1923,30 +1914,31 @@ export default function AdminDashboardPage() {
                               })()}
                             </td>
 
-                            {/* 14. Estatus (Estilo Apple con Punto de Color) */}
-                            <td className="px-4 py-3 border-r border-slate-100 text-center whitespace-nowrap">
+                            {/* 14. Estatus (Selector Apple Style con Indicador LED) */}
+                            <td className="px-3 py-2.5 border-r border-slate-100 text-center whitespace-nowrap min-w-[130px]">
                               {(() => {
-                                const stStyle = getStatusAppleStyle(b.status);
+                                const st = getStatusBadge(b.status);
                                 return (
-                                  <div className="relative inline-flex items-center justify-center group">
-                                    <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full border text-[11px] font-bold shadow-2xs transition-all cursor-pointer hover:shadow-xs hover:scale-[1.02] active:scale-[0.98] ${stStyle.bg} ${stStyle.border} ${stStyle.text}`}>
-                                      <span className={`w-2 h-2 rounded-full ${stStyle.dot} ring-2 ring-white shadow-2xs shrink-0`} />
-                                      <span>{stStyle.label}</span>
-                                      <ChevronDown className="w-3 h-3 opacity-40 ml-0.5 shrink-0" />
+                                  <div className="relative inline-block">
+                                    {/* Apple Pill Presentation */}
+                                    <div className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold tracking-tight border shadow-2xs transition-all duration-150 ${st.bg} ${st.text} ${st.border}`}>
+                                      <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${st.dot} ring-1 ring-white/60`} />
+                                      <span>{st.label}</span>
+                                      <ChevronDown className="w-3 h-3 opacity-60 ml-0.5" />
                                     </div>
 
-                                    {/* Selector Nativo Overlay */}
+                                    {/* Native Select Overlay */}
                                     <select
                                       value={b.status}
                                       onChange={(e) => handleQuickStatusChange(b.id, e.target.value)}
                                       className="absolute inset-0 w-full h-full opacity-0 cursor-pointer text-xs"
                                       title="Cambiar estado del servicio"
                                     >
-                                      <option value="PENDING">🟡 Pendiente</option>
-                                      <option value="CONFIRMED">🟢 Confirmado</option>
-                                      <option value="IN_PROGRESS">🔵 En Curso</option>
-                                      <option value="COMPLETED">🟣 Finalizado</option>
-                                      <option value="CANCELLED">🔴 Cancelado</option>
+                                      <option value="PENDING">Pendiente</option>
+                                      <option value="CONFIRMED">Confirmado</option>
+                                      <option value="IN_PROGRESS">En Curso</option>
+                                      <option value="COMPLETED">Finalizado</option>
+                                      <option value="CANCELLED">Cancelado</option>
                                     </select>
                                   </div>
                                 );
@@ -2088,29 +2080,24 @@ export default function AdminDashboardPage() {
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {employees.map((emp) => {
-                    const empColor = getEmployeeColor(emp.name);
-                    return (
-                      <div key={emp.id} className={`bg-white p-5 rounded-3xl border shadow-xs space-y-4 transition-all hover:shadow-md ${empColor.border}`}>
-                        <div className="flex items-start justify-between">
-                          <div className="flex items-center gap-3">
-                            <div className={`w-10 h-10 rounded-2xl ${empColor.bg} ${empColor.text} font-black text-sm flex items-center justify-center shadow-xs border ${empColor.border}`}>
-                              {emp.name.slice(0, 2).toUpperCase()}
-                            </div>
-                            <div>
-                              <div className="flex items-center gap-1.5">
-                                <span className={`w-2 h-2 rounded-full ${empColor.dot}`} />
-                                <h3 className="text-xs font-bold text-slate-900">{emp.name}</h3>
-                              </div>
-                              <p className="text-[11px] text-slate-500 font-mono">CI: {emp.ci || "Sin CI"}</p>
-                            </div>
+                  {employees.map((emp) => (
+                    <div key={emp.id} className="bg-white p-5 rounded-3xl border border-slate-200/80 shadow-xs space-y-4">
+                      <div className="flex items-start justify-between">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-electric-600 to-cyan-500 text-white font-bold text-sm flex items-center justify-center shadow-xs">
+                            {emp.name.slice(0, 2).toUpperCase()}
                           </div>
-                          <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase ${
-                            emp.status === "ACTIVE" ? "bg-emerald-50 text-emerald-800 border border-emerald-200" : "bg-slate-100 text-slate-600"
-                          }`}>
-                            {emp.status === "ACTIVE" ? "Activo" : "Inactivo"}
-                          </span>
+                          <div>
+                            <h3 className="text-xs font-bold text-slate-900">{emp.name}</h3>
+                            <p className="text-[11px] text-slate-500 font-mono">CI: {emp.ci || "Sin CI"}</p>
+                          </div>
                         </div>
+                        <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase ${
+                          emp.status === "ACTIVE" ? "bg-emerald-50 text-emerald-800 border border-emerald-200" : "bg-slate-100 text-slate-600"
+                        }`}>
+                          {emp.status === "ACTIVE" ? "Activo" : "Inactivo"}
+                        </span>
+                      </div>
 
                       <div className="space-y-1.5 text-xs text-slate-600">
                         <p className="flex items-center gap-2">
@@ -2153,8 +2140,7 @@ export default function AdminDashboardPage() {
                         </button>
                       </div>
                     </div>
-                  );
-                })}
+                  ))}
                 </div>
               </div>
             )}
