@@ -1,13 +1,14 @@
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
-import { createBooking, getBookings, getUserByEmail, createUser } from "@/lib/db";
+import { createBooking, getBookings, getUserByEmail, createUser, updateUserProfile } from "@/lib/db";
 import {
   supabaseCreateBooking,
   supabaseCreateUser,
   supabaseGetAllBookings,
   supabaseGetBookingsByUserId,
   supabaseGetUserByEmail,
+  supabaseUpdateUser,
 } from "@/lib/supabase-db";
 import { calculatePricing } from "@/lib/pricing";
 import { generateBookingNumber } from "@/lib/utils";
@@ -185,7 +186,25 @@ export async function POST(req: Request) {
             });
           } catch (e2) {}
         }
+      } else if (existingUser) {
+        // Si el usuario ya existe pero aún no tiene teléfono (o dirección) guardado, guardarlo para futuras reservas
+        const hasNoPhone = !existingUser.phone || existingUser.phone.trim() === "";
+        const hasNoAddress = (!existingUser.address || existingUser.address.trim() === "") && address;
+
+        if (hasNoPhone || hasNoAddress) {
+          const profileUpdate: any = {};
+          if (hasNoPhone && customerPhone) profileUpdate.phone = customerPhone;
+          if (hasNoAddress && address) profileUpdate.address = address;
+
+          try {
+            await supabaseUpdateUser(existingUser.id, profileUpdate);
+          } catch (e) {}
+          try {
+            updateUserProfile(existingUser.id, profileUpdate);
+          } catch (e) {}
+        }
       }
+
       if (existingUser) {
         userId = existingUser.id;
       }

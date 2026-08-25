@@ -80,6 +80,7 @@ function BookingContent() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [completedBooking, setCompletedBooking] = useState<any | null>(null);
+  const [hasSavedPhone, setHasSavedPhone] = useState(false);
 
   // Cargar parámetros de URL iniciales
   useEffect(() => {
@@ -109,7 +110,8 @@ function BookingContent() {
     const loadSavedAddresses = async () => {
       let deletedList: string[] = [];
       try {
-        deletedList = JSON.parse(localStorage.getItem("aquiestamos_deleted_addresses") || "[]");
+        const storedDeleted = localStorage.getItem("aquiestamos_deleted_addresses");
+        if (storedDeleted) deletedList = JSON.parse(storedDeleted);
       } catch (e) {}
 
       const isDeleted = (addrText?: string, idText?: string) => {
@@ -143,10 +145,15 @@ function BookingContent() {
             fetch("/api/bookings"),
           ]);
 
+          let profilePhone = "";
           if (profRes.ok) {
             const profData = await profRes.json();
             if (profData?.user) {
-              if (profData.user.phone && !customerPhone) setCustomerPhone(profData.user.phone);
+              if (profData.user.phone) {
+                profilePhone = profData.user.phone;
+                setCustomerPhone(profData.user.phone);
+                setHasSavedPhone(true);
+              }
               if (profData.user.name && !customerName) setCustomerName(profData.user.name);
               if (profData.user.address && !isDeleted(profData.user.address, "profile_default")) {
                 const exists = addressesList.some(a => a.address.toLowerCase().trim() === profData.user.address.toLowerCase().trim());
@@ -164,10 +171,17 @@ function BookingContent() {
             }
           }
 
-          const hasInitialized = localStorage.getItem("aquiestamos_addresses_initialized") === "true";
-          if (!hasInitialized && bkRes.ok) {
+          if (bkRes.ok) {
             const bkData = await bkRes.json();
-            if (bkData?.bookings && Array.isArray(bkData.bookings)) {
+            if (bkData?.bookings && Array.isArray(bkData.bookings) && bkData.bookings.length > 0) {
+              if (!profilePhone && bkData.bookings[0]?.customerPhone) {
+                setCustomerPhone(bkData.bookings[0].customerPhone);
+                setHasSavedPhone(true);
+              }
+            }
+
+            const hasInitialized = localStorage.getItem("aquiestamos_addresses_initialized") === "true";
+            if (!hasInitialized && bkData?.bookings && Array.isArray(bkData.bookings)) {
               bkData.bookings.forEach((b: any) => {
                 if (b.address && !isDeleted(b.address, `bk_${b.id}`)) {
                   const exists = addressesList.some(a => a.address.toLowerCase().trim() === b.address.toLowerCase().trim());
@@ -635,6 +649,21 @@ function BookingContent() {
                         placeholder="Ej: 0981 123 456"
                         className="w-full px-3 py-2 rounded-lg border border-neutral-300 text-xs focus:ring-1 focus:ring-electric-600 focus:outline-none"
                       />
+                      {customerPhone ? (
+                        hasSavedPhone ? (
+                          <p className="text-[10px] text-emerald-600 font-medium mt-1 flex items-center gap-1">
+                            <span>✓</span> Teléfono guardado en tu perfil
+                          </p>
+                        ) : (
+                          <p className="text-[10px] text-electric-600 font-medium mt-1 flex items-center gap-1">
+                            <span>💾</span> Se guardará en tu perfil para tus próximas reservas
+                          </p>
+                        )
+                      ) : (
+                        <p className="text-[10px] text-neutral-400 font-normal mt-1">
+                          Se guardará en tu perfil para futuras reservas.
+                        </p>
+                      )}
                     </div>
 
                     <div>
