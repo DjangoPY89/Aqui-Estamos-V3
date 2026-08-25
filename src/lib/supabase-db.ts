@@ -808,7 +808,55 @@ export async function supabaseCreateReview(data: {
 }
 
 // ==========================================
-// 6. ESTADÍSTICAS DEL PANEL ADMINISTRATIVO
+// 7. CONFIGURACIÓN GLOBAL DE DISPONIBILIDAD & CALENDARIO
+// ==========================================
+
+export async function supabaseGetAvailabilitySettings() {
+  try {
+    const supabase = getSupabase();
+    const { data, error } = await supabase
+      .from("users")
+      .select("address")
+      .eq("id", "sys_availability_settings")
+      .maybeSingle();
+
+    if (error || !data || !data.address) return null;
+    return JSON.parse(data.address);
+  } catch (e) {
+    return null;
+  }
+}
+
+export async function supabaseSaveAvailabilitySettings(settings: any) {
+  try {
+    const supabase = getSupabase();
+    const payload = JSON.stringify(settings);
+    const { data, error } = await supabase
+      .from("users")
+      .upsert({
+        id: "sys_availability_settings",
+        name: "System Availability Settings",
+        email: "system.availability@aquiestamos.com",
+        role: "ADMIN",
+        address: payload,
+        phone: "000000",
+      })
+      .select("id")
+      .maybeSingle();
+
+    if (error) {
+      console.error("Error saving availability settings to Supabase:", error.message);
+      return false;
+    }
+    return true;
+  } catch (e: any) {
+    console.error("Exception saving availability settings to Supabase:", e.message);
+    return false;
+  }
+}
+
+// ==========================================
+// 8. ESTADÍSTICAS DEL PANEL ADMINISTRATIVO
 // ==========================================
 
 export async function supabaseGetAdminStats() {

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { 
   ChevronLeft, 
   ChevronRight, 
@@ -36,6 +36,7 @@ export default function BookingCalendarPicker({
   const initialDate = selectedDate ? new Date(selectedDate + 'T00:00:00') : new Date();
   const [currentYear, setCurrentYear] = useState(initialDate.getFullYear());
   const [currentMonth, setCurrentMonth] = useState(initialDate.getMonth());
+  
   const [localSettings, setLocalSettings] = useState<AvailabilitySettings | null>(() => {
     if (availabilitySettings) return availabilitySettings;
     if (typeof window !== 'undefined') {
@@ -46,38 +47,15 @@ export default function BookingCalendarPicker({
     }
     return null;
   });
+  
   const [isLoadingSettings, setIsLoadingSettings] = useState(!availabilitySettings);
 
-  // Sincronizar configuraciones en tiempo real
-  useEffect(() => {
-    if (availabilitySettings) {
-      let mergedSettings = availabilitySettings;
-      try {
-        const local = localStorage.getItem('aquiestamos_admin_availability_settings');
-        if (local) {
-          const parsed = JSON.parse(local);
-          if (parsed?.blockedDates && Array.isArray(parsed.blockedDates)) {
-            const map = new Map<string, any>();
-            parsed.blockedDates.forEach((b: any) => map.set(b.id, b));
-            (mergedSettings.blockedDates || []).forEach((b: any) => map.set(b.id, b));
-            mergedSettings = { ...mergedSettings, blockedDates: Array.from(map.values()) };
-          }
-        }
-      } catch (e) {}
-      setLocalSettings(mergedSettings);
-      setIsLoadingSettings(false);
-      return;
-    }
-
-    // Inicializar rápido con localStorage si existe
-    try {
-      const local = localStorage.getItem('aquiestamos_admin_availability_settings');
-      if (local) {
-        setLocalSettings(JSON.parse(local));
-      }
-    } catch (e) {}
-
-    fetch(`/api/availability?t=${Date.now()}`, { cache: 'no-store' })
+  // Función para sincronizar la disponibilidad más reciente de la nube
+  const loadFreshAvailability = useCallback(() => {
+    fetch(`/api/availability?t=${Date.now()}`, { 
+      cache: 'no-store',
+      headers: { 'Cache-Control': 'no-cache', 'Pragma': 'no-cache' } 
+    })
       .then((res) => res.json())
       .then((data) => {
         if (data?.settings) {
@@ -99,7 +77,45 @@ export default function BookingCalendarPicker({
       })
       .catch((err) => console.error('Error loading calendar availability:', err))
       .finally(() => setIsLoadingSettings(false));
-  }, [availabilitySettings]);
+  }, []);
+
+  // Sincronizar configuraciones en tiempo real
+  useEffect(() => {
+    if (availabilitySettings) {
+      let mergedSettings = availabilitySettings;
+      try {
+        const local = localStorage.getItem('aquiestamos_admin_availability_settings');
+        if (local) {
+          const parsed = JSON.parse(local);
+          if (parsed?.blockedDates && Array.isArray(parsed.blockedDates)) {
+            const map = new Map<string, any>();
+            parsed.blockedDates.forEach((b: any) => map.set(b.id, b));
+            (mergedSettings.blockedDates || []).forEach((b: any) => map.set(b.id, b));
+            mergedSettings = { ...mergedSettings, blockedDates: Array.from(map.values()) };
+          }
+        }
+      } catch (e) {}
+      setLocalSettings(mergedSettings);
+      setIsLoadingSettings(false);
+    }
+
+    loadFreshAvailability();
+
+    // Auto-actualizar cuando la app/pestaña vuelve a estar activa en móviles
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        loadFreshAvailability();
+      }
+    };
+
+    window.addEventListener('focus', loadFreshAvailability);
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    return () => {
+      window.removeEventListener('focus', loadFreshAvailability);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, [availabilitySettings, loadFreshAvailability]);
 
   // Si cambia la fecha seleccionada externamente, sincronizar mes
   useEffect(() => {
@@ -140,7 +156,7 @@ export default function BookingCalendarPicker({
     const minBookingDate = new Date(today);
     minBookingDate.setDate(minBookingDate.getDate() + 1);
 
-    // Máximo para reservar: 60 días
+    // Máximo para reservar: 90 días
     const maxBookingDate = new Date(today);
     maxBookingDate.setDate(maxBookingDate.getDate() + 90);
 
@@ -148,8 +164,6 @@ export default function BookingCalendarPicker({
     const lastDayOfMonth = new Date(currentYear, currentMonth + 1, 0);
     const totalDays = lastDayOfMonth.getDate();
 
-    // Día de la semana del primer día (0=Dom, 1=Lun, ..., 6=Sáb)
-    // Convertir a base Lunes (0=Lun, 1=Mar, ..., 6=Dom)
     let startDayOfWeek = firstDayOfMonth.getDay() - 1;
     if (startDayOfWeek === -1) startDayOfWeek = 6;
 
@@ -173,7 +187,7 @@ export default function BookingCalendarPicker({
       const isTooFar = dateObj > maxBookingDate;
 
       // 2. Validar día de la semana (Lunes a Domingo)
-      const dayOfWeekIndex = dateObj.getDay(); // 0=Dom, 1=Lun...
+      const dayOfWeekIndex = dateObj.getDay();
       const dayKeyMap: Record<number, string> = {
         0: 'sunday',
         1: 'monday',
@@ -242,7 +256,7 @@ export default function BookingCalendarPicker({
   }, [currentYear, currentMonth, localSettings, selectedDate]);
 
   return (
-    <div className="bg-white rounded-2xl border border-slate-200 p-4 sm:p-5 shadow-xs select-none space-y-4">
+    <div className="bg-white rounded-2xl sm:rounded-3xl border border-slate-200 p-3 sm:p-5 shadow-xs select-none space-y-4 touch-manipulation">
       
       {/* Cabecera del Calendario: Mes y Año + Navegación */}
       <div className="flex items-center justify-between pb-3 border-b border-slate-100">
@@ -251,18 +265,18 @@ export default function BookingCalendarPicker({
             <CalendarIcon className="w-4 h-4" />
           </div>
           <div>
-            <h4 className="font-extrabold text-sm text-slate-900 capitalize">
+            <h4 className="font-extrabold text-sm sm:text-base text-slate-900 capitalize">
               {MONTH_NAMES[currentMonth]} {currentYear}
             </h4>
             <p className="text-[10px] text-slate-500 font-medium">Selecciona un día disponible</p>
           </div>
         </div>
 
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-1.5">
           <button
             type="button"
             onClick={handlePrevMonth}
-            className="w-8 h-8 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 flex items-center justify-center transition-colors active:scale-95"
+            className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 flex items-center justify-center transition-colors active:scale-90"
             title="Mes Anterior"
           >
             <ChevronLeft className="w-4 h-4" />
@@ -270,7 +284,7 @@ export default function BookingCalendarPicker({
           <button
             type="button"
             onClick={handleNextMonth}
-            className="w-8 h-8 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 flex items-center justify-center transition-colors active:scale-95"
+            className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 flex items-center justify-center transition-colors active:scale-90"
             title="Mes Siguiente"
           >
             <ChevronRight className="w-4 h-4" />
@@ -292,11 +306,11 @@ export default function BookingCalendarPicker({
         ))}
       </div>
 
-      {/* Grilla de Días del Mes */}
+      {/* Grilla de Días del Mes (Optimizada para Touch Móvil) */}
       <div className="grid grid-cols-7 gap-1 sm:gap-1.5 text-center">
         {calendarDays.map((item, index) => {
           if (item.isPadding) {
-            return <div key={`pad-${index}`} className="h-10 sm:h-12" />;
+            return <div key={`pad-${index}`} className="h-11 sm:h-12" />;
           }
 
           const {
@@ -313,18 +327,18 @@ export default function BookingCalendarPicker({
           } = item;
 
           // Clases dinámicas según estado
-          let tileClass = 'relative h-10 sm:h-12 rounded-xl flex flex-col items-center justify-center transition-all text-xs font-bold ';
+          let tileClass = 'relative min-h-[44px] sm:min-h-[48px] rounded-xl flex flex-col items-center justify-center transition-all text-xs font-bold touch-manipulation ';
 
           if (isSelected) {
             tileClass += 'bg-electric-600 text-white shadow-md shadow-electric-600/30 ring-2 ring-electric-600 ring-offset-2 scale-105 z-10';
           } else if (isBlocked) {
-            tileClass += 'bg-rose-50/80 border border-rose-200/80 text-rose-400 cursor-not-allowed opacity-75';
+            tileClass += 'bg-rose-50/90 border border-rose-200 text-rose-500 cursor-not-allowed opacity-80';
           } else if (isDayOfWeekClosed) {
-            tileClass += 'bg-slate-100/70 border border-slate-200/60 text-slate-400 cursor-not-allowed';
+            tileClass += 'bg-slate-100/80 border border-slate-200/70 text-slate-400 cursor-not-allowed';
           } else if (isPast) {
             tileClass += 'text-slate-300 cursor-not-allowed opacity-40';
           } else if (isSelectable) {
-            tileClass += 'bg-slate-50/70 hover:bg-electric-50 hover:text-electric-700 hover:border-electric-300 border border-slate-200/70 text-slate-800 cursor-pointer active:scale-95 shadow-2xs';
+            tileClass += 'bg-slate-50/80 hover:bg-electric-50 hover:text-electric-700 hover:border-electric-300 border border-slate-200/80 text-slate-800 cursor-pointer active:scale-95 shadow-2xs';
           }
 
           const tooltipText = isBlocked
@@ -344,17 +358,17 @@ export default function BookingCalendarPicker({
               title={tooltipText}
               className={tileClass}
             >
-              <span>{dayNumber}</span>
+              <span className="text-[12px] sm:text-xs leading-none">{dayNumber}</span>
 
               {/* Indicador visual inferior */}
               {isSelected ? (
                 <Check className="w-3 h-3 text-white stroke-[3] mt-0.5" />
               ) : isBlocked ? (
-                <span className="text-[8px] font-extrabold text-rose-600 leading-none truncate max-w-full px-0.5">
+                <span className="text-[7.5px] sm:text-[8px] font-black text-rose-600 leading-none truncate max-w-full px-0.5 mt-0.5">
                   {isHoliday ? 'Feriado' : 'Cerrado'}
                 </span>
               ) : isDayOfWeekClosed ? (
-                <span className="text-[8px] font-bold text-slate-400 leading-none">
+                <span className="text-[7.5px] sm:text-[8px] font-bold text-slate-400 leading-none mt-0.5">
                   Descanso
                 </span>
               ) : isSelectable ? (
@@ -366,7 +380,7 @@ export default function BookingCalendarPicker({
       </div>
 
       {/* Leyenda Explicativa */}
-      <div className="pt-3 border-t border-slate-100 flex flex-wrap items-center justify-between gap-2 text-[10px] font-semibold text-slate-600">
+      <div className="pt-3 border-t border-slate-100 flex flex-wrap items-center justify-between gap-2 text-[10px] sm:text-[11px] font-semibold text-slate-600">
         <div className="flex items-center gap-1.5">
           <span className="w-2.5 h-2.5 rounded-full bg-emerald-500" />
           <span>Disponible</span>
@@ -381,7 +395,7 @@ export default function BookingCalendarPicker({
         </div>
         <div className="flex items-center gap-1.5">
           <span className="w-2.5 h-2.5 rounded-full bg-slate-300" />
-          <span>Descanso / Pasado</span>
+          <span>Descanso</span>
         </div>
       </div>
 
