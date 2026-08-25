@@ -1599,7 +1599,10 @@ export default function AdminDashboardPage() {
                         <span className="text-[11px] font-semibold text-slate-300">Visitas (7 días)</span>
                       </div>
                       <p className="text-lg sm:text-xl font-extrabold tracking-tight text-white">
-                        1.8K Visitas
+                        {(() => {
+                          const sevenDaysTotal = dailyOperationsData.slice(-7).reduce((acc, d) => acc + d.pageVisitsCount, 0);
+                          return sevenDaysTotal >= 1000 ? `${(sevenDaysTotal / 1000).toFixed(1)}K Visitas` : `${sevenDaysTotal} Visitas`;
+                        })()}
                       </p>
                       <p className="text-[10px] font-bold text-[#22c55e] pb-0.5">+18% esta semana</p>
                       <div className="h-5 w-full">
