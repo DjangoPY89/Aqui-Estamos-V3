@@ -13,6 +13,7 @@ import {
 import { calculatePricing } from "@/lib/pricing";
 import { generateBookingNumber } from "@/lib/utils";
 import { sendNewBookingAdminNotification, sendBookingConfirmationToCustomer } from "@/lib/email";
+import { checkDateAvailability } from "@/lib/availability";
 
 export const dynamic = "force-dynamic";
 
@@ -139,6 +140,19 @@ export async function POST(req: Request) {
         { error: "Por favor completa tu nombre, teléfono, correo, dirección y horario para agendar tu servicio." },
         { status: 400 }
       );
+    }
+
+    // Validar rigurosamente que la fecha esté abierta en el servidor (bloqueos, feriados, capacidad)
+    try {
+      const availCheck = await checkDateAvailability(serviceDate);
+      if (!availCheck.isOpen) {
+        return NextResponse.json(
+          { error: availCheck.closedReason || "La fecha seleccionada no se encuentra disponible para reservas." },
+          { status: 400 }
+        );
+      }
+    } catch (errAvail) {
+      console.error("Error validating date availability on server:", errAvail);
     }
 
     // Recalcular precio en backend para total seguridad

@@ -106,30 +106,12 @@ export default function AvailabilityManager({ employees, onNotice }: Availabilit
       });
       const data = await res.json();
       
-      let finalSettings: AvailabilitySettings = data.settings;
-
-      // Recuperar y fusionar reglas guardadas en localStorage si existían
-      try {
-        const local = localStorage.getItem('aquiestamos_admin_availability_settings');
-        if (local) {
-          const parsed = JSON.parse(local);
-          if (parsed && Array.isArray(parsed.blockedDates)) {
-            const currentIds = new Set((finalSettings?.blockedDates || []).map(b => b.id));
-            const extraLocalBlocks = parsed.blockedDates.filter((b: BlockedDate) => !currentIds.has(b.id));
-            if (extraLocalBlocks.length > 0 && finalSettings) {
-              finalSettings = {
-                ...finalSettings,
-                blockedDates: [...extraLocalBlocks, ...(finalSettings.blockedDates || [])],
-              };
-            }
-          }
-        }
-      } catch (e) {}
-
-      setSettings(finalSettings);
-      try {
-        localStorage.setItem('aquiestamos_admin_availability_settings', JSON.stringify(finalSettings));
-      } catch (e) {}
+      if (data?.settings) {
+        setSettings(data.settings);
+        try {
+          localStorage.setItem('aquiestamos_admin_availability_settings', JSON.stringify(data.settings));
+        } catch (e) {}
+      }
     } catch (err: any) {
       try {
         const local = localStorage.getItem('aquiestamos_admin_availability_settings');

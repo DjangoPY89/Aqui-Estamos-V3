@@ -163,27 +163,20 @@ function BookingContent() {
       }
     } catch (e) {}
 
-    // 2. Sincronización en vivo con API
-    fetch(`/api/availability?t=${Date.now()}`, { cache: "no-store" })
+    // 2. Sincronización en vivo con API Cloud
+    fetch(`/api/availability?t=${Date.now()}`, { 
+      cache: "no-store",
+      headers: { "Cache-Control": "no-cache", "Pragma": "no-cache" }
+    })
       .then((res) => res.json())
       .then((data) => {
         if (data?.settings) {
-          let finalSettings = data.settings;
+          setAvailabilitySettings(data.settings);
           try {
-            const local = localStorage.getItem("aquiestamos_admin_availability_settings");
-            if (local) {
-              const parsed = JSON.parse(local);
-              if (parsed?.blockedDates && Array.isArray(parsed.blockedDates)) {
-                const map = new Map<string, any>();
-                parsed.blockedDates.forEach((b: any) => map.set(b.id, b));
-                (finalSettings.blockedDates || []).forEach((b: any) => map.set(b.id, b));
-                finalSettings = { ...finalSettings, blockedDates: Array.from(map.values()) };
-              }
-            }
+            localStorage.setItem("aquiestamos_admin_availability_settings", JSON.stringify(data.settings));
           } catch (e) {}
-          setAvailabilitySettings(finalSettings);
-          if (Array.isArray(finalSettings.timeSlots)) {
-            setConfiguredSlots(finalSettings.timeSlots);
+          if (Array.isArray(data.settings.timeSlots)) {
+            setConfiguredSlots(data.settings.timeSlots);
           }
         }
       })

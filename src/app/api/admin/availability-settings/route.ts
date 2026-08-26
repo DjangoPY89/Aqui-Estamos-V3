@@ -1,12 +1,12 @@
 import { NextResponse } from 'next/server';
-import { getAvailabilitySettings, saveAvailabilitySettings } from '@/lib/availability';
+import { getAvailabilitySettingsAsync, saveAvailabilitySettingsAsync } from '@/lib/availability';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
 export async function GET() {
   try {
-    const settings = getAvailabilitySettings();
+    const settings = await getAvailabilitySettingsAsync();
     return NextResponse.json(
       { success: true, settings },
       {
@@ -29,7 +29,7 @@ export async function GET() {
 export async function POST(req: Request) {
   try {
     const body = await req.json();
-    const updated = saveAvailabilitySettings(body);
+    const updated = await saveAvailabilitySettingsAsync(body);
     return NextResponse.json(
       {
         success: true,

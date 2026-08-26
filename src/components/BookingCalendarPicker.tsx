@@ -59,20 +59,10 @@ export default function BookingCalendarPicker({
       .then((res) => res.json())
       .then((data) => {
         if (data?.settings) {
-          let mergedSettings = data.settings;
+          setLocalSettings(data.settings);
           try {
-            const local = localStorage.getItem('aquiestamos_admin_availability_settings');
-            if (local) {
-              const parsed = JSON.parse(local);
-              if (parsed?.blockedDates && Array.isArray(parsed.blockedDates)) {
-                const map = new Map<string, any>();
-                parsed.blockedDates.forEach((b: any) => map.set(b.id, b));
-                (mergedSettings.blockedDates || []).forEach((b: any) => map.set(b.id, b));
-                mergedSettings = { ...mergedSettings, blockedDates: Array.from(map.values()) };
-              }
-            }
+            localStorage.setItem('aquiestamos_admin_availability_settings', JSON.stringify(data.settings));
           } catch (e) {}
-          setLocalSettings(mergedSettings);
         }
       })
       .catch((err) => console.error('Error loading calendar availability:', err))

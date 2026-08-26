@@ -642,6 +642,7 @@ export async function supabaseGetAllCorporateLeads(): Promise<CorporateLead[]> {
   const { data, error } = await supabase
     .from("corporate_leads")
     .select("*")
+    .neq("id", "sys_availability_settings")
     .order("created_at", { ascending: false });
 
   if (error || !data) return [];
@@ -816,7 +817,7 @@ export async function supabaseGetAdminStats() {
 
   const [bookingsRes, leadsRes, usersRes] = await Promise.all([
     supabase.from("bookings").select("status, total_price"),
-    supabase.from("corporate_leads").select("status"),
+    supabase.from("corporate_leads").select("status").neq("id", "sys_availability_settings"),
     supabase.from("users").select("role", { count: "exact", head: true }),
   ]);
 
@@ -843,4 +844,69 @@ export async function supabaseGetAdminStats() {
     newLeads,
     totalUsers,
   };
+}
+
+// ==========================================
+// 7. CONFIGURACIÓN DE DISPONIBILIDAD Y BLOQUEOS (SUPABASE PERSISTENTE)
+// ==========================================
+
+export async function supabaseGetAvailabilitySettings(): Promise<any | null> {
+  try {
+    const supabase = getSupabase();
+    const { data, error } = await supabase
+      .from("corporate_leads")
+      .select("requirements")
+      .eq("id", "sys_availability_settings")
+      .maybeSingle();
+
+    if (error || !data || !data.requirements) {
+      return null;
+    }
+
+    const parsed = JSON.parse(data.requirements);
+    return parsed;
+  } catch (err) {
+    console.error("Error reading availability settings from Supabase:", err);
+    return null;
+  }
+}
+
+export async function supabaseSaveAvailabilitySettings(settings: any): Promise<boolean> {
+  try {
+    const supabase = getSupabase();
+    const jsonStr = JSON.stringify(settings);
+
+    const { data: existing } = await supabase
+      .from("corporate_leads")
+      .select("id")
+      .eq("id", "sys_availability_settings")
+      .maybeSingle();
+
+    if (!existing) {
+      const { error: insErr } = await supabase
+        .from("corporate_leads")
+        .insert({
+          id: "sys_availability_settings",
+          company_name: "SYSTEM_CONFIG",
+          facility_type: "SYSTEM_SETTINGS",
+          contact_name: "Admin System",
+          phone: "0000000000",
+          requirements: jsonStr,
+          status: "NEW",
+        });
+      return !insErr;
+    } else {
+      const { error: updErr } = await supabase
+        .from("corporate_leads")
+        .update({
+          requirements: jsonStr,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", "sys_availability_settings");
+      return !updErr;
+    }
+  } catch (err) {
+    console.error("Error saving availability settings to Supabase:", err);
+    return false;
+  }
 }

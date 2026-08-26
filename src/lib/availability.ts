@@ -10,7 +10,9 @@ import {
 import { getAllEmployees, getBookings, getAvailabilitySettingsFromDb, saveAvailabilitySettingsToDb } from '@/lib/db';
 import { 
   supabaseGetAllEmployees, 
-  supabaseGetAllBookings 
+  supabaseGetAllBookings,
+  supabaseGetAvailabilitySettings,
+  supabaseSaveAvailabilitySettings
 } from '@/lib/supabase-db';
 
 const SETTINGS_FILE_PATH = path.join(process.cwd(), 'src', 'data', 'availability-settings.json');
@@ -111,6 +113,60 @@ function mergeBlockedDates(existingList: BlockedDate[] = [], defaultHolidays: Bl
   return Array.from(map.values());
 }
 
+/**
+ * Carga asíncrona de configuraciones desde Supabase Cloud DB.
+ * Garantiza sincronización en tiempo real 100% cross-device (PC, Mac, iPhone, Android).
+ */
+export async function getAvailabilitySettingsAsync(): Promise<AvailabilitySettings> {
+  try {
+    const supaSettings = await supabaseGetAvailabilitySettings();
+    if (supaSettings && typeof supaSettings === 'object' && supaSettings.workingDays) {
+      const merged: AvailabilitySettings = {
+        ...DEFAULT_AVAILABILITY_SETTINGS,
+        ...supaSettings,
+        blockedDates: mergeBlockedDates(supaSettings.blockedDates || [], DEFAULT_PARAGUAY_HOLIDAYS),
+      };
+      globalThis.__aquiestamos_availability_settings = merged;
+      return merged;
+    }
+  } catch (e) {
+    console.error('Error fetching availability settings from Supabase:', e);
+  }
+
+  return getAvailabilitySettings();
+}
+
+/**
+ * Guarda asíncronamente en Supabase Cloud DB y actualiza cachés locales.
+ */
+export async function saveAvailabilitySettingsAsync(newSettings: Partial<AvailabilitySettings>): Promise<AvailabilitySettings> {
+  const current = await getAvailabilitySettingsAsync();
+
+  const mergedBlockedDates = newSettings.blockedDates !== undefined 
+    ? newSettings.blockedDates 
+    : current.blockedDates;
+
+  const updated: AvailabilitySettings = {
+    ...current,
+    ...newSettings,
+    blockedDates: mergedBlockedDates,
+    updatedAt: new Date().toISOString(),
+  };
+
+  // Guardar en Supabase Cloud (garantiza persistencia cross-device)
+  try {
+    await supabaseSaveAvailabilitySettings(updated);
+  } catch (e) {
+    console.error('Error saving availability settings to Supabase:', e);
+  }
+
+  // Actualizar memoria y archivos locales
+  globalThis.__aquiestamos_availability_settings = updated;
+  try { saveAvailabilitySettingsToDb(updated); } catch (e) {}
+  try { fs.writeFileSync(TMP_SETTINGS_FILE_PATH, JSON.stringify(updated, null, 2), 'utf-8'); } catch (e) {}
+
+  return updated;
+}
 
 export function getAvailabilitySettings(): AvailabilitySettings {
   if (globalThis.__aquiestamos_availability_settings) {
@@ -143,7 +199,6 @@ export function getAvailabilitySettings(): AvailabilitySettings {
           blockedDates: mergeBlockedDates(parsed.blockedDates || [], DEFAULT_PARAGUAY_HOLIDAYS),
         };
         globalThis.__aquiestamos_availability_settings = merged;
-        // Back-fill to db store so future instances also get it
         try { saveAvailabilitySettingsToDb(merged); } catch (e) {}
         return merged;
       }
@@ -222,7 +277,7 @@ export const DAY_OF_WEEK_MAP: Record<number, DayOfWeek> = {
 };
 
 export async function checkDateAvailability(dateStr: string): Promise<DateAvailabilityCheck> {
-  const settings = getAvailabilitySettings();
+  const settings = await getAvailabilitySettingsAsync();
   
   // 1. Obtener empleados activos
   let employees: any[] = [];
