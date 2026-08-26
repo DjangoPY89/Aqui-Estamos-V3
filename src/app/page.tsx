@@ -13,8 +13,6 @@ import CoverageMap from "@/components/home/CoverageMap";
 import Testimonials from "@/components/home/Testimonials";
 import GuaranteeBanner from "@/components/home/GuaranteeBanner";
 
-export const dynamic = "force-dynamic";
-
 export default function HomePage() {
   return (
     <main>

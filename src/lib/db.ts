@@ -236,13 +236,15 @@ function saveStoreToDisk(store: DbStore) {
   } catch (e) {}
 }
 
-// Intentar cargar better-sqlite3 de forma segura sin romper Serverless si no está compilado
+// Intentar cargar better-sqlite3 de forma segura solo en local sin romper Serverless
 let sqliteDb: any = null;
 try {
-  const Database = require("better-sqlite3");
   const isVercel = process.env.VERCEL === "1" || process.env.AWS_LAMBDA_FUNCTION_NAME !== undefined;
-  const dbPath = isVercel ? path.join("/tmp", "aquiestamos.db") : path.join(process.cwd(), "data", "aquiestamos.db");
-  sqliteDb = new Database(dbPath, { timeout: 3000 });
+  if (!isVercel) {
+    const Database = require("better-sqlite3");
+    const dbPath = path.join(process.cwd(), "data", "aquiestamos.db");
+    sqliteDb = new Database(dbPath, { timeout: 3000 });
+  }
 } catch (e) {
   sqliteDb = null;
 }
