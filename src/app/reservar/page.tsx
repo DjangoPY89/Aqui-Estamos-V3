@@ -240,6 +240,7 @@ function BookingContent() {
     }
 
     const loadSavedAddresses = async () => {
+      const userEmail = session?.user?.email?.trim().toLowerCase();
       let deletedList: string[] = [];
       try {
         const storedDeleted = localStorage.getItem("aquiestamos_deleted_addresses");
@@ -254,23 +255,26 @@ function BookingContent() {
 
       const addressesList: SavedAddress[] = [];
 
-      // 1. Cargar desde LocalStorage
-      try {
-        const localData = localStorage.getItem("aquiestamos_saved_addresses");
-        if (localData) {
-          const parsed = JSON.parse(localData);
-          if (Array.isArray(parsed)) {
-            parsed.forEach((a: SavedAddress) => {
-              if (!isDeleted(a.address, a.id)) {
-                addressesList.push(a);
-              }
-            });
+      // 1. Cargar desde LocalStorage específico del usuario autenticado
+      if (userEmail) {
+        try {
+          const userLocalKey = `aquiestamos_saved_addresses_${userEmail}`;
+          const localData = localStorage.getItem(userLocalKey);
+          if (localData) {
+            const parsed = JSON.parse(localData);
+            if (Array.isArray(parsed)) {
+              parsed.forEach((a: SavedAddress) => {
+                if (!isDeleted(a.address, a.id)) {
+                  addressesList.push(a);
+                }
+              });
+            }
           }
-        }
-      } catch (e) {}
+        } catch (e) {}
+      }
 
-      // 2. Cargar desde perfil de usuario si está logueado
-      if (session?.user) {
+      // 2. Cargar desde perfil de usuario y reservas del usuario si está logueado
+      if (session?.user && userEmail) {
         try {
           const [profRes, bkRes] = await Promise.all([
             fetch("/api/user/profile"),
@@ -287,7 +291,7 @@ function BookingContent() {
                 setHasSavedPhone(true);
               }
               if (profData.user.name && !customerName) setCustomerName(profData.user.name);
-              if (profData.user.address && !isDeleted(profData.user.address, "profile_default")) {
+              if (profData.user.address && profData.user.address.trim() && !isDeleted(profData.user.address, "profile_default")) {
                 const exists = addressesList.some(a => a.address.toLowerCase().trim() === profData.user.address.toLowerCase().trim());
                 if (!exists) {
                   addressesList.unshift({
@@ -312,7 +316,7 @@ function BookingContent() {
               }
             }
 
-            const hasInitialized = localStorage.getItem("aquiestamos_addresses_initialized") === "true";
+            const hasInitialized = localStorage.getItem(`aquiestamos_addr_init_${userEmail}`) === "true";
             if (!hasInitialized && bkData?.bookings && Array.isArray(bkData.bookings)) {
               bkData.bookings.forEach((b: any) => {
                 if (b.address && !isDeleted(b.address, `bk_${b.id}`)) {
@@ -331,13 +335,12 @@ function BookingContent() {
             }
           }
         } catch (e) {
-          console.error("Error al cargar direcciones:", e);
+          console.error("Error al cargar direcciones del usuario:", e);
         }
       }
 
-      // Si no hay ninguna dirección y no está logueado, agregar ejemplo amigable si el usuario es demo
+      // Si el usuario tiene direcciones guardadas en su cuenta, mostrarlas
       if (addressesList.length > 0) {
-        // Ensure all addresses have valid numeric coords before setting them
         const sanitized = addressesList.map((a) => ({
           ...a,
           latitude: (typeof a.latitude === 'number' && !isNaN(a.latitude)) ? a.latitude : -25.2831,
@@ -351,7 +354,10 @@ function BookingContent() {
         setLatitude(defaultAddr.latitude);
         setLongitude(defaultAddr.longitude);
       } else {
+        // Usuario nuevo (Google o directo): iniciar con formulario limpio en modo NEW
+        setSavedAddresses([]);
         setAddressMode("NEW");
+        setSelectedAddressId("NEW");
       }
     };
 
@@ -460,9 +466,12 @@ function BookingContent() {
         };
         const existing = savedAddresses.filter((a) => a.address.toLowerCase() !== newEntry.address.toLowerCase());
         const updated = [newEntry, ...existing];
-        setSavedAddresses(updated);
+        const targetEmail = (session?.user?.email || customerEmail).trim().toLowerCase();
+        if (targetEmail) {
+          localStorage.setItem(`aquiestamos_saved_addresses_${targetEmail}`, JSON.stringify(updated));
+          localStorage.setItem(`aquiestamos_addr_init_${targetEmail}`, "true");
+        }
         localStorage.setItem("aquiestamos_saved_addresses", JSON.stringify(updated));
-        localStorage.setItem("aquiestamos_addresses_initialized", "true");
 
         // Actualizar en el perfil del usuario si tiene sesión
         if (session?.user) {

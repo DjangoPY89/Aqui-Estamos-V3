@@ -30,11 +30,16 @@ const GoogleMapPicker = dynamic(() => import("@/components/booking/GoogleMapPick
   ),
 });
 
-const ADDRESS_TYPES = [
-  { id: "casa", label: "🏠 Casa", value: "Casa" },
-  { id: "depto", label: "🏢 Depto", value: "Departamento" },
-  { id: "oficina", label: "💼 Oficina", value: "Oficina" },
-  { id: "otro", label: "✨ Otro", value: "Domicilio" },
+const REGISTRATION_ZONES = [
+  { name: "Asunción (Villa Morra / Ykua Satî)", lat: -25.2831, lng: -57.5612 },
+  { name: "Asunción (Carmelitas / Manorá)", lat: -25.2775, lng: -57.5670 },
+  { name: "Asunción (Santa Teresa / Eje Corporativo)", lat: -25.2890, lng: -57.5520 },
+  { name: "Asunción (Centro / Mcal. López)", lat: -25.2867, lng: -57.6470 },
+  { name: "Asunción (Mburucuyá / Trinidad)", lat: -25.2650, lng: -57.5580 },
+  { name: "Luque (Aeropuerto / Conmebol)", lat: -25.2678, lng: -57.4856 },
+  { name: "San Lorenzo (Campus UNA)", lat: -25.3392, lng: -57.5089 },
+  { name: "Lambaré (Yacht / Centro)", lat: -25.3456, lng: -57.6083 },
+  { name: "Fernando de la Mora", lat: -25.3211, lng: -57.5528 },
 ];
 
 function RegisterForm() {
@@ -53,18 +58,26 @@ function RegisterForm() {
   });
 
   // Paso 2: Dirección Detallada para el Servicio
-  const [addressType, setAddressType] = useState("Casa");
+  const [newAddressLabel, setNewAddressLabel] = useState("Casa");
+  const [selectedZone, setSelectedZone] = useState("Asunción (Villa Morra / Ykua Satî)");
   const [addressStreet, setAddressStreet] = useState("");
   const [addressApt, setAddressApt] = useState("");
-  const [addressNotes, setAddressNotes] = useState("");
+  const [addressRef, setAddressRef] = useState("");
 
   const [latitude, setLatitude] = useState(-25.2831);
   const [longitude, setLongitude] = useState(-57.5612);
-  const [isLocating, setIsLocating] = useState(false);
-  const [locationSuccess, setLocationSuccess] = useState(false);
 
   const [isLoading, setIsLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+
+  const handleZoneChange = (zoneName: string) => {
+    setSelectedZone(zoneName);
+    const found = REGISTRATION_ZONES.find((z) => z.name === zoneName);
+    if (found) {
+      setLatitude(found.lat);
+      setLongitude(found.lng);
+    }
+  };
 
   // Validar y pasar al Paso 2
   const handleProceedToStep2 = (e: React.FormEvent) => {
@@ -95,37 +108,9 @@ function RegisterForm() {
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
-  // Geolocalización GPS en el paso 2
-  const handleGetCurrentLocation = () => {
-    if (!navigator.geolocation) {
-      setErrorMsg("Tu navegador no soporta geolocalización GPS.");
-      return;
-    }
-
-    setIsLocating(true);
-    setErrorMsg(null);
-
-    navigator.geolocation.getCurrentPosition(
-      (pos) => {
-        const lat = pos.coords.latitude;
-        const lng = pos.coords.longitude;
-        setLatitude(lat);
-        setLongitude(lng);
-        setIsLocating(false);
-        setLocationSuccess(true);
-      },
-      (err) => {
-        setIsLocating(false);
-        setErrorMsg("No se pudo obtener tu ubicación automática. Puedes escribir tu dirección o fijar el pin en el mapa.");
-      },
-      { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
-    );
-  };
-
   const handleLocationChange = (coords: { lat: number; lng: number; addressSuggestion?: string }) => {
     setLatitude(coords.lat);
     setLongitude(coords.lng);
-    setLocationSuccess(true);
     if (coords.addressSuggestion && (!addressStreet || addressStreet.length < 5)) {
       setAddressStreet(coords.addressSuggestion);
     }
@@ -137,17 +122,21 @@ function RegisterForm() {
     setErrorMsg(null);
 
     if (!addressStreet.trim()) {
-      setErrorMsg("Por favor, ingresa la dirección exacta (calle y número o intersección).");
+      setErrorMsg("Por favor ingresa la calle principal y numeración exacta de la propiedad.");
       return;
     }
 
     setIsLoading(true);
 
-    const fullFormattedAddress = [
-      addressStreet.trim(),
-      addressApt.trim() ? `Piso/Depto: ${addressApt.trim()}` : "",
-      addressNotes.trim() ? `Ref: ${addressNotes.trim()}` : "",
-    ].filter(Boolean).join(" - ");
+    const parts = [addressStreet.trim()];
+    if (addressApt.trim()) parts.push(addressApt.trim());
+    if (selectedZone.trim() && !parts.some((p) => p.toLowerCase().includes(selectedZone.split("(")[0].trim().toLowerCase()))) {
+      parts.push(selectedZone.trim());
+    }
+    if (addressRef.trim()) parts.push(`(Ref: ${addressRef.trim()})`);
+    const fullFormattedAddress = parts.join(", ");
+
+    const cleanEmail = accountData.email.trim().toLowerCase();
 
     try {
       const res = await fetch("/api/register", {
@@ -155,7 +144,7 @@ function RegisterForm() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           name: accountData.name.trim(),
-          email: accountData.email.trim().toLowerCase(),
+          email: cleanEmail,
           password: accountData.password,
           phone: accountData.phone.trim(),
           address: fullFormattedAddress,
@@ -169,26 +158,28 @@ function RegisterForm() {
         throw new Error(data.error || "Error al crear la cuenta");
       }
 
-      // Guardar dirección en LocalStorage para disponibilidad inmediata en reservas y portal
+      // Guardar dirección en LocalStorage asociada específicamente al correo de este usuario
       try {
         const initialAddress = {
           id: `addr_init_${Date.now()}`,
-          label: `${addressType} Principal`,
+          label: newAddressLabel.trim() || "Casa",
           address: fullFormattedAddress,
           street: addressStreet.trim(),
           apt: addressApt.trim(),
-          notes: addressNotes.trim(),
+          notes: addressRef.trim(),
           latitude,
           longitude,
           isDefault: true,
         };
+        localStorage.setItem(`aquiestamos_saved_addresses_${cleanEmail}`, JSON.stringify([initialAddress]));
+        localStorage.setItem(`aquiestamos_addr_init_${cleanEmail}`, "true");
         localStorage.setItem("aquiestamos_saved_addresses", JSON.stringify([initialAddress]));
       } catch (e) {}
 
       // Iniciar sesión automáticamente
       const loginRes = await signIn("credentials", {
         redirect: false,
-        email: accountData.email.trim().toLowerCase(),
+        email: cleanEmail,
         password: accountData.password,
       });
 
@@ -392,127 +383,134 @@ function RegisterForm() {
               <button
                 type="button"
                 onClick={() => setStep(1)}
-                className="inline-flex items-center gap-1.5 text-xs font-semibold text-neutral-600 hover:text-neutral-900 transition-colors py-1"
+                className="inline-flex items-center gap-1.5 text-xs font-semibold text-neutral-600 hover:text-neutral-900 transition-colors py-1 cursor-pointer"
               >
                 <ArrowLeft className="w-3.5 h-3.5" />
                 <span>Modificar datos de cuenta ({accountData.name})</span>
               </button>
 
-              <form onSubmit={handleFinalSubmit} className="space-y-3.5">
+              <form onSubmit={handleFinalSubmit} className="space-y-4">
                 
-                {/* Selector Rápido de Tipo de Inmueble */}
-                <div>
-                  <label className="block text-xs font-semibold text-neutral-700 mb-1.5">
-                    Tipo de Inmueble
-                  </label>
-                  <div className="grid grid-cols-4 gap-2">
-                    {ADDRESS_TYPES.map((t) => (
-                      <button
-                        key={t.id}
-                        type="button"
-                        onClick={() => setAddressType(t.value)}
-                        className={`py-2 px-2 rounded-xl text-xs font-semibold border transition-all text-center ${
-                          addressType === t.value
-                            ? "bg-electric-50 border-electric-600 text-electric-800 shadow-2xs"
-                            : "bg-neutral-50 hover:bg-neutral-100 border-neutral-200 text-neutral-700"
-                        }`}
-                      >
-                        {t.label}
-                      </button>
-                    ))}
+                {/* Fila 1: Nombre / Etiqueta de la Propiedad y Zona / Ciudad */}
+                <div className="grid grid-cols-1 sm:grid-cols-12 gap-3">
+                  {/* Nombre / Etiqueta de la Propiedad */}
+                  <div className="sm:col-span-6">
+                    <label className="block text-xs font-bold text-neutral-800 mb-1.5">
+                      Nombre / Etiqueta de la Propiedad
+                    </label>
+                    <input
+                      type="text"
+                      value={newAddressLabel}
+                      onChange={(e) => setNewAddressLabel(e.target.value)}
+                      placeholder="Ej: Casa, Oficina, Depto"
+                      className="w-full px-3 py-2 rounded-xl border border-neutral-300 text-xs font-medium text-neutral-900 focus:ring-2 focus:ring-electric-600 focus:border-electric-600 focus:outline-none bg-white"
+                    />
+                    {/* Chips rápidos */}
+                    <div className="flex flex-wrap gap-1.5 mt-1.5">
+                      {["🏠 Casa", "🏢 Oficina", "🏬 Depto", "🌳 Quinta"].map((tag) => (
+                        <button
+                          key={tag}
+                          type="button"
+                          onClick={() => setNewAddressLabel(tag.replace(/^[^\s]+\s/, ""))}
+                          className="text-[10px] font-semibold px-2 py-0.5 rounded-md bg-neutral-100 border border-neutral-200 text-neutral-600 hover:text-electric-700 hover:border-electric-300 transition-colors cursor-pointer"
+                        >
+                          {tag}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Zona / Ciudad */}
+                  <div className="sm:col-span-6">
+                    <label className="block text-xs font-bold text-neutral-800 mb-1.5">
+                      Zona / Ciudad *
+                    </label>
+                    <select
+                      value={selectedZone}
+                      onChange={(e) => handleZoneChange(e.target.value)}
+                      className="w-full px-3 py-2 rounded-xl border border-neutral-300 text-xs font-medium text-neutral-900 focus:ring-2 focus:ring-electric-600 focus:border-electric-600 focus:outline-none bg-white"
+                    >
+                      {REGISTRATION_ZONES.map((z) => (
+                        <option key={z.name} value={z.name}>
+                          {z.name}
+                        </option>
+                      ))}
+                    </select>
+                    <span className="text-[10px] text-neutral-400 mt-1 block">
+                      Al cambiar la zona, el mapa se centra automáticamente.
+                    </span>
                   </div>
                 </div>
 
-                {/* Dirección Exacta (Calle y Número) con botón GPS */}
-                <div>
-                  <div className="flex items-center justify-between mb-1">
-                    <label className="block text-xs font-semibold text-neutral-700">
-                      Dirección Exacta (Calle y Número / Intersección) *
+                {/* Fila 2: Calle Principal y Numeración Exacta & Edificio / Depto */}
+                <div className="grid grid-cols-1 sm:grid-cols-12 gap-3">
+                  <div className="sm:col-span-7">
+                    <label className="block text-xs font-bold text-neutral-800 mb-1">
+                      Calle Principal y Numeración Exacta *
                     </label>
-                    <button
-                      type="button"
-                      onClick={handleGetCurrentLocation}
-                      disabled={isLocating}
-                      className="text-[11px] text-electric-600 hover:text-electric-700 font-bold flex items-center gap-1 hover:underline"
-                    >
-                      <Navigation className={`w-3 h-3 ${isLocating ? "animate-spin" : ""}`} />
-                      <span>{isLocating ? "Detectando..." : "📍 Usar GPS actual"}</span>
-                    </button>
-                  </div>
-                  <div className="relative">
-                    <MapPin className="w-4 h-4 text-neutral-400 absolute left-3 top-3" />
                     <input
                       type="text"
                       required
                       value={addressStreet}
                       onChange={(e) => setAddressStreet(e.target.value)}
-                      placeholder="Ej: Av. Santa Teresa 1827 c/ Aviadores del Chaco"
-                      className="w-full pl-9 pr-3 py-2.5 rounded-xl border border-neutral-300 text-xs focus:ring-2 focus:ring-electric-500/20 focus:border-electric-600 focus:outline-none"
+                      placeholder="Ej: Avda. Santa Teresa 2250 c/ Herminio Maldonado"
+                      className="w-full px-3 py-2 rounded-xl border border-neutral-300 text-xs font-medium text-neutral-900 focus:ring-2 focus:ring-electric-600 focus:border-electric-600 focus:outline-none bg-white"
                     />
                   </div>
-                </div>
 
-                {/* Campos complementarios: Depto/Piso y Referencias */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <div>
-                    <label className="block text-xs font-medium text-neutral-700 mb-1">
-                      Piso / Depto / N° Casa <span className="text-neutral-400 font-normal">(Opcional)</span>
+                  <div className="sm:col-span-5">
+                    <label className="block text-xs font-bold text-neutral-800 mb-1">
+                      Edificio / Depto / Piso <span className="text-neutral-400 font-normal">(Opcional)</span>
                     </label>
                     <input
                       type="text"
                       value={addressApt}
                       onChange={(e) => setAddressApt(e.target.value)}
-                      placeholder="Ej: Piso 4, Depto 4B / Casa 2"
-                      className="w-full px-3 py-2 rounded-xl border border-neutral-300 text-xs focus:ring-2 focus:ring-electric-500/20 focus:border-electric-600 focus:outline-none"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-medium text-neutral-700 mb-1">
-                      Instrucciones o Referencia <span className="text-neutral-400 font-normal">(Opcional)</span>
-                    </label>
-                    <input
-                      type="text"
-                      value={addressNotes}
-                      onChange={(e) => setAddressNotes(e.target.value)}
-                      placeholder="Ej: Portón blanco, timbre 4B"
-                      className="w-full px-3 py-2 rounded-xl border border-neutral-300 text-xs focus:ring-2 focus:ring-electric-500/20 focus:border-electric-600 focus:outline-none"
+                      placeholder="Ej: Torre 2, Piso 8, Depto 802"
+                      className="w-full px-3 py-2 rounded-xl border border-neutral-300 text-xs font-medium text-neutral-900 focus:ring-2 focus:ring-electric-600 focus:border-electric-600 focus:outline-none bg-white"
                     />
                   </div>
                 </div>
 
-                {/* MAPA SATELITAL INTERACTIVO CON PIN DE ENTRADA */}
-                <div className="pt-2">
-                  <div className="flex items-center justify-between mb-1.5">
-                    <span className="text-xs font-bold text-neutral-800 flex items-center gap-1.5">
-                      <Layers className="w-3.5 h-3.5 text-electric-600" />
-                      <span>Fija el pin en el mapa para ubicar la entrada:</span>
+                {/* Fila 3: Referencias de Acceso y Timbre */}
+                <div>
+                  <label className="block text-xs font-bold text-neutral-800 mb-1">
+                    Referencias de Acceso y Timbre <span className="text-neutral-400 font-normal">(Opcional)</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={addressRef}
+                    onChange={(e) => setAddressRef(e.target.value)}
+                    placeholder="Ej: Portón negro al lado de la farmacia, avisar en portería o tocar timbre 8B"
+                    className="w-full px-3 py-2 rounded-xl border border-neutral-300 text-xs font-medium text-neutral-900 focus:ring-2 focus:ring-electric-600 focus:border-electric-600 focus:outline-none bg-white"
+                  />
+                </div>
+
+                {/* Fila 4: Mapa Google Maps Interactivo con Pin Rojo */}
+                <div className="space-y-2 pt-1">
+                  <div className="flex flex-wrap items-center justify-between gap-1 text-xs">
+                    <span className="font-bold text-neutral-800 flex items-center gap-1.5">
+                      <MapPin className="w-4 h-4 text-rose-500" />
+                      Ubica el pin rojo de Google Maps sobre la entrada:
                     </span>
-                    {locationSuccess && (
-                      <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200">
-                        ✓ Pin sincronizado
-                      </span>
-                    )}
+                    <span className="font-mono text-[11px] text-neutral-500 bg-white px-2 py-0.5 rounded-md border border-neutral-200">
+                      📍 GPS: {latitude.toFixed(4)}, {longitude.toFixed(4)}
+                    </span>
                   </div>
 
-                  <div className="rounded-2xl overflow-hidden border border-neutral-300 shadow-inner">
-                    <GoogleMapPicker
-                      latitude={latitude}
-                      longitude={longitude}
-                      onLocationChange={handleLocationChange}
-                      currentAddress={addressStreet}
-                    />
-                  </div>
-                  <p className="text-[10px] text-neutral-500 text-center mt-1.5">
-                    Arrastra el mapa o toca el punto exacto para que el personal de limpieza localice la entrada con facilidad.
-                  </p>
+                  <GoogleMapPicker
+                    latitude={latitude}
+                    longitude={longitude}
+                    currentAddress={addressStreet}
+                    onLocationChange={handleLocationChange}
+                  />
                 </div>
 
                 {/* Botón Final de Creación de Cuenta */}
                 <button
                   type="submit"
                   disabled={isLoading}
-                  className="w-full py-3.5 bg-electric-600 hover:bg-electric-700 text-white font-bold text-xs rounded-xl shadow-electric transition-all active:scale-[0.99] disabled:opacity-50 flex items-center justify-center gap-2 mt-3"
+                  className="w-full py-3.5 bg-electric-600 hover:bg-electric-700 text-white font-bold text-xs rounded-xl shadow-electric transition-all active:scale-[0.99] disabled:opacity-50 flex items-center justify-center gap-2 mt-3 cursor-pointer"
                 >
                   {isLoading ? (
                     <span>Registrando y configurando tu cuenta...</span>
