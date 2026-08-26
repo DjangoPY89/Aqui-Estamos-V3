@@ -133,11 +133,14 @@ export default function CustomerPortalPage() {
         }
       }
 
-      // Reconstruir lista consolidada de direcciones guardadas
+      // Reconstruir lista consolidada de direcciones guardadas ESPECÍFICAS DE ESTE USUARIO
+      const userEmail = session?.user?.email?.toLowerCase().trim();
       let deletedList: string[] = [];
-      try {
-        deletedList = JSON.parse(localStorage.getItem("aquiestamos_deleted_addresses") || "[]");
-      } catch (e) {}
+      if (userEmail) {
+        try {
+          deletedList = JSON.parse(localStorage.getItem(`aquiestamos_deleted_addresses_${userEmail}`) || "[]");
+        } catch (e) {}
+      }
 
       const isDeleted = (addrText?: string, idText?: string) => {
         if (!addrText && !idText) return false;
@@ -147,21 +150,23 @@ export default function CustomerPortalPage() {
 
       const addrs: SavedPortalAddress[] = [];
 
-      try {
-        const local = localStorage.getItem("aquiestamos_saved_addresses");
-        if (local) {
-          const parsed = JSON.parse(local);
-          if (Array.isArray(parsed)) {
-            parsed.forEach((a: SavedPortalAddress) => {
-              if (!isDeleted(a.address, a.id)) {
-                addrs.push(a);
-              }
-            });
+      if (userEmail) {
+        try {
+          const local = localStorage.getItem(`aquiestamos_saved_addresses_${userEmail}`);
+          if (local) {
+            const parsed = JSON.parse(local);
+            if (Array.isArray(parsed)) {
+              parsed.forEach((a: SavedPortalAddress) => {
+                if (!isDeleted(a.address, a.id)) {
+                  addrs.push(a);
+                }
+              });
+            }
           }
-        }
-      } catch (e) {}
+        } catch (e) {}
+      }
 
-      if (loadedProfile?.address && !isDeleted(loadedProfile.address, "profile_main")) {
+      if (loadedProfile?.address && loadedProfile.address.trim() && !isDeleted(loadedProfile.address, "profile_main")) {
         const exists = addrs.some(a => a.address.toLowerCase().trim() === loadedProfile!.address!.toLowerCase().trim());
         if (!exists) {
           addrs.unshift({
@@ -177,7 +182,9 @@ export default function CustomerPortalPage() {
       }
 
       setUserAddresses(addrs);
-      localStorage.setItem("aquiestamos_saved_addresses", JSON.stringify(addrs));
+      if (userEmail) {
+        localStorage.setItem(`aquiestamos_saved_addresses_${userEmail}`, JSON.stringify(addrs));
+      }
     } catch (err) {
       console.error("Error al cargar datos del portal:", err);
     } finally {
@@ -269,6 +276,8 @@ export default function CustomerPortalPage() {
       fullAddress += ` - ${addrZone}`;
     }
 
+    const userEmail = session?.user?.email?.toLowerCase().trim();
+
     if (isEditingAddress && editingAddressId) {
       const updated = userAddresses.map((a) => {
         if (a.id === editingAddressId) {
@@ -289,7 +298,9 @@ export default function CustomerPortalPage() {
       });
 
       setUserAddresses(updated);
-      localStorage.setItem("aquiestamos_saved_addresses", JSON.stringify(updated));
+      if (userEmail) {
+        localStorage.setItem(`aquiestamos_saved_addresses_${userEmail}`, JSON.stringify(updated));
+      }
       showAddressNotice("¡Dirección actualizada correctamente!");
     } else {
       const newAddress: SavedPortalAddress = {
@@ -310,7 +321,9 @@ export default function CustomerPortalPage() {
         : [newAddress, ...userAddresses];
 
       setUserAddresses(updated);
-      localStorage.setItem("aquiestamos_saved_addresses", JSON.stringify(updated));
+      if (userEmail) {
+        localStorage.setItem(`aquiestamos_saved_addresses_${userEmail}`, JSON.stringify(updated));
+      }
       showAddressNotice("¡Nueva ubicación guardada con éxito!");
     }
 
@@ -327,6 +340,7 @@ export default function CustomerPortalPage() {
 
   // Establecer como Principal
   const handleSetDefaultAddress = async (addr: SavedPortalAddress) => {
+    const userEmail = session?.user?.email?.toLowerCase().trim();
     try {
       await fetch("/api/user/profile", {
         method: "PATCH",
@@ -339,7 +353,9 @@ export default function CustomerPortalPage() {
         isDefault: a.id === addr.id,
       }));
       setUserAddresses(updated);
-      localStorage.setItem("aquiestamos_saved_addresses", JSON.stringify(updated));
+      if (userEmail) {
+        localStorage.setItem(`aquiestamos_saved_addresses_${userEmail}`, JSON.stringify(updated));
+      }
       showAddressNotice(`✓ "${addr.label}" establecida como tu dirección principal.`);
     } catch (e) {
       alert("Error al actualizar dirección principal.");
@@ -350,17 +366,20 @@ export default function CustomerPortalPage() {
   const handleDeleteAddress = (id: string, label: string) => {
     if (!confirm(`¿Eliminar definitivamente la dirección "${label}"?`)) return;
 
+    const userEmail = session?.user?.email?.toLowerCase().trim();
     const toDelete = userAddresses.find(a => a.id === id);
     const updated = userAddresses.filter((a) => a.id !== id);
     setUserAddresses(updated);
-    localStorage.setItem("aquiestamos_saved_addresses", JSON.stringify(updated));
+    if (userEmail) {
+      localStorage.setItem(`aquiestamos_saved_addresses_${userEmail}`, JSON.stringify(updated));
+    }
 
-    if (toDelete) {
+    if (toDelete && userEmail) {
       try {
-        const deletedList: string[] = JSON.parse(localStorage.getItem("aquiestamos_deleted_addresses") || "[]");
+        const deletedList: string[] = JSON.parse(localStorage.getItem(`aquiestamos_deleted_addresses_${userEmail}`) || "[]");
         if (toDelete.address) deletedList.push(toDelete.address.toLowerCase().trim());
         deletedList.push(toDelete.id);
-        localStorage.setItem("aquiestamos_deleted_addresses", JSON.stringify(deletedList));
+        localStorage.setItem(`aquiestamos_deleted_addresses_${userEmail}`, JSON.stringify(deletedList));
       } catch (e) {}
     }
 

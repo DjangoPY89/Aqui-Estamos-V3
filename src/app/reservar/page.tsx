@@ -242,10 +242,12 @@ function BookingContent() {
     const loadSavedAddresses = async () => {
       const userEmail = session?.user?.email?.trim().toLowerCase();
       let deletedList: string[] = [];
-      try {
-        const storedDeleted = localStorage.getItem("aquiestamos_deleted_addresses");
-        if (storedDeleted) deletedList = JSON.parse(storedDeleted);
-      } catch (e) {}
+      if (userEmail) {
+        try {
+          const storedDeleted = localStorage.getItem(`aquiestamos_deleted_addresses_${userEmail}`);
+          if (storedDeleted) deletedList = JSON.parse(storedDeleted);
+        } catch (e) {}
+      }
 
       const isDeleted = (addrText?: string, idText?: string) => {
         if (!addrText && !idText) return false;
@@ -471,7 +473,6 @@ function BookingContent() {
           localStorage.setItem(`aquiestamos_saved_addresses_${targetEmail}`, JSON.stringify(updated));
           localStorage.setItem(`aquiestamos_addr_init_${targetEmail}`, "true");
         }
-        localStorage.setItem("aquiestamos_saved_addresses", JSON.stringify(updated));
 
         // Actualizar en el perfil del usuario si tiene sesión
         if (session?.user) {

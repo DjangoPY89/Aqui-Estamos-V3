@@ -173,7 +173,6 @@ function RegisterForm() {
         };
         localStorage.setItem(`aquiestamos_saved_addresses_${cleanEmail}`, JSON.stringify([initialAddress]));
         localStorage.setItem(`aquiestamos_addr_init_${cleanEmail}`, "true");
-        localStorage.setItem("aquiestamos_saved_addresses", JSON.stringify([initialAddress]));
       } catch (e) {}
 
       // Iniciar sesión automáticamente
