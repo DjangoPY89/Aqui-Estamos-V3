@@ -17,10 +17,10 @@ export default function Hero() {
           quality={95}
           className="object-cover object-center"
         />
-        {/* Capas de Degradado para Contraste y Legibilidad */}
-        <div className="absolute inset-0 bg-neutral-950/40" />
-        <div className="absolute inset-0 bg-gradient-to-t from-neutral-950/90 via-neutral-950/25 to-neutral-950/30" />
-        <div className="absolute inset-0 bg-gradient-to-r from-neutral-950/75 via-neutral-950/30 to-transparent" />
+        {/* Capas de Degradado para Luminosidad Natural y Legibilidad */}
+        <div className="absolute inset-0 bg-neutral-950/25" />
+        <div className="absolute inset-0 bg-gradient-to-t from-neutral-950/85 via-neutral-950/15 to-neutral-950/20" />
+        <div className="absolute inset-0 bg-gradient-to-r from-neutral-950/70 via-neutral-950/20 to-transparent" />
       </div>
 
       {/* Contenido Hero Superpuesto */}
