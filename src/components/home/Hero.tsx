@@ -1,26 +1,25 @@
 import React from "react";
 import Link from "next/link";
-import Image from "next/image";
 import { Star, ArrowRight, Sparkles, ShieldCheck } from "lucide-react";
 
 export default function Hero() {
   return (
     <section className="relative w-full min-h-[620px] sm:min-h-[700px] lg:min-h-[800px] flex items-center justify-center overflow-hidden bg-neutral-950 text-white border-b border-neutral-900">
       
-      {/* Background Image Full-Width */}
+      {/* Video Background Full-Width (100% de ancho de pantalla) */}
       <div className="absolute inset-0 w-full h-full overflow-hidden">
-        <Image
-          src="/images/hero-bg.jpg"
-          alt="Departamento moderno limpio y ordenado - Aquí Estamos"
-          fill
-          priority
-          quality={95}
-          className="object-cover object-center"
+        <video
+          src="/videos/hero-video.mp4"
+          autoPlay
+          loop
+          muted
+          playsInline
+          className="w-full h-full object-cover scale-105"
         />
-        {/* Capas de Degradado para Luminosidad Natural y Legibilidad */}
-        <div className="absolute inset-0 bg-neutral-950/25" />
-        <div className="absolute inset-0 bg-gradient-to-t from-neutral-950/85 via-neutral-950/15 to-neutral-950/20" />
-        <div className="absolute inset-0 bg-gradient-to-r from-neutral-950/70 via-neutral-950/20 to-transparent" />
+        {/* Capas de Degradado con Mayor Transparencia para que el Video se Aprecie Nítido */}
+        <div className="absolute inset-0 bg-neutral-950/35" />
+        <div className="absolute inset-0 bg-gradient-to-t from-neutral-950/85 via-neutral-950/10 to-neutral-950/25" />
+        <div className="absolute inset-0 bg-gradient-to-r from-neutral-950/65 via-neutral-950/20 to-transparent" />
       </div>
 
       {/* Contenido Hero Superpuesto */}
