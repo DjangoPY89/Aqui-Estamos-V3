@@ -471,6 +471,9 @@ export async function supabaseGetAllBookings(): Promise<Booking[]> {
     status: r.status,
     assignedCleaner: r.assigned_cleaner,
     notes: r.notes,
+    rating: r.rating !== undefined && r.rating !== null ? Number(r.rating) : null,
+    reviewComment: r.review_comment || null,
+    reviewedAt: r.reviewed_at || null,
     createdAt: r.created_at,
     updatedAt: r.updated_at || r.created_at,
   }));
@@ -508,6 +511,9 @@ export async function supabaseGetBookingById(id: string): Promise<Booking | null
     status: r.status,
     assignedCleaner: r.assigned_cleaner,
     notes: r.notes,
+    rating: r.rating !== undefined && r.rating !== null ? Number(r.rating) : null,
+    reviewComment: r.review_comment || null,
+    reviewedAt: r.reviewed_at || null,
     createdAt: r.created_at,
     updatedAt: r.updated_at || r.created_at,
   };
@@ -545,6 +551,9 @@ export async function supabaseGetBookingsByUserId(userId: string): Promise<Booki
     status: r.status,
     assignedCleaner: r.assigned_cleaner,
     notes: r.notes,
+    rating: r.rating !== undefined && r.rating !== null ? Number(r.rating) : null,
+    reviewComment: r.review_comment || null,
+    reviewedAt: r.reviewed_at || null,
     createdAt: r.created_at,
     updatedAt: r.updated_at || r.created_at,
   }));
@@ -624,6 +633,9 @@ export async function supabaseUpdateBooking(
     status: Booking["status"];
     assignedCleaner: string;
     notes: string;
+    rating: number | null;
+    reviewComment: string | null;
+    reviewedAt: string | null;
   }>
 ): Promise<Booking | null> {
   const supabase = getSupabase();
@@ -641,6 +653,9 @@ export async function supabaseUpdateBooking(
   if (data.status !== undefined) updatePayload.status = data.status;
   if (data.assignedCleaner !== undefined) updatePayload.assigned_cleaner = data.assignedCleaner;
   if (data.notes !== undefined) updatePayload.notes = data.notes;
+  if (data.rating !== undefined) updatePayload.rating = data.rating;
+  if (data.reviewComment !== undefined) updatePayload.review_comment = data.reviewComment;
+  if (data.reviewedAt !== undefined) updatePayload.reviewed_at = data.reviewedAt;
   updatePayload.updated_at = new Date().toISOString();
 
   await supabase.from("bookings").update(updatePayload).eq("id", id);

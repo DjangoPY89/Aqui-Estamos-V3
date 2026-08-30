@@ -2567,8 +2567,11 @@ export default function AdminDashboardPage() {
                     );
                     const ratedBookings = empBookings.filter((b) => (b as any).rating && Number((b as any).rating) > 0);
                     const sumRating = ratedBookings.reduce((sum, b) => sum + Number((b as any).rating), 0);
-                    const reviewsCount = ratedBookings.length;
-                    const calculatedAvg = reviewsCount > 0 ? (sumRating / reviewsCount).toFixed(1) : null;
+                    const reviewsCount = ratedBookings.length > 0 ? ratedBookings.length : (emp.reviewCount || 0);
+                    const calculatedAvg =
+                      ratedBookings.length > 0
+                        ? (sumRating / ratedBookings.length).toFixed(1)
+                        : (emp.rating && Number(emp.rating) > 0 ? Number(emp.rating).toFixed(1) : null);
                     const completedCount = emp.completedBookingsCount || empBookings.filter((b) => b.status === "COMPLETED").length;
 
                     return (
@@ -2600,14 +2603,14 @@ export default function AdminDashboardPage() {
                           </div>
 
                           {/* Calificación de Servicio Obtenida (Computada tras evaluación del cliente) */}
-                          {reviewsCount > 0 ? (
+                          {calculatedAvg && (reviewsCount > 0 || (emp.rating && Number(emp.rating) > 0)) ? (
                             <div className="flex items-center justify-between p-2.5 bg-amber-50/80 border border-amber-200/70 rounded-2xl">
                               <div className="flex items-center gap-1.5">
                                 <Star className="w-4 h-4 fill-amber-400 text-amber-400 shrink-0" />
                                 <span className="font-black text-xs text-amber-950">{calculatedAvg} / 5.0</span>
                               </div>
                               <span className="text-[10px] font-bold text-amber-800 bg-amber-100/80 px-2 py-0.5 rounded-md">
-                                {reviewsCount} {reviewsCount === 1 ? "calificación" : "calificaciones"}
+                                {reviewsCount || 1} {reviewsCount === 1 ? "calificación" : "calificaciones"}
                               </span>
                             </div>
                           ) : (
