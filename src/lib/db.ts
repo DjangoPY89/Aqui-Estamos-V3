@@ -352,7 +352,15 @@ export function createOrUpdateOAuthUser(data: {
 
 export function updateUserProfile(
   userId: string,
-  data: { name?: string; phone?: string; address?: string; ruc?: string; taxName?: string }
+  data: { 
+    name?: string; 
+    phone?: string; 
+    address?: string; 
+    ruc?: string; 
+    taxName?: string;
+    latitude?: number | null;
+    longitude?: number | null;
+  }
 ): User | null {
   const store = getMemoryStore();
   const userIndex = store.users.findIndex((u) => u.id === userId);
@@ -364,6 +372,8 @@ export function updateUserProfile(
   if (data.address !== undefined) user.address = data.address.trim();
   if (data.ruc !== undefined) user.ruc = data.ruc.trim();
   if (data.taxName !== undefined) user.taxName = data.taxName.trim();
+  if (data.latitude !== undefined) user.latitude = data.latitude;
+  if (data.longitude !== undefined) user.longitude = data.longitude;
 
   saveStoreToDisk(store);
   const { passwordHash, resetToken, resetTokenExpires, ...safeUser } = user;

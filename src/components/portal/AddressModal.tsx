@@ -160,31 +160,32 @@ export default function AddressModal({
               <p className="text-[10px] text-slate-400 mt-1">Al elegir la zona, el mapa se centrará automáticamente.</p>
             </div>
 
-            {/* Calle y Número */}
+            {/* Campo Dirección Completa */}
             <div className="sm:col-span-2">
               <label className="block text-xs font-bold text-slate-700 mb-1.5">
-                Dirección Completa (Calle y N° de Casa) *
+                Dirección Completa *
               </label>
               <input
                 type="text"
                 required
                 value={street}
                 onChange={(e) => setStreet(e.target.value)}
-                placeholder="Ej: Av. Molas López 450 casi San Martín"
+                placeholder="Ej: Avda. Santa Teresa 2250 c/ Herminio Maldonado"
                 className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-900 focus:bg-white focus:ring-2 focus:ring-purple-600 focus:outline-none"
               />
+              <p className="text-[11px] text-slate-400 mt-1">Escribe aquí tu dirección exacta tal como deseas que figure.</p>
             </div>
 
             {/* Piso / Depto */}
             <div>
               <label className="block text-xs font-bold text-slate-700 mb-1.5">
-                Piso / N° Depto / Bloque
+                Piso / N° Depto / Bloque (Opcional)
               </label>
               <input
                 type="text"
                 value={apartment}
                 onChange={(e) => setApartment(e.target.value)}
-                placeholder="Ej: Piso 4, Depto 402, Torre B"
+                placeholder="Ej: Torre 2, Piso 8, Depto 802"
                 className="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-900 focus:bg-white focus:ring-2 focus:ring-purple-600 focus:outline-none"
               />
             </div>
@@ -192,27 +193,27 @@ export default function AddressModal({
             {/* Referencia */}
             <div>
               <label className="block text-xs font-bold text-slate-700 mb-1.5">
-                Referencia de Entrada / Fachada
+                Referencias de Acceso (Opcional)
               </label>
               <input
                 type="text"
                 value={reference}
                 onChange={(e) => setReference(e.target.value)}
-                placeholder="Ej: Portón negro frente a la farmacia"
+                placeholder="Ej: Portón negro al lado de la farmacia"
                 className="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-900 focus:bg-white focus:ring-2 focus:ring-purple-600 focus:outline-none"
               />
             </div>
           </div>
 
-          {/* Mapa Interactivo con Pin GPS */}
+          {/* Ubicación GPS Separada con Mapa Interactivo */}
           <div className="space-y-1.5 pt-2">
             <div className="flex items-center justify-between">
               <label className="block text-xs font-black text-slate-800 flex items-center gap-1.5">
                 <Compass className="w-4 h-4 text-purple-600" />
-                <span>Mueve el Pin GPS a la entrada de tu domicilio:</span>
+                <span>Ubicación GPS (Mueve el Pin al punto exacto):</span>
               </label>
-              <span className="text-[10px] font-mono text-slate-500 font-bold">
-                {lat.toFixed(4)}, {lng.toFixed(4)}
+              <span className="text-[10px] font-mono text-slate-500 font-bold bg-slate-100 px-2 py-0.5 rounded-md">
+                GPS: {lat ? Number(lat).toFixed(4) : "-"}, {lng ? Number(lng).toFixed(4) : "-"}
               </span>
             </div>
 
@@ -224,9 +225,7 @@ export default function AddressModal({
                 onLocationChange={(selected) => {
                   setLat(selected.lat);
                   setLng(selected.lng);
-                  if (selected.addressSuggestion && !street) {
-                    setStreet(selected.addressSuggestion);
-                  }
+                  // La dirección escrita y el GPS se guardan por separado, no se sobreescribe el texto del cliente
                 }}
               />
             </div>

@@ -270,12 +270,8 @@ export default function CustomerPortalPage() {
     e.preventDefault();
     if (!addrStreet.trim()) return;
 
-    let fullAddress = addrStreet.trim();
-    if (addrApt.trim()) fullAddress += `, ${addrApt.trim()}`;
-    if (addrZone.trim() && !fullAddress.includes(addrZone.split(" ")[0])) {
-      fullAddress += ` - ${addrZone}`;
-    }
-
+    // En el campo Dirección Completa simplemente se guarda la dirección escrita por el cliente
+    const fullAddress = addrStreet.trim();
     const userEmail = session?.user?.email?.toLowerCase().trim();
 
     if (isEditingAddress && editingAddressId) {
@@ -285,7 +281,7 @@ export default function CustomerPortalPage() {
             ...a,
             label: addrLabel.trim() || "Casa",
             address: fullAddress,
-            street: addrStreet.trim(),
+            street: fullAddress,
             apartment: addrApt.trim(),
             reference: addrRef.trim(),
             zone: addrZone,
@@ -301,13 +297,13 @@ export default function CustomerPortalPage() {
       if (userEmail) {
         localStorage.setItem(`aquiestamos_saved_addresses_${userEmail}`, JSON.stringify(updated));
       }
-      showAddressNotice("¡Dirección actualizada correctamente!");
+      showAddressNotice("¡Dirección y ubicación GPS actualizadas correctamente!");
     } else {
       const newAddress: SavedPortalAddress = {
         id: `addr_${Date.now()}`,
         label: addrLabel.trim() || "Casa",
         address: fullAddress,
-        street: addrStreet.trim(),
+        street: fullAddress,
         apartment: addrApt.trim(),
         reference: addrRef.trim(),
         zone: addrZone,
@@ -324,14 +320,18 @@ export default function CustomerPortalPage() {
       if (userEmail) {
         localStorage.setItem(`aquiestamos_saved_addresses_${userEmail}`, JSON.stringify(updated));
       }
-      showAddressNotice("¡Nueva ubicación guardada con éxito!");
+      showAddressNotice("¡Nueva dirección y ubicación GPS guardadas con éxito!");
     }
 
     if (addrIsDefault) {
       fetch("/api/user/profile", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ address: fullAddress }),
+        body: JSON.stringify({ 
+          address: fullAddress,
+          latitude: addrLat,
+          longitude: addrLng,
+        }),
       }).catch(() => {});
     }
 

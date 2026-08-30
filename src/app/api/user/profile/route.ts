@@ -58,7 +58,7 @@ export async function PATCH(req: Request) {
     }
 
     const body = await req.json();
-    const { name, phone, address, ruc, taxName } = body;
+    const { name, phone, address, ruc, taxName, latitude, longitude } = body;
 
     let updated: any = null;
     try {
@@ -68,9 +68,19 @@ export async function PATCH(req: Request) {
         address,
         ruc,
         taxName,
+        latitude: latitude !== undefined ? latitude : undefined,
+        longitude: longitude !== undefined ? longitude : undefined,
       });
       try {
-        updateUserProfile(currentUser.id, { name, phone, address, ruc, taxName });
+        updateUserProfile(currentUser.id, { 
+          name, 
+          phone, 
+          address, 
+          ruc, 
+          taxName,
+          latitude: latitude !== undefined ? latitude : undefined,
+          longitude: longitude !== undefined ? longitude : undefined,
+        });
       } catch (e) {}
     } catch (e) {
       updated = updateUserProfile(currentUser.id, {
@@ -79,6 +89,8 @@ export async function PATCH(req: Request) {
         address,
         ruc,
         taxName,
+        latitude: latitude !== undefined ? latitude : undefined,
+        longitude: longitude !== undefined ? longitude : undefined,
       });
     }
 

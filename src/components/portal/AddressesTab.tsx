@@ -127,38 +127,58 @@ export default function AddressesTab({
                   )}
                 </div>
 
-                {/* Dirección Texto y Detalles */}
-                <div className="space-y-1 text-xs">
-                  <p className="font-bold text-slate-800 leading-snug">
-                    {addr.address}
-                  </p>
+                {/* Dirección Escrita y Detalles Separados */}
+                <div className="space-y-2 text-xs">
+                  <div>
+                    <span className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400 block mb-0.5">
+                      Dirección Escrita
+                    </span>
+                    <p className="font-bold text-slate-900 leading-snug text-sm">
+                      {addr.address}
+                    </p>
+                  </div>
                   
                   {(addr.apartment || addr.reference) && (
-                    <p className="text-[11px] text-slate-500">
-                      {addr.apartment ? `Depto/Piso: ${addr.apartment} • ` : ""}
-                      {addr.reference ? `Ref: ${addr.reference}` : ""}
+                    <p className="text-[11px] text-slate-500 bg-slate-50 p-2 rounded-xl border border-slate-100">
+                      {addr.apartment ? <span className="font-semibold text-slate-700">Depto/Piso: {addr.apartment} </span> : null}
+                      {addr.apartment && addr.reference ? "• " : ""}
+                      {addr.reference ? <span>Ref: {addr.reference}</span> : null}
                     </p>
                   )}
 
-                  {addr.zone && (
-                    <span className="inline-block mt-1 px-2 py-0.5 bg-slate-100 text-slate-700 rounded-md text-[10px] font-bold">
-                      {addr.zone}
-                    </span>
-                  )}
+                  {/* Ubicación GPS Separada */}
+                  <div className="flex flex-wrap items-center gap-2 pt-1">
+                    {addr.latitude && addr.longitude ? (
+                      <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-purple-50 text-purple-700 border border-purple-200 rounded-lg text-[11px] font-mono font-bold">
+                        <MapPin className="w-3 h-3 text-purple-600" />
+                        <span>GPS: {Number(addr.latitude).toFixed(4)}, {Number(addr.longitude).toFixed(4)}</span>
+                      </span>
+                    ) : null}
+
+                    {addr.zone && (
+                      <span className="inline-block px-2 py-1 bg-slate-100 text-slate-600 rounded-lg text-[10px] font-bold">
+                        {addr.zone}
+                      </span>
+                    )}
+                  </div>
                 </div>
               </div>
 
               {/* Botones de Acción */}
               <div className="pt-3 border-t border-slate-100 flex items-center justify-between gap-2 text-xs">
-                <a
-                  href={`https://www.google.com/maps/search/?api=1&query=${addr.latitude},${addr.longitude}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1 text-[11px] font-bold text-electric-600 hover:underline"
-                >
-                  <Navigation className="w-3.5 h-3.5" />
-                  <span>Ver en Google Maps</span>
-                </a>
+                {addr.latitude && addr.longitude ? (
+                  <a
+                    href={`https://www.google.com/maps?q=${addr.latitude},${addr.longitude}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1 text-[11px] font-bold text-electric-600 hover:text-electric-700 hover:underline"
+                  >
+                    <Navigation className="w-3.5 h-3.5" />
+                    <span>Abrir en Google Maps</span>
+                  </a>
+                ) : (
+                  <span className="text-[11px] text-slate-400">Sin GPS asignado</span>
+                )}
 
                 <div className="flex items-center gap-1">
                   <button
