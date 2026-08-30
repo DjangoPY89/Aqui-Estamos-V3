@@ -2911,71 +2911,79 @@ export default function AdminDashboardPage() {
                       </div>
                     </div>
 
-                    {/* Apple Bento Box Metrics */}
-                    <div className="grid grid-cols-2 lg:grid-cols-4 gap-3.5">
+                    {/* Apple Bento Box Metrics - Centrado y Simétrico */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                       {/* Metric 1: Promedio General */}
-                      <div className="bg-white p-4.5 rounded-3xl border border-slate-200/80 shadow-xs flex flex-col justify-between space-y-2">
-                        <div className="flex items-center justify-between">
-                          <span className="text-[11px] font-bold text-slate-500 tracking-tight">Promedio General</span>
-                          <div className="w-7 h-7 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center font-bold text-xs">
-                            <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
+                      <div className="bg-white p-5 rounded-3xl border border-slate-200/80 shadow-xs flex flex-col items-center justify-between text-center space-y-3">
+                        <div className="w-10 h-10 rounded-2xl bg-amber-50 text-amber-600 flex items-center justify-center shadow-2xs">
+                          <Star className="w-5 h-5 fill-amber-400 text-amber-400" />
+                        </div>
+                        <div className="space-y-1">
+                          <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500">
+                            Promedio General
+                          </span>
+                          <div className="text-3xl font-black text-slate-950 tracking-tight flex items-center justify-center gap-1">
+                            <span>{customerReviewMetrics.total > 0 ? `${customerReviewMetrics.average}` : "—"}</span>
+                            <span className="text-sm text-slate-400 font-bold">/ 5.0</span>
                           </div>
                         </div>
-                        <div>
-                          <div className="text-2xl font-black text-slate-950 tracking-tight">
-                            {customerReviewMetrics.total > 0 ? `${customerReviewMetrics.average}` : "—"}
-                            <span className="text-xs text-slate-400 font-semibold ml-1">/ 5.0</span>
-                          </div>
-                          <p className="text-[10px] text-slate-400 mt-0.5 font-medium">Basado en todas las opiniones</p>
-                        </div>
+                        <span className="inline-block px-3 py-1 rounded-full bg-slate-100 text-slate-600 text-[10px] font-bold">
+                          Basado en todas las opiniones
+                        </span>
                       </div>
 
                       {/* Metric 2: 5 Estrellas Pct */}
-                      <div className="bg-white p-4.5 rounded-3xl border border-slate-200/80 shadow-xs flex flex-col justify-between space-y-2">
-                        <div className="flex items-center justify-between">
-                          <span className="text-[11px] font-bold text-slate-500 tracking-tight">5 Estrellas (Excelencia)</span>
-                          <div className="w-7 h-7 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center font-bold text-xs">
-                            <Award className="w-3.5 h-3.5" />
-                          </div>
+                      <div className="bg-white p-5 rounded-3xl border border-slate-200/80 shadow-xs flex flex-col items-center justify-between text-center space-y-3">
+                        <div className="w-10 h-10 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center shadow-2xs">
+                          <Award className="w-5 h-5" />
                         </div>
-                        <div>
-                          <div className="text-2xl font-black text-slate-950 tracking-tight">
+                        <div className="space-y-1">
+                          <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500">
+                            5 Estrellas (Excelencia)
+                          </span>
+                          <div className="text-3xl font-black text-slate-950 tracking-tight">
                             {customerReviewMetrics.total > 0 ? `${customerReviewMetrics.fiveStarPct}%` : "100%"}
                           </div>
-                          <p className="text-[10px] text-emerald-600 font-bold mt-0.5">Máxima satisfacción</p>
                         </div>
+                        <span className="inline-block px-3 py-1 rounded-full bg-emerald-50 text-emerald-700 text-[10px] font-bold">
+                          Máxima satisfacción
+                        </span>
                       </div>
 
                       {/* Metric 3: Aprobación Positiva */}
-                      <div className="bg-white p-4.5 rounded-3xl border border-slate-200/80 shadow-xs flex flex-col justify-between space-y-2">
-                        <div className="flex items-center justify-between">
-                          <span className="text-[11px] font-bold text-slate-500 tracking-tight">Índice Positivo (4★ o 5★)</span>
-                          <div className="w-7 h-7 rounded-xl bg-cyan-50 text-cyan-600 flex items-center justify-center font-bold text-xs">
-                            <TrendingUp className="w-3.5 h-3.5" />
-                          </div>
+                      <div className="bg-white p-5 rounded-3xl border border-slate-200/80 shadow-xs flex flex-col items-center justify-between text-center space-y-3">
+                        <div className="w-10 h-10 rounded-2xl bg-cyan-50 text-cyan-600 flex items-center justify-center shadow-2xs">
+                          <TrendingUp className="w-5 h-5" />
                         </div>
-                        <div>
-                          <div className="text-2xl font-black text-slate-950 tracking-tight">
+                        <div className="space-y-1">
+                          <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500">
+                            Índice Positivo (4★ o 5★)
+                          </span>
+                          <div className="text-3xl font-black text-slate-950 tracking-tight">
                             {customerReviewMetrics.total > 0 ? `${customerReviewMetrics.positivePct}%` : "100%"}
                           </div>
-                          <p className="text-[10px] text-slate-400 mt-0.5 font-medium">Recomiendan el servicio</p>
                         </div>
+                        <span className="inline-block px-3 py-1 rounded-full bg-cyan-50 text-cyan-700 text-[10px] font-bold">
+                          Recomiendan el servicio
+                        </span>
                       </div>
 
                       {/* Metric 4: Colaboradora Destacada */}
-                      <div className="bg-white p-4.5 rounded-3xl border border-slate-200/80 shadow-xs flex flex-col justify-between space-y-2">
-                        <div className="flex items-center justify-between">
-                          <span className="text-[11px] font-bold text-slate-500 tracking-tight">Personal Más Destacado</span>
-                          <div className="w-7 h-7 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center font-bold text-xs">
-                            <ShieldCheck className="w-3.5 h-3.5" />
-                          </div>
+                      <div className="bg-white p-5 rounded-3xl border border-slate-200/80 shadow-xs flex flex-col items-center justify-between text-center space-y-3">
+                        <div className="w-10 h-10 rounded-2xl bg-purple-50 text-purple-600 flex items-center justify-center shadow-2xs">
+                          <ShieldCheck className="w-5 h-5" />
                         </div>
-                        <div>
-                          <div className="text-sm font-black text-slate-900 truncate" title={customerReviewMetrics.topEmployee}>
+                        <div className="space-y-1 w-full px-2">
+                          <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500">
+                            Personal Más Destacado
+                          </span>
+                          <div className="text-xl font-black text-slate-950 tracking-tight truncate" title={customerReviewMetrics.topEmployee}>
                             {customerReviewMetrics.topEmployee}
                           </div>
-                          <p className="text-[10px] text-purple-600 font-bold mt-0.5">Mejor rendimiento promedio</p>
                         </div>
+                        <span className="inline-block px-3 py-1 rounded-full bg-purple-50 text-purple-700 text-[10px] font-bold truncate max-w-full">
+                          Mejor rendimiento promedio
+                        </span>
                       </div>
                     </div>
                   </div>
