@@ -101,7 +101,7 @@ export async function POST(req: Request) {
         }
       } catch (e) {}
 
-      // 3. Si hay una empleada asignada, actualizar su calificación en Supabase
+      // 3. Si hay una empleada asignada, actualizar su historial y promedio en Supabase
       if (assignedCleanerName) {
         try {
           const employees = await supabaseGetAllEmployees();
@@ -112,8 +112,21 @@ export async function POST(req: Request) {
           );
 
           if (emp) {
-            const bookings = await supabaseGetAllBookings();
-            const empRatedBookings = bookings.filter(
+            const prevHistory = emp.ratingsHistory || [];
+            const newEntry = {
+              rating: numRating,
+              comment,
+              customerName: name,
+              createdAt: now,
+            };
+            const updatedHistory = [...prevHistory, newEntry];
+
+            const [allBookings, allReviews] = await Promise.all([
+              supabaseGetAllBookings(),
+              supabaseGetAllReviews(),
+            ]);
+
+            const empRatedBookings = allBookings.filter(
               (b) =>
                 b.assignedCleaner &&
                 (b.assignedCleaner.toLowerCase().includes(emp.name.toLowerCase()) ||
@@ -122,20 +135,32 @@ export async function POST(req: Request) {
                 Number(b.rating) > 0
             );
 
-            const sumRating = empRatedBookings.reduce((sum, b) => sum + Number(b.rating), 0);
-            const avgRating =
-              empRatedBookings.length > 0
-                ? Number((sumRating / empRatedBookings.length).toFixed(1))
-                : numRating;
+            const empReviews = allReviews.filter(
+              (r) =>
+                (r.serviceType && r.serviceType.toLowerCase().includes(emp.name.toLowerCase())) ||
+                (r.comment && r.comment.toLowerCase().includes(emp.name.toLowerCase()))
+            );
+
+            const allRatings: number[] = [
+              ...updatedHistory.map((h) => Number(h.rating)),
+              ...empReviews.map((r) => Number(r.rating)),
+              ...empRatedBookings.map((b) => Number(b.rating)),
+            ].filter((n) => !isNaN(n) && n > 0);
+
+            const totalCount = allRatings.length;
+            const sumRatings = allRatings.reduce((sum, val) => sum + val, 0);
+            const avgRating = totalCount > 0 ? Number((sumRatings / totalCount).toFixed(1)) : numRating;
 
             await supabaseUpdateEmployee(emp.id, {
               rating: avgRating,
+              ratingsHistory: updatedHistory,
             });
 
             try {
               updateEmployee(emp.id, {
                 rating: avgRating,
-                reviewCount: empRatedBookings.length,
+                reviewCount: totalCount,
+                ratingsHistory: updatedHistory,
               });
             } catch (e) {}
           }

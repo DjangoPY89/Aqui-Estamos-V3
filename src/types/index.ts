@@ -68,6 +68,7 @@ export interface Employee {
   ipsVerified: boolean;
   rating?: number | null;
   reviewCount?: number;
+  ratingsHistory?: { rating: number; comment?: string; customerName?: string; createdAt: string }[];
   status: 'ACTIVE' | 'INACTIVE' | 'ON_LEAVE';
   activeBookingsCount?: number;
   completedBookingsCount?: number;

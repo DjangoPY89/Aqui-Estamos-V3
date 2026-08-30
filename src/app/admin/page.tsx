@@ -2566,11 +2566,18 @@ export default function AdminDashboardPage() {
                         (b as any).employeeName?.toLowerCase().includes(emp.name.toLowerCase())
                     );
                     const ratedBookings = empBookings.filter((b) => (b as any).rating && Number((b as any).rating) > 0);
-                    const sumRating = ratedBookings.reduce((sum, b) => sum + Number((b as any).rating), 0);
-                    const reviewsCount = ratedBookings.length > 0 ? ratedBookings.length : (emp.reviewCount || 0);
+                    const historyRatings: any[] = emp.ratingsHistory || [];
+
+                    const allEmpRatings: number[] = [
+                      ...historyRatings.map((h: any) => Number(h.rating || h)),
+                      ...ratedBookings.map((b) => Number((b as any).rating)),
+                    ].filter((n) => !isNaN(n) && n > 0);
+
+                    const reviewsCount = allEmpRatings.length > 0 ? allEmpRatings.length : (emp.reviewCount || 0);
+                    const sumRating = allEmpRatings.reduce((sum, b) => sum + b, 0);
                     const calculatedAvg =
-                      ratedBookings.length > 0
-                        ? (sumRating / ratedBookings.length).toFixed(1)
+                      allEmpRatings.length > 0
+                        ? (sumRating / allEmpRatings.length).toFixed(1)
                         : (emp.rating && Number(emp.rating) > 0 ? Number(emp.rating).toFixed(1) : null);
                     const completedCount = emp.completedBookingsCount || empBookings.filter((b) => b.status === "COMPLETED").length;
 

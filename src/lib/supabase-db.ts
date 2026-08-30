@@ -299,9 +299,10 @@ export async function supabaseGetAllEmployees(): Promise<Employee[]> {
 
   if (error || !employees) return [];
 
-  const { data: bookings } = await supabase
-    .from("bookings")
-    .select("assigned_cleaner, status, rating");
+  const [{ data: bookings }, { data: reviews }] = await Promise.all([
+    supabase.from("bookings").select("assigned_cleaner, status, rating"),
+    supabase.from("reviews").select("service_type, comment, rating, user_name, created_at"),
+  ]);
 
   return employees.map((e) => {
     const empBookings = (bookings || []).filter(
@@ -315,9 +316,25 @@ export async function supabaseGetAllEmployees(): Promise<Employee[]> {
       (b) => b.status === "COMPLETED"
     ).length;
 
+    const empReviews = (reviews || []).filter(
+      (r) =>
+        (r.service_type && r.service_type.toLowerCase().includes(e.name.toLowerCase())) ||
+        (r.comment && r.comment.toLowerCase().includes(e.name.toLowerCase()))
+    );
+
     const ratedBookings = empBookings.filter((b) => b.rating && Number(b.rating) > 0);
-    const sumRatings = ratedBookings.reduce((sum, b) => sum + Number(b.rating), 0);
-    const avgRating = ratedBookings.length > 0 ? Number((sumRatings / ratedBookings.length).toFixed(1)) : (e.rating !== undefined && e.rating !== null ? Number(e.rating) : null);
+
+    const historyRatings: any[] = typeof e.ratings_history === "string" ? JSON.parse(e.ratings_history || "[]") : (e.ratings_history || []);
+
+    const allRatings: number[] = [
+      ...historyRatings.map((h: any) => Number(h.rating || h)),
+      ...empReviews.map((r) => Number(r.rating)),
+      ...ratedBookings.map((b) => Number(b.rating)),
+    ].filter((n) => !isNaN(n) && n > 0);
+
+    const totalCount = allRatings.length;
+    const sumRatings = allRatings.reduce((sum, val) => sum + val, 0);
+    const avgRating = totalCount > 0 ? Number((sumRatings / totalCount).toFixed(1)) : (e.rating !== undefined && e.rating !== null ? Number(e.rating) : null);
 
     return {
       id: e.id,
@@ -329,7 +346,8 @@ export async function supabaseGetAllEmployees(): Promise<Employee[]> {
       zone: e.zone || "Asunción y Gran Asunción",
       ipsVerified: Boolean(e.ips_verified),
       rating: avgRating,
-      reviewCount: ratedBookings.length,
+      reviewCount: totalCount,
+      ratingsHistory: historyRatings,
       status: e.status as Employee["status"],
       activeBookingsCount: activeCount,
       completedBookingsCount: completedCount,
@@ -348,6 +366,8 @@ export async function supabaseGetEmployeeById(id: string): Promise<Employee | nu
 
   if (error || !e) return null;
 
+  const historyRatings: any[] = typeof e.ratings_history === "string" ? JSON.parse(e.ratings_history || "[]") : (e.ratings_history || []);
+
   return {
     id: e.id,
     name: e.name,
@@ -358,6 +378,8 @@ export async function supabaseGetEmployeeById(id: string): Promise<Employee | nu
     zone: e.zone || "Asunción y Gran Asunción",
     ipsVerified: Boolean(e.ips_verified),
     rating: e.rating !== null && e.rating !== undefined ? Number(e.rating) : null,
+    reviewCount: historyRatings.length,
+    ratingsHistory: historyRatings,
     status: e.status as Employee["status"],
     createdAt: e.created_at,
   };
@@ -387,6 +409,7 @@ export async function supabaseCreateEmployee(data: {
       zone: data.zone || "Asunción (General)",
       ips_verified: data.ipsVerified !== false,
       rating: null,
+      ratings_history: "[]",
       status: "ACTIVE",
     })
     .select()
@@ -409,7 +432,9 @@ export async function supabaseUpdateEmployee(
     image: string;
     zone: string;
     ipsVerified: boolean;
-    rating: number;
+    rating: number | null;
+    reviewCount: number;
+    ratingsHistory: any[];
     status: Employee["status"];
   }>
 ): Promise<Employee | null> {
@@ -424,6 +449,9 @@ export async function supabaseUpdateEmployee(
   if (data.ipsVerified !== undefined) updatePayload.ips_verified = data.ipsVerified;
   if (data.rating !== undefined) updatePayload.rating = data.rating;
   if (data.status !== undefined) updatePayload.status = data.status;
+  if (data.ratingsHistory !== undefined) {
+    updatePayload.ratings_history = typeof data.ratingsHistory === "string" ? data.ratingsHistory : JSON.stringify(data.ratingsHistory);
+  }
   updatePayload.updated_at = new Date().toISOString();
 
   await supabase.from("employees").update(updatePayload).eq("id", id);

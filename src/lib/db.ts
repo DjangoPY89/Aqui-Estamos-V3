@@ -633,15 +633,34 @@ export function getAllEmployees(): Employee[] {
     ).length;
     const completedCount = empBookings.filter((b) => b.status === "COMPLETED").length;
 
-    // Calcular calificaciones reales dadas por clientes
+    // 1. Calificaciones de reseñas de clientes
+    const empReviews = store.reviews.filter(
+      (r) =>
+        (r.serviceType && r.serviceType.toLowerCase().includes(emp.name.toLowerCase())) ||
+        (r.comment && r.comment.toLowerCase().includes(emp.name.toLowerCase()))
+    );
+
+    // 2. Calificaciones de reservas
     const ratedBookings = empBookings.filter((b) => b.rating && Number(b.rating) > 0);
-    const sumRatings = ratedBookings.reduce((sum, b) => sum + Number(b.rating), 0);
-    const avgRating = ratedBookings.length > 0 ? Number((sumRatings / ratedBookings.length).toFixed(1)) : (emp.rating !== undefined ? emp.rating : null);
+
+    // 3. Historial de calificaciones del empleado
+    const historyRatings = emp.ratingsHistory || [];
+
+    // Combinar todas las calificaciones obtenidas (sin omitir ninguna)
+    const allRatings: number[] = [
+      ...historyRatings.map((h) => Number(h.rating)),
+      ...empReviews.map((r) => Number(r.rating)),
+      ...ratedBookings.map((b) => Number(b.rating)),
+    ].filter((n) => !isNaN(n) && n > 0);
+
+    const totalCount = allRatings.length;
+    const sumRatings = allRatings.reduce((sum, val) => sum + val, 0);
+    const avgRating = totalCount > 0 ? Number((sumRatings / totalCount).toFixed(1)) : (emp.rating !== undefined && emp.rating !== null ? Number(emp.rating) : null);
 
     return {
       ...emp,
       rating: avgRating,
-      reviewCount: ratedBookings.length,
+      reviewCount: totalCount,
       activeBookingsCount: activeCount,
       completedBookingsCount: completedCount,
     };
@@ -657,13 +676,27 @@ export function getEmployeeById(id: string): Employee | null {
     (b) => b.assignedCleaner && b.assignedCleaner.toLowerCase().includes(emp.name.toLowerCase())
   );
   const ratedBookings = empBookings.filter((b) => b.rating && Number(b.rating) > 0);
-  const sumRatings = ratedBookings.reduce((sum, b) => sum + Number(b.rating), 0);
-  const avgRating = ratedBookings.length > 0 ? Number((sumRatings / ratedBookings.length).toFixed(1)) : null;
+  const empReviews = store.reviews.filter(
+    (r) =>
+      (r.serviceType && r.serviceType.toLowerCase().includes(emp.name.toLowerCase())) ||
+      (r.comment && r.comment.toLowerCase().includes(emp.name.toLowerCase()))
+  );
+  const historyRatings = emp.ratingsHistory || [];
+
+  const allRatings: number[] = [
+    ...historyRatings.map((h) => Number(h.rating)),
+    ...empReviews.map((r) => Number(r.rating)),
+    ...ratedBookings.map((b) => Number(b.rating)),
+  ].filter((n) => !isNaN(n) && n > 0);
+
+  const totalCount = allRatings.length;
+  const sumRatings = allRatings.reduce((sum, val) => sum + val, 0);
+  const avgRating = totalCount > 0 ? Number((sumRatings / totalCount).toFixed(1)) : null;
 
   return {
     ...emp,
     rating: avgRating,
-    reviewCount: ratedBookings.length,
+    reviewCount: totalCount,
   };
 }
 
@@ -690,6 +723,7 @@ export function createEmployee(data: {
     ipsVerified: data.ipsVerified !== false,
     rating: null,
     reviewCount: 0,
+    ratingsHistory: [],
     status: "ACTIVE",
     activeBookingsCount: 0,
     completedBookingsCount: 0,
@@ -711,6 +745,7 @@ export function updateEmployee(
     image: string | null;
     rating: number | null;
     reviewCount: number;
+    ratingsHistory: { rating: number; comment?: string; customerName?: string; createdAt: string }[];
     zone: string;
     ipsVerified: boolean;
     status: 'ACTIVE' | 'INACTIVE' | 'ON_LEAVE';
