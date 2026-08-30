@@ -473,34 +473,40 @@ export async function supabaseGetAllBookings(): Promise<Booking[]> {
 
   if (error || !data) return [];
 
-  return data.map((r) => ({
-    id: r.id,
-    bookingNumber: r.booking_number,
-    userId: r.user_id,
-    customerName: r.customer_name,
-    customerPhone: r.customer_phone,
-    customerEmail: r.customer_email,
-    address: r.address,
-    latitude: r.latitude,
-    longitude: r.longitude,
-    serviceHours: r.service_hours,
-    frequency: r.frequency,
-    extras: typeof r.extras === "string" ? JSON.parse(r.extras) : (r.extras || []),
-    serviceDate: r.service_date,
-    serviceTime: r.service_time,
-    totalPrice: r.total_price,
-    discount: r.discount || 0,
-    paymentMethod: r.payment_method,
-    paymentStatus: r.payment_status,
-    status: r.status,
-    assignedCleaner: r.assigned_cleaner,
-    notes: r.notes,
-    rating: r.rating !== undefined && r.rating !== null ? Number(r.rating) : null,
-    reviewComment: r.review_comment || null,
-    reviewedAt: r.reviewed_at || null,
-    createdAt: r.created_at,
-    updatedAt: r.updated_at || r.created_at,
-  }));
+  return data.map((r) => {
+    const ratedMatch = r.notes ? r.notes.match(/\[RATED:(\d+)\]/) : null;
+    const ratingNum = ratedMatch ? Number(ratedMatch[1]) : (r.rating !== undefined && r.rating !== null ? Number(r.rating) : null);
+    const cleanNotes = r.notes ? r.notes.replace(/\[RATED:\d+\]\s*/g, "").trim() : r.notes;
+
+    return {
+      id: r.id,
+      bookingNumber: r.booking_number,
+      userId: r.user_id,
+      customerName: r.customer_name,
+      customerPhone: r.customer_phone,
+      customerEmail: r.customer_email,
+      address: r.address,
+      latitude: r.latitude,
+      longitude: r.longitude,
+      serviceHours: r.service_hours,
+      frequency: r.frequency,
+      extras: typeof r.extras === "string" ? JSON.parse(r.extras) : (r.extras || []),
+      serviceDate: r.service_date,
+      serviceTime: r.service_time,
+      totalPrice: r.total_price,
+      discount: r.discount || 0,
+      paymentMethod: r.payment_method,
+      paymentStatus: r.payment_status,
+      status: r.status,
+      assignedCleaner: r.assigned_cleaner,
+      notes: cleanNotes,
+      rating: ratingNum,
+      reviewComment: r.review_comment || null,
+      reviewedAt: ratingNum ? (r.updated_at || r.created_at) : (r.reviewed_at || null),
+      createdAt: r.created_at,
+      updatedAt: r.updated_at || r.created_at,
+    };
+  });
 }
 
 export async function supabaseGetBookingById(id: string): Promise<Booking | null> {
@@ -512,6 +518,10 @@ export async function supabaseGetBookingById(id: string): Promise<Booking | null
     .maybeSingle();
 
   if (error || !r) return null;
+
+  const ratedMatch = r.notes ? r.notes.match(/\[RATED:(\d+)\]/) : null;
+  const ratingNum = ratedMatch ? Number(ratedMatch[1]) : (r.rating !== undefined && r.rating !== null ? Number(r.rating) : null);
+  const cleanNotes = r.notes ? r.notes.replace(/\[RATED:\d+\]\s*/g, "").trim() : r.notes;
 
   return {
     id: r.id,
@@ -534,10 +544,10 @@ export async function supabaseGetBookingById(id: string): Promise<Booking | null
     paymentStatus: r.payment_status,
     status: r.status,
     assignedCleaner: r.assigned_cleaner,
-    notes: r.notes,
-    rating: r.rating !== undefined && r.rating !== null ? Number(r.rating) : null,
+    notes: cleanNotes,
+    rating: ratingNum,
     reviewComment: r.review_comment || null,
-    reviewedAt: r.reviewed_at || null,
+    reviewedAt: ratingNum ? (r.updated_at || r.created_at) : (r.reviewed_at || null),
     createdAt: r.created_at,
     updatedAt: r.updated_at || r.created_at,
   };
@@ -553,34 +563,40 @@ export async function supabaseGetBookingsByUserId(userId: string): Promise<Booki
 
   if (error || !data) return [];
 
-  return data.map((r) => ({
-    id: r.id,
-    bookingNumber: r.booking_number,
-    userId: r.user_id,
-    customerName: r.customer_name,
-    customerPhone: r.customer_phone,
-    customerEmail: r.customer_email,
-    address: r.address,
-    latitude: r.latitude,
-    longitude: r.longitude,
-    serviceHours: r.service_hours,
-    frequency: r.frequency,
-    extras: typeof r.extras === "string" ? JSON.parse(r.extras) : (r.extras || []),
-    serviceDate: r.service_date,
-    serviceTime: r.service_time,
-    totalPrice: r.total_price,
-    discount: r.discount || 0,
-    paymentMethod: r.payment_method,
-    paymentStatus: r.payment_status,
-    status: r.status,
-    assignedCleaner: r.assigned_cleaner,
-    notes: r.notes,
-    rating: r.rating !== undefined && r.rating !== null ? Number(r.rating) : null,
-    reviewComment: r.review_comment || null,
-    reviewedAt: r.reviewed_at || null,
-    createdAt: r.created_at,
-    updatedAt: r.updated_at || r.created_at,
-  }));
+  return data.map((r) => {
+    const ratedMatch = r.notes ? r.notes.match(/\[RATED:(\d+)\]/) : null;
+    const ratingNum = ratedMatch ? Number(ratedMatch[1]) : (r.rating !== undefined && r.rating !== null ? Number(r.rating) : null);
+    const cleanNotes = r.notes ? r.notes.replace(/\[RATED:\d+\]\s*/g, "").trim() : r.notes;
+
+    return {
+      id: r.id,
+      bookingNumber: r.booking_number,
+      userId: r.user_id,
+      customerName: r.customer_name,
+      customerPhone: r.customer_phone,
+      customerEmail: r.customer_email,
+      address: r.address,
+      latitude: r.latitude,
+      longitude: r.longitude,
+      serviceHours: r.service_hours,
+      frequency: r.frequency,
+      extras: typeof r.extras === "string" ? JSON.parse(r.extras) : (r.extras || []),
+      serviceDate: r.service_date,
+      serviceTime: r.service_time,
+      totalPrice: r.total_price,
+      discount: r.discount || 0,
+      paymentMethod: r.payment_method,
+      paymentStatus: r.payment_status,
+      status: r.status,
+      assignedCleaner: r.assigned_cleaner,
+      notes: cleanNotes,
+      rating: ratingNum,
+      reviewComment: r.review_comment || null,
+      reviewedAt: ratingNum ? (r.updated_at || r.created_at) : (r.reviewed_at || null),
+      createdAt: r.created_at,
+      updatedAt: r.updated_at || r.created_at,
+    };
+  });
 }
 
 export async function supabaseCreateBooking(data: {
@@ -621,15 +637,16 @@ export async function supabaseCreateBooking(data: {
       longitude: data.longitude || null,
       service_hours: data.serviceHours,
       frequency: data.frequency,
-      extras: data.extras || [],
+      extras: JSON.stringify(data.extras || []),
       service_date: data.serviceDate,
       service_time: data.serviceTime,
       total_price: data.totalPrice,
       discount: data.discount || 0,
       payment_method: data.paymentMethod,
       payment_status: "PENDING",
-      status: "PENDING",
-      notes: data.notes || null,
+      status: "CONFIRMED",
+      assigned_cleaner: null,
+      notes: data.notes?.trim() || null,
     })
     .select()
     .single();
@@ -676,13 +693,24 @@ export async function supabaseUpdateBooking(
   if (data.paymentStatus !== undefined) updatePayload.payment_status = data.paymentStatus;
   if (data.status !== undefined) updatePayload.status = data.status;
   if (data.assignedCleaner !== undefined) updatePayload.assigned_cleaner = data.assignedCleaner;
-  if (data.notes !== undefined) updatePayload.notes = data.notes;
-  if (data.rating !== undefined) updatePayload.rating = data.rating;
-  if (data.reviewComment !== undefined) updatePayload.review_comment = data.reviewComment;
-  if (data.reviewedAt !== undefined) updatePayload.reviewed_at = data.reviewedAt;
+
+  // Persistir rating de forma segura en notes
+  if (data.rating !== undefined && data.rating !== null && Number(data.rating) > 0) {
+    const { data: currentBk } = await supabase.from("bookings").select("notes").eq("id", id).maybeSingle();
+    const rawNotes = data.notes !== undefined ? (data.notes || "") : (currentBk?.notes || "");
+    const baseNotes = rawNotes.replace(/\[RATED:\d+\]\s*/g, "").trim();
+    updatePayload.notes = `[RATED:${data.rating}] ${baseNotes}`.trim();
+  } else if (data.notes !== undefined) {
+    updatePayload.notes = data.notes;
+  }
+
   updatePayload.updated_at = new Date().toISOString();
 
-  await supabase.from("bookings").update(updatePayload).eq("id", id);
+  const { error } = await supabase.from("bookings").update(updatePayload).eq("id", id);
+  if (error) {
+    console.error("Error al actualizar reserva en Supabase:", error);
+    throw new Error(error.message);
+  }
   return await supabaseGetBookingById(id);
 }
 
