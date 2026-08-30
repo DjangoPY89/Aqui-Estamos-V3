@@ -153,7 +153,6 @@ export async function POST(req: Request) {
 
             await supabaseUpdateEmployee(emp.id, {
               rating: avgRating,
-              ratingsHistory: updatedHistory,
             });
 
             try {

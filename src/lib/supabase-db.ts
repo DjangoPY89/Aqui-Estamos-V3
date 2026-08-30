@@ -324,10 +324,7 @@ export async function supabaseGetAllEmployees(): Promise<Employee[]> {
 
     const ratedBookings = empBookings.filter((b) => b.rating && Number(b.rating) > 0);
 
-    const historyRatings: any[] = typeof e.ratings_history === "string" ? JSON.parse(e.ratings_history || "[]") : (e.ratings_history || []);
-
     const allRatings: number[] = [
-      ...historyRatings.map((h: any) => Number(h.rating || h)),
       ...empReviews.map((r) => Number(r.rating)),
       ...ratedBookings.map((b) => Number(b.rating)),
     ].filter((n) => !isNaN(n) && n > 0);
@@ -347,7 +344,6 @@ export async function supabaseGetAllEmployees(): Promise<Employee[]> {
       ipsVerified: Boolean(e.ips_verified),
       rating: avgRating,
       reviewCount: totalCount,
-      ratingsHistory: historyRatings,
       status: e.status as Employee["status"],
       activeBookingsCount: activeCount,
       completedBookingsCount: completedCount,
@@ -366,8 +362,6 @@ export async function supabaseGetEmployeeById(id: string): Promise<Employee | nu
 
   if (error || !e) return null;
 
-  const historyRatings: any[] = typeof e.ratings_history === "string" ? JSON.parse(e.ratings_history || "[]") : (e.ratings_history || []);
-
   return {
     id: e.id,
     name: e.name,
@@ -378,8 +372,6 @@ export async function supabaseGetEmployeeById(id: string): Promise<Employee | nu
     zone: e.zone || "Asunción y Gran Asunción",
     ipsVerified: Boolean(e.ips_verified),
     rating: e.rating !== null && e.rating !== undefined ? Number(e.rating) : null,
-    reviewCount: historyRatings.length,
-    ratingsHistory: historyRatings,
     status: e.status as Employee["status"],
     createdAt: e.created_at,
   };
@@ -409,13 +401,13 @@ export async function supabaseCreateEmployee(data: {
       zone: data.zone || "Asunción (General)",
       ips_verified: data.ipsVerified !== false,
       rating: null,
-      ratings_history: "[]",
       status: "ACTIVE",
     })
     .select()
     .single();
 
   if (error || !inserted) {
+    console.error("Error en supabaseCreateEmployee:", error);
     throw new Error(error?.message || "Error al crear empleado en Supabase");
   }
 
@@ -429,12 +421,11 @@ export async function supabaseUpdateEmployee(
     ci: string;
     phone: string;
     email: string;
-    image: string;
+    image: string | null;
     zone: string;
     ipsVerified: boolean;
     rating: number | null;
     reviewCount: number;
-    ratingsHistory: any[];
     status: Employee["status"];
   }>
 ): Promise<Employee | null> {
@@ -449,19 +440,24 @@ export async function supabaseUpdateEmployee(
   if (data.ipsVerified !== undefined) updatePayload.ips_verified = data.ipsVerified;
   if (data.rating !== undefined) updatePayload.rating = data.rating;
   if (data.status !== undefined) updatePayload.status = data.status;
-  if (data.ratingsHistory !== undefined) {
-    updatePayload.ratings_history = typeof data.ratingsHistory === "string" ? data.ratingsHistory : JSON.stringify(data.ratingsHistory);
-  }
   updatePayload.updated_at = new Date().toISOString();
 
-  await supabase.from("employees").update(updatePayload).eq("id", id);
+  const { error } = await supabase.from("employees").update(updatePayload).eq("id", id);
+  if (error) {
+    console.error("Error en supabaseUpdateEmployee:", error);
+    throw new Error(error.message);
+  }
   return await supabaseGetEmployeeById(id);
 }
 
 export async function supabaseDeleteEmployee(id: string): Promise<boolean> {
   const supabase = getSupabase();
   const { error } = await supabase.from("employees").delete().eq("id", id);
-  return !error;
+  if (error) {
+    console.error("Error en supabaseDeleteEmployee:", error);
+    return false;
+  }
+  return true;
 }
 
 // ==========================================
