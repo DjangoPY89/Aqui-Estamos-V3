@@ -2778,9 +2778,9 @@ export default function AdminDashboardPage() {
                       ? (sumRating / allEmpRatings.length).toFixed(1)
                       : (emp.rating && Number(emp.rating) > 0 ? Number(emp.rating).toFixed(1) : null);
 
-                    const completedCount = emp.completedBookingsCount !== undefined
-                      ? emp.completedBookingsCount
-                      : empBookings.filter((b) => b.status === "COMPLETED").length;
+                    const completedFromBookings = empBookings.filter((b) => b.status === "COMPLETED").length;
+                    const completedFromEmp = typeof emp.completedBookingsCount === "number" ? emp.completedBookingsCount : 0;
+                    const completedCount = Math.max(completedFromBookings, completedFromEmp);
 
                     return (
                       <div key={emp.id} className="bg-white p-5 rounded-3xl border border-slate-200/80 shadow-xs space-y-4 flex flex-col justify-between">
@@ -2851,7 +2851,7 @@ export default function AdminDashboardPage() {
                             </p>
                             <p className="flex items-center gap-2 text-slate-500 text-[11px]">
                               <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
-                              <span>{completedCount} servicios concluidos</span>
+                              <span>{completedCount} {completedCount === 1 ? "servicio concluido" : "servicios concluidos"}</span>
                             </p>
                           </div>
                         </div>
