@@ -96,10 +96,10 @@ function getInitialStore(): DbStore {
         email: "carmen.benitez@aquiestamos.com",
         zone: "Asunción (Villa Morra / Ykua Satî)",
         ipsVerified: true,
-        rating: 4.95,
+        rating: null,
         status: "ACTIVE",
-        activeBookingsCount: 1,
-        completedBookingsCount: 42,
+        activeBookingsCount: 0,
+        completedBookingsCount: 0,
         createdAt: "2025-01-01T00:00:00.000Z",
       },
       {
@@ -110,10 +110,10 @@ function getInitialStore(): DbStore {
         email: "gladys.romero@aquiestamos.com",
         zone: "Asunción (Centro / Carmelitas)",
         ipsVerified: true,
-        rating: 4.90,
+        rating: null,
         status: "ACTIVE",
         activeBookingsCount: 0,
-        completedBookingsCount: 38,
+        completedBookingsCount: 0,
         createdAt: "2025-01-01T00:00:00.000Z",
       },
       {
@@ -124,10 +124,10 @@ function getInitialStore(): DbStore {
         email: "mariza.gonzalez@aquiestamos.com",
         zone: "Gran Asunción (Luque / San Lorenzo)",
         ipsVerified: true,
-        rating: 4.88,
+        rating: null,
         status: "ACTIVE",
         activeBookingsCount: 0,
-        completedBookingsCount: 29,
+        completedBookingsCount: 0,
         createdAt: "2025-01-01T00:00:00.000Z",
       },
       {
@@ -138,10 +138,10 @@ function getInitialStore(): DbStore {
         email: "mirna.rolon@aquiestamos.com",
         zone: "Gran Asunción (Lambaré / Fdo. de la Mora)",
         ipsVerified: true,
-        rating: 4.92,
+        rating: null,
         status: "ACTIVE",
         activeBookingsCount: 0,
-        completedBookingsCount: 35,
+        completedBookingsCount: 0,
         createdAt: "2025-01-01T00:00:00.000Z",
       },
     ],
@@ -625,26 +625,23 @@ export function seedInitialData() {
 export function getAllEmployees(): Employee[] {
   const store = getMemoryStore();
   return store.employees.map((emp) => {
-    const empBookings = store.bookings.filter((b) =>
-      (b.assignedCleaner && (
-        b.assignedCleaner.toLowerCase().includes(emp.name.toLowerCase()) ||
-        emp.name.toLowerCase().includes(b.assignedCleaner.toLowerCase())
-      ))
+    const empBookings = store.bookings.filter(
+      (b) => b.assignedCleaner && b.assignedCleaner.toLowerCase().includes(emp.name.toLowerCase())
     );
     const activeCount = empBookings.filter(
       (b) => ["PENDING", "CONFIRMED", "IN_PROGRESS"].includes(b.status)
     ).length;
-    const completedCount = empBookings.filter(
-      (b) => b.status === "COMPLETED"
-    ).length;
+    const completedCount = empBookings.filter((b) => b.status === "COMPLETED").length;
 
-    const ratedBookings = empBookings.filter((b) => (b as any).rating && (b as any).rating > 0);
-    const sumRating = ratedBookings.reduce((sum, b) => sum + Number((b as any).rating), 0);
-    const dynamicRating = ratedBookings.length > 0 ? Number((sumRating / ratedBookings.length).toFixed(1)) : (emp.rating || 5.0);
+    // Calcular calificaciones reales dadas por clientes
+    const ratedBookings = empBookings.filter((b) => b.rating && Number(b.rating) > 0);
+    const sumRatings = ratedBookings.reduce((sum, b) => sum + Number(b.rating), 0);
+    const avgRating = ratedBookings.length > 0 ? Number((sumRatings / ratedBookings.length).toFixed(1)) : (emp.rating !== undefined ? emp.rating : null);
 
     return {
       ...emp,
-      rating: dynamicRating,
+      rating: avgRating,
+      reviewCount: ratedBookings.length,
       activeBookingsCount: activeCount,
       completedBookingsCount: completedCount,
     };
@@ -653,7 +650,21 @@ export function getAllEmployees(): Employee[] {
 
 export function getEmployeeById(id: string): Employee | null {
   const store = getMemoryStore();
-  return store.employees.find((e) => e.id === id) || null;
+  const emp = store.employees.find((e) => e.id === id) || null;
+  if (!emp) return null;
+
+  const empBookings = store.bookings.filter(
+    (b) => b.assignedCleaner && b.assignedCleaner.toLowerCase().includes(emp.name.toLowerCase())
+  );
+  const ratedBookings = empBookings.filter((b) => b.rating && Number(b.rating) > 0);
+  const sumRatings = ratedBookings.reduce((sum, b) => sum + Number(b.rating), 0);
+  const avgRating = ratedBookings.length > 0 ? Number((sumRatings / ratedBookings.length).toFixed(1)) : null;
+
+  return {
+    ...emp,
+    rating: avgRating,
+    reviewCount: ratedBookings.length,
+  };
 }
 
 export function createEmployee(data: {
@@ -677,7 +688,8 @@ export function createEmployee(data: {
     image: data.image || null,
     zone: data.zone || "Asunción (General)",
     ipsVerified: data.ipsVerified !== false,
-    rating: 5.0,
+    rating: null,
+    reviewCount: 0,
     status: "ACTIVE",
     activeBookingsCount: 0,
     completedBookingsCount: 0,
@@ -697,7 +709,8 @@ export function updateEmployee(
     phone: string;
     email: string;
     image: string | null;
-    rating: number;
+    rating: number | null;
+    reviewCount: number;
     zone: string;
     ipsVerified: boolean;
     status: 'ACTIVE' | 'INACTIVE' | 'ON_LEAVE';

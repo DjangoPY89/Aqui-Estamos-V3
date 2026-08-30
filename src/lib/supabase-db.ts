@@ -301,16 +301,23 @@ export async function supabaseGetAllEmployees(): Promise<Employee[]> {
 
   const { data: bookings } = await supabase
     .from("bookings")
-    .select("assigned_cleaner, status");
+    .select("assigned_cleaner, status, rating");
 
   return employees.map((e) => {
-    const activeCount = (bookings || []).filter(
-      (b) => b.assigned_cleaner && b.assigned_cleaner.includes(e.name) && ["PENDING", "CONFIRMED", "IN_PROGRESS"].includes(b.status)
+    const empBookings = (bookings || []).filter(
+      (b) => b.assigned_cleaner && b.assigned_cleaner.toLowerCase().includes(e.name.toLowerCase())
+    );
+    const activeCount = empBookings.filter(
+      (b) => ["PENDING", "CONFIRMED", "IN_PROGRESS"].includes(b.status)
     ).length;
 
-    const completedCount = (bookings || []).filter(
-      (b) => b.assigned_cleaner && b.assigned_cleaner.includes(e.name) && b.status === "COMPLETED"
+    const completedCount = empBookings.filter(
+      (b) => b.status === "COMPLETED"
     ).length;
+
+    const ratedBookings = empBookings.filter((b) => b.rating && Number(b.rating) > 0);
+    const sumRatings = ratedBookings.reduce((sum, b) => sum + Number(b.rating), 0);
+    const avgRating = ratedBookings.length > 0 ? Number((sumRatings / ratedBookings.length).toFixed(1)) : (e.rating !== undefined && e.rating !== null ? Number(e.rating) : null);
 
     return {
       id: e.id,
@@ -321,7 +328,8 @@ export async function supabaseGetAllEmployees(): Promise<Employee[]> {
       image: e.image,
       zone: e.zone || "Asunción y Gran Asunción",
       ipsVerified: Boolean(e.ips_verified),
-      rating: Number(e.rating || 5.0),
+      rating: avgRating,
+      reviewCount: ratedBookings.length,
       status: e.status as Employee["status"],
       activeBookingsCount: activeCount,
       completedBookingsCount: completedCount,
@@ -349,7 +357,7 @@ export async function supabaseGetEmployeeById(id: string): Promise<Employee | nu
     image: e.image,
     zone: e.zone || "Asunción y Gran Asunción",
     ipsVerified: Boolean(e.ips_verified),
-    rating: Number(e.rating || 5.0),
+    rating: e.rating !== null && e.rating !== undefined ? Number(e.rating) : null,
     status: e.status as Employee["status"],
     createdAt: e.created_at,
   };
@@ -378,7 +386,7 @@ export async function supabaseCreateEmployee(data: {
       image: data.image || null,
       zone: data.zone || "Asunción (General)",
       ips_verified: data.ipsVerified !== false,
-      rating: 5.0,
+      rating: null,
       status: "ACTIVE",
     })
     .select()

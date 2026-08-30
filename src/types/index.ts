@@ -37,6 +37,7 @@ export interface Booking {
   notes?: string | null;
   rating?: number | null;
   reviewComment?: string | null;
+  reviewedAt?: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -65,7 +66,8 @@ export interface Employee {
   image?: string | null;
   zone: string;
   ipsVerified: boolean;
-  rating: number;
+  rating?: number | null;
+  reviewCount?: number;
   status: 'ACTIVE' | 'INACTIVE' | 'ON_LEAVE';
   activeBookingsCount?: number;
   completedBookingsCount?: number;

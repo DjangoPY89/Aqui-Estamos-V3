@@ -2565,13 +2565,10 @@ export default function AdminDashboardPage() {
                         b.assignedCleaner?.toLowerCase().includes(emp.name.toLowerCase()) ||
                         (b as any).employeeName?.toLowerCase().includes(emp.name.toLowerCase())
                     );
-                    const ratedBookings = empBookings.filter((b) => (b as any).rating && (b as any).rating > 0);
-                    const sumRating = ratedBookings.reduce((sum, b) => sum + (b as any).rating, 0);
-                    const displayRating =
-                      ratedBookings.length > 0
-                        ? (sumRating / ratedBookings.length).toFixed(1)
-                        : (emp.rating ? Number(emp.rating).toFixed(1) : "5.0");
+                    const ratedBookings = empBookings.filter((b) => (b as any).rating && Number((b as any).rating) > 0);
+                    const sumRating = ratedBookings.reduce((sum, b) => sum + Number((b as any).rating), 0);
                     const reviewsCount = ratedBookings.length;
+                    const calculatedAvg = reviewsCount > 0 ? (sumRating / reviewsCount).toFixed(1) : null;
                     const completedCount = emp.completedBookingsCount || empBookings.filter((b) => b.status === "COMPLETED").length;
 
                     return (
@@ -2602,16 +2599,28 @@ export default function AdminDashboardPage() {
                             </span>
                           </div>
 
-                          {/* Calificación de Servicio Obtenida */}
-                          <div className="flex items-center justify-between p-2.5 bg-amber-50/80 border border-amber-200/70 rounded-2xl">
-                            <div className="flex items-center gap-1.5">
-                              <Star className="w-4 h-4 fill-amber-400 text-amber-400 shrink-0" />
-                              <span className="font-black text-xs text-amber-950">{displayRating} / 5.0</span>
+                          {/* Calificación de Servicio Obtenida (Computada tras evaluación del cliente) */}
+                          {reviewsCount > 0 ? (
+                            <div className="flex items-center justify-between p-2.5 bg-amber-50/80 border border-amber-200/70 rounded-2xl">
+                              <div className="flex items-center gap-1.5">
+                                <Star className="w-4 h-4 fill-amber-400 text-amber-400 shrink-0" />
+                                <span className="font-black text-xs text-amber-950">{calculatedAvg} / 5.0</span>
+                              </div>
+                              <span className="text-[10px] font-bold text-amber-800 bg-amber-100/80 px-2 py-0.5 rounded-md">
+                                {reviewsCount} {reviewsCount === 1 ? "calificación" : "calificaciones"}
+                              </span>
                             </div>
-                            <span className="text-[10px] font-bold text-amber-800 bg-amber-100/80 px-2 py-0.5 rounded-md">
-                              {reviewsCount} {reviewsCount === 1 ? "calificación" : "calificaciones"}
-                            </span>
-                          </div>
+                          ) : (
+                            <div className="flex items-center justify-between p-2.5 bg-slate-50 border border-slate-200/80 rounded-2xl">
+                              <div className="flex items-center gap-1.5 text-slate-400">
+                                <Star className="w-4 h-4 text-slate-300" />
+                                <span className="text-xs font-semibold text-slate-500">Sin calificaciones aún</span>
+                              </div>
+                              <span className="text-[10px] font-bold text-slate-400 bg-slate-100 px-2 py-0.5 rounded-md">
+                                0 opiniones
+                              </span>
+                            </div>
+                          )}
 
                           {/* Datos de Contacto y Zona */}
                           <div className="space-y-1.5 text-xs text-slate-600">
