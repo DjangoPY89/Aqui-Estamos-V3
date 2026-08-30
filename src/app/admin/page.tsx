@@ -60,9 +60,10 @@ import {
   Receipt,
   FileText,
   QrCode,
-  Printer
+  Printer,
+  Quote
 } from "lucide-react";
-import { Booking, CorporateLead, Employee, User } from "@/types";
+import { Booking, CorporateLead, Employee, Review, User } from "@/types";
 import { formatGs } from "@/lib/pricing";
 import AvailabilityManager from "@/components/admin/AvailabilityManager";
 import KudeInvoiceModal from "@/components/portal/KudeInvoiceModal";
@@ -139,6 +140,12 @@ export default function AdminDashboardPage() {
   const [invoiceSearchTerm, setInvoiceSearchTerm] = useState("");
   const [selectedInvoiceBooking, setSelectedInvoiceBooking] = useState<Booking | null>(null);
   const [showCharts, setShowCharts] = useState(true);
+
+  // Estados del Feed de Calificaciones y Reseñas de Clientes (Apple Style)
+  const [customerReviews, setCustomerReviews] = useState<Review[]>([]);
+  const [reviewEmployeeFilter, setReviewEmployeeFilter] = useState<string>("ALL");
+  const [reviewRatingFilter, setReviewRatingFilter] = useState<string>("ALL");
+  const [reviewSearchText, setReviewSearchText] = useState<string>("");
 
   // Estados del Calendario Operativo en Vivo
   const [currentCalendarDate, setCurrentCalendarDate] = useState(new Date());
@@ -438,12 +445,13 @@ export default function AdminDashboardPage() {
   const loadData = async () => {
     setIsLoading(true);
     try {
-      const [bRes, lRes, uRes, eRes, sRes] = await Promise.all([
+      const [bRes, lRes, uRes, eRes, sRes, rRes] = await Promise.all([
         fetch("/api/bookings?limit=200", { cache: "no-store" }),
         fetch("/api/corporate", { cache: "no-store" }),
         fetch("/api/admin/users", { cache: "no-store" }),
         fetch("/api/admin/employees", { cache: "no-store" }),
-        fetch("/api/admin/stats", { cache: "no-store" })
+        fetch("/api/admin/stats", { cache: "no-store" }),
+        fetch("/api/reviews", { cache: "no-store" }),
       ]);
 
       if (bRes.ok) {
@@ -465,6 +473,10 @@ export default function AdminDashboardPage() {
       if (sRes.ok) {
         const data = await sRes.json();
         setStats(data.stats || {});
+      }
+      if (rRes.ok) {
+        const data = await rRes.json();
+        setCustomerReviews(data.reviews || []);
       }
     } catch (err) {
       console.error("Error al cargar datos del panel:", err);
@@ -1217,6 +1229,181 @@ export default function AdminDashboardPage() {
     link.click();
     document.body.removeChild(link);
   };
+
+  // Consolidación de todas las calificaciones y opiniones de clientes (Apple Style Feed)
+  const consolidatedReviews = useMemo(() => {
+    const list: Array<{
+      id: string;
+      customerName: string;
+      customerImage?: string | null;
+      rating: number;
+      comment: string;
+      serviceType: string;
+      bookingNumber?: string | null;
+      cleanerName: string;
+      cleanerImage?: string | null;
+      createdAt: string;
+      source: string;
+    }> = [];
+
+    // 1. Reseñas de la tabla reviews
+    (customerReviews || []).forEach((r) => {
+      let cleaner = "Personal de Cuadrilla";
+      let cleanerImg: string | null = null;
+      for (const emp of employees) {
+        if (
+          (r.serviceType && r.serviceType.toLowerCase().includes(emp.name.toLowerCase())) ||
+          (r.comment && r.comment.toLowerCase().includes(emp.name.toLowerCase()))
+        ) {
+          cleaner = emp.name;
+          cleanerImg = emp.image || null;
+          break;
+        }
+      }
+      list.push({
+        id: r.id,
+        customerName: r.userName || "Cliente Satisfecho",
+        customerImage: r.userImage || null,
+        rating: Number(r.rating) || 5,
+        comment: r.comment || "",
+        serviceType: r.serviceType || "Servicio Residencial",
+        bookingNumber: null,
+        cleanerName: cleaner,
+        cleanerImage: cleanerImg,
+        createdAt: r.createdAt || new Date().toISOString(),
+        source: "Portal / Reseña Web",
+      });
+    });
+
+    // 2. Reservas calificadas
+    (bookings || []).forEach((b) => {
+      if (b.rating && Number(b.rating) > 0) {
+        const alreadyExists = list.some(
+          (item) => item.id === b.id || (item.bookingNumber === b.bookingNumber && item.comment === b.reviewComment)
+        );
+        if (!alreadyExists) {
+          let cleanerImg: string | null = null;
+          if (b.assignedCleaner) {
+            const foundEmp = employees.find((e) => b.assignedCleaner!.toLowerCase().includes(e.name.toLowerCase()));
+            if (foundEmp?.image) cleanerImg = foundEmp.image;
+          }
+          list.push({
+            id: b.id,
+            customerName: b.customerName || "Cliente Verificado",
+            customerImage: null,
+            rating: Number(b.rating),
+            comment: b.reviewComment || "Servicio completado y calificado con éxito.",
+            serviceType: `Limpieza ${b.serviceHours} Horas (${b.frequency === "once" ? "Única" : "Recurrente"})`,
+            bookingNumber: b.bookingNumber,
+            cleanerName: b.assignedCleaner || "Personal de Cuadrilla",
+            cleanerImage: cleanerImg,
+            createdAt: b.reviewedAt || b.updatedAt || b.createdAt,
+            source: "Reserva Calificada",
+          });
+        }
+      }
+    });
+
+    // 3. Historial de evaluaciones del personal
+    employees.forEach((emp) => {
+      if (emp.ratingsHistory && Array.isArray(emp.ratingsHistory)) {
+        emp.ratingsHistory.forEach((h, idx) => {
+          const alreadyExists = list.some(
+            (item) => item.cleanerName === emp.name && item.comment === h.comment && item.createdAt === h.createdAt
+          );
+          if (!alreadyExists && h.rating) {
+            list.push({
+              id: `emp_hist_${emp.id}_${idx}`,
+              customerName: h.customerName || "Cliente Verificado",
+              customerImage: null,
+              rating: Number(h.rating),
+              comment: h.comment || "Calificación de servicio registrada.",
+              serviceType: `Servicio de Limpieza • ${emp.zone}`,
+              bookingNumber: null,
+              cleanerName: emp.name,
+              cleanerImage: emp.image || null,
+              createdAt: h.createdAt || new Date().toISOString(),
+              source: "Evaluación Registrada",
+            });
+          }
+        });
+      }
+    });
+
+    // Ordenar por fecha cronológica descendente (más recientes primero)
+    return list.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+  }, [customerReviews, bookings, employees]);
+
+  // Filtros aplicados a las reseñas
+  const filteredCustomerReviews = useMemo(() => {
+    return consolidatedReviews.filter((rev) => {
+      if (reviewEmployeeFilter !== "ALL") {
+        if (!rev.cleanerName.toLowerCase().includes(reviewEmployeeFilter.toLowerCase())) {
+          return false;
+        }
+      }
+      if (reviewRatingFilter !== "ALL") {
+        if (reviewRatingFilter === "5" && rev.rating !== 5) return false;
+        if (reviewRatingFilter === "4" && rev.rating !== 4) return false;
+        if (reviewRatingFilter === "3" && rev.rating !== 3) return false;
+        if (reviewRatingFilter === "LOW" && rev.rating > 2) return false;
+      }
+      if (reviewSearchText.trim()) {
+        const q = reviewSearchText.toLowerCase();
+        const matchName = rev.customerName.toLowerCase().includes(q);
+        const matchComment = rev.comment.toLowerCase().includes(q);
+        const matchCleaner = rev.cleanerName.toLowerCase().includes(q);
+        const matchService = rev.serviceType.toLowerCase().includes(q);
+        const matchBk = rev.bookingNumber?.toLowerCase().includes(q);
+        if (!matchName && !matchComment && !matchCleaner && !matchService && !matchBk) {
+          return false;
+        }
+      }
+      return true;
+    });
+  }, [consolidatedReviews, reviewEmployeeFilter, reviewRatingFilter, reviewSearchText]);
+
+  // Métricas Apple Bento Box para reseñas
+  const customerReviewMetrics = useMemo(() => {
+    const total = consolidatedReviews.length;
+    if (total === 0) {
+      return { total: 0, average: 0, fiveStarPct: 100, positivePct: 100, topEmployee: "Sin evaluaciones aún" };
+    }
+    const sum = consolidatedReviews.reduce((acc, r) => acc + r.rating, 0);
+    const avg = Number((sum / total).toFixed(1));
+    const fiveStars = consolidatedReviews.filter((r) => r.rating === 5).length;
+    const highRatings = consolidatedReviews.filter((r) => r.rating >= 4).length;
+
+    // Colaboradora más destacada
+    const cleanerCounts: Record<string, { sum: number; count: number }> = {};
+    consolidatedReviews.forEach((r) => {
+      if (r.cleanerName && r.cleanerName !== "Personal de Cuadrilla") {
+        if (!cleanerCounts[r.cleanerName]) cleanerCounts[r.cleanerName] = { sum: 0, count: 0 };
+        cleanerCounts[r.cleanerName].sum += r.rating;
+        cleanerCounts[r.cleanerName].count += 1;
+      }
+    });
+
+    let topEmp = "Personal de Cuadrilla";
+    let highestScore = 0;
+    let maxCount = 0;
+    Object.entries(cleanerCounts).forEach(([name, data]) => {
+      const score = data.sum / data.count;
+      if (score > highestScore || (score === highestScore && data.count > maxCount)) {
+        highestScore = score;
+        maxCount = data.count;
+        topEmp = name;
+      }
+    });
+
+    return {
+      total,
+      average: avg,
+      fiveStarPct: Math.round((fiveStars / total) * 100),
+      positivePct: Math.round((highRatings / total) * 100),
+      topEmployee: topEmp,
+    };
+  }, [consolidatedReviews]);
 
   const unassignedCount = bookings.filter(
     (b) => !b.assignedCleaner || b.assignedCleaner === "Sin Asignar" || b.assignedCleaner === "Sin asignar"
@@ -2693,6 +2880,337 @@ export default function AdminDashboardPage() {
                       </div>
                     );
                   })}
+                </div>
+
+                {/* ======================================================== */}
+                {/* SECCIÓN APPLE-INSPIRED: FEED DE CALIFICACIONES DE CLIENTES */}
+                {/* ======================================================== */}
+                <div className="pt-6 border-t border-slate-200/80 space-y-6">
+                  {/* Header & Apple Bento Highlights */}
+                  <div className="space-y-4">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                      <div>
+                        <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-slate-100 border border-slate-200/80 text-[11px] font-bold text-slate-700 mb-1.5 tracking-tight">
+                          <Sparkles className="w-3.5 h-3.5 text-amber-500" />
+                          <span>Experiencia & Calidad de Servicio</span>
+                        </div>
+                        <h2 className="text-lg font-black text-slate-950 tracking-tight">
+                          Últimas Calificaciones & Reseñas de Clientes
+                        </h2>
+                        <p className="text-xs text-slate-500">
+                          Evaluaciones en tiempo real emitidas por los clientes tras la finalización de sus servicios.
+                        </p>
+                      </div>
+
+                      {/* Contador total */}
+                      <div className="flex items-center gap-2 self-start sm:self-auto">
+                        <span className="px-3.5 py-1.5 rounded-2xl bg-white border border-slate-200 text-xs font-black text-slate-900 shadow-2xs flex items-center gap-2">
+                          <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
+                          <span>{customerReviewMetrics.total} {customerReviewMetrics.total === 1 ? "evaluación total" : "evaluaciones totales"}</span>
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Apple Bento Box Metrics */}
+                    <div className="grid grid-cols-2 lg:grid-cols-4 gap-3.5">
+                      {/* Metric 1: Promedio General */}
+                      <div className="bg-white p-4.5 rounded-3xl border border-slate-200/80 shadow-xs flex flex-col justify-between space-y-2">
+                        <div className="flex items-center justify-between">
+                          <span className="text-[11px] font-bold text-slate-500 tracking-tight">Promedio General</span>
+                          <div className="w-7 h-7 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center font-bold text-xs">
+                            <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
+                          </div>
+                        </div>
+                        <div>
+                          <div className="text-2xl font-black text-slate-950 tracking-tight">
+                            {customerReviewMetrics.total > 0 ? `${customerReviewMetrics.average}` : "—"}
+                            <span className="text-xs text-slate-400 font-semibold ml-1">/ 5.0</span>
+                          </div>
+                          <p className="text-[10px] text-slate-400 mt-0.5 font-medium">Basado en todas las opiniones</p>
+                        </div>
+                      </div>
+
+                      {/* Metric 2: 5 Estrellas Pct */}
+                      <div className="bg-white p-4.5 rounded-3xl border border-slate-200/80 shadow-xs flex flex-col justify-between space-y-2">
+                        <div className="flex items-center justify-between">
+                          <span className="text-[11px] font-bold text-slate-500 tracking-tight">5 Estrellas (Excelencia)</span>
+                          <div className="w-7 h-7 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center font-bold text-xs">
+                            <Award className="w-3.5 h-3.5" />
+                          </div>
+                        </div>
+                        <div>
+                          <div className="text-2xl font-black text-slate-950 tracking-tight">
+                            {customerReviewMetrics.total > 0 ? `${customerReviewMetrics.fiveStarPct}%` : "100%"}
+                          </div>
+                          <p className="text-[10px] text-emerald-600 font-bold mt-0.5">Máxima satisfacción</p>
+                        </div>
+                      </div>
+
+                      {/* Metric 3: Aprobación Positiva */}
+                      <div className="bg-white p-4.5 rounded-3xl border border-slate-200/80 shadow-xs flex flex-col justify-between space-y-2">
+                        <div className="flex items-center justify-between">
+                          <span className="text-[11px] font-bold text-slate-500 tracking-tight">Índice Positivo (4★ o 5★)</span>
+                          <div className="w-7 h-7 rounded-xl bg-cyan-50 text-cyan-600 flex items-center justify-center font-bold text-xs">
+                            <TrendingUp className="w-3.5 h-3.5" />
+                          </div>
+                        </div>
+                        <div>
+                          <div className="text-2xl font-black text-slate-950 tracking-tight">
+                            {customerReviewMetrics.total > 0 ? `${customerReviewMetrics.positivePct}%` : "100%"}
+                          </div>
+                          <p className="text-[10px] text-slate-400 mt-0.5 font-medium">Recomiendan el servicio</p>
+                        </div>
+                      </div>
+
+                      {/* Metric 4: Colaboradora Destacada */}
+                      <div className="bg-white p-4.5 rounded-3xl border border-slate-200/80 shadow-xs flex flex-col justify-between space-y-2">
+                        <div className="flex items-center justify-between">
+                          <span className="text-[11px] font-bold text-slate-500 tracking-tight">Personal Más Destacado</span>
+                          <div className="w-7 h-7 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center font-bold text-xs">
+                            <ShieldCheck className="w-3.5 h-3.5" />
+                          </div>
+                        </div>
+                        <div>
+                          <div className="text-sm font-black text-slate-900 truncate" title={customerReviewMetrics.topEmployee}>
+                            {customerReviewMetrics.topEmployee}
+                          </div>
+                          <p className="text-[10px] text-purple-600 font-bold mt-0.5">Mejor rendimiento promedio</p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Barra de Filtros Apple Style (Segmented controls & Search) */}
+                  <div className="bg-white/80 backdrop-blur-md p-3.5 rounded-3xl border border-slate-200/80 shadow-2xs space-y-3">
+                    <div className="flex flex-col md:flex-row gap-3 items-stretch md:items-center justify-between">
+                      {/* Buscador minimalista */}
+                      <div className="relative flex-1">
+                        <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+                        <input
+                          type="text"
+                          value={reviewSearchText}
+                          onChange={(e) => setReviewSearchText(e.target.value)}
+                          placeholder="Buscar por cliente, comentario, empleada o # reserva..."
+                          className="w-full pl-9 pr-8 py-2 bg-slate-50 hover:bg-slate-100/70 focus:bg-white border border-slate-200/80 rounded-2xl text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-slate-900/10 transition-all placeholder:text-slate-400"
+                        />
+                        {reviewSearchText && (
+                          <button
+                            type="button"
+                            onClick={() => setReviewSearchText("")}
+                            className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 cursor-pointer text-xs"
+                          >
+                            <X className="w-3.5 h-3.5" />
+                          </button>
+                        )}
+                      </div>
+
+                      {/* Filtro de Empleada */}
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs font-bold text-slate-500 whitespace-nowrap hidden sm:inline">Colaborador:</span>
+                        <select
+                          value={reviewEmployeeFilter}
+                          onChange={(e) => setReviewEmployeeFilter(e.target.value)}
+                          className="px-3 py-2 bg-slate-50 hover:bg-slate-100 border border-slate-200/80 rounded-2xl text-xs font-bold text-slate-700 focus:outline-none focus:ring-2 focus:ring-slate-900/10 cursor-pointer"
+                        >
+                          <option value="ALL">👤 Todos los Colaboradores</option>
+                          {employees.map((emp) => (
+                            <option key={emp.id} value={emp.name}>
+                              {emp.name}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+
+                      {/* Segmented Controls por Estrellas */}
+                      <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-2xl overflow-x-auto">
+                        <button
+                          type="button"
+                          onClick={() => setReviewRatingFilter("ALL")}
+                          className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${
+                            reviewRatingFilter === "ALL"
+                              ? "bg-white text-slate-900 shadow-2xs"
+                              : "text-slate-500 hover:text-slate-800"
+                          }`}
+                        >
+                          Todas
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setReviewRatingFilter("5")}
+                          className={`px-2.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1 whitespace-nowrap ${
+                            reviewRatingFilter === "5"
+                              ? "bg-white text-amber-950 shadow-2xs"
+                              : "text-slate-500 hover:text-slate-800"
+                          }`}
+                        >
+                          <span>5</span>
+                          <Star className="w-3 h-3 fill-amber-400 text-amber-400" />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setReviewRatingFilter("4")}
+                          className={`px-2.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1 whitespace-nowrap ${
+                            reviewRatingFilter === "4"
+                              ? "bg-white text-amber-950 shadow-2xs"
+                              : "text-slate-500 hover:text-slate-800"
+                          }`}
+                        >
+                          <span>4</span>
+                          <Star className="w-3 h-3 fill-amber-400 text-amber-400" />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setReviewRatingFilter("3")}
+                          className={`px-2.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1 whitespace-nowrap ${
+                            reviewRatingFilter === "3"
+                              ? "bg-white text-amber-950 shadow-2xs"
+                              : "text-slate-500 hover:text-slate-800"
+                          }`}
+                        >
+                          <span>3</span>
+                          <Star className="w-3 h-3 fill-amber-400 text-amber-400" />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setReviewRatingFilter("LOW")}
+                          className={`px-2.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${
+                            reviewRatingFilter === "LOW"
+                              ? "bg-white text-rose-800 shadow-2xs"
+                              : "text-slate-500 hover:text-slate-800"
+                          }`}
+                        >
+                          ≤ 2★
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Grid de Tarjetas de Calificaciones (Apple Inspired Cards) */}
+                  {filteredCustomerReviews.length > 0 ? (
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4.5">
+                      {filteredCustomerReviews.map((rev) => {
+                        const dateObj = new Date(rev.createdAt);
+                        const formattedDate = !isNaN(dateObj.getTime())
+                          ? dateObj.toLocaleDateString("es-PY", {
+                              day: "numeric",
+                              month: "short",
+                              year: "numeric",
+                            })
+                          : rev.createdAt;
+
+                        return (
+                          <div
+                            key={rev.id}
+                            className="bg-white p-5 rounded-3xl border border-slate-200/80 shadow-xs hover:border-slate-300 hover:shadow-sm transition-all flex flex-col justify-between space-y-3.5"
+                          >
+                            <div className="space-y-3">
+                              {/* Top Bar: Cliente + Estrellas */}
+                              <div className="flex items-start justify-between gap-2">
+                                <div className="flex items-center gap-2.5">
+                                  {rev.customerImage ? (
+                                    <img
+                                      src={rev.customerImage}
+                                      alt={rev.customerName}
+                                      className="w-9 h-9 rounded-2xl object-cover border border-slate-200 shrink-0"
+                                    />
+                                  ) : (
+                                    <div className="w-9 h-9 rounded-2xl bg-gradient-to-tr from-slate-800 to-slate-600 text-white font-bold text-xs flex items-center justify-center shrink-0">
+                                      {rev.customerName.slice(0, 2).toUpperCase()}
+                                    </div>
+                                  )}
+                                  <div>
+                                    <h4 className="text-xs font-bold text-slate-900 leading-tight">
+                                      {rev.customerName}
+                                    </h4>
+                                    <p className="text-[10px] text-slate-400 mt-0.5">{formattedDate}</p>
+                                  </div>
+                                </div>
+
+                                {/* Star Score Badge */}
+                                <div className="flex items-center gap-1 px-2.5 py-1 bg-amber-50 rounded-xl border border-amber-200/80 text-amber-950 text-xs font-black shrink-0">
+                                  <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400 shrink-0" />
+                                  <span>{rev.rating}.0</span>
+                                </div>
+                              </div>
+
+                              {/* Colaboradora Asignada Chip */}
+                              <div className="flex items-center justify-between p-2.5 bg-slate-50/90 border border-slate-100 rounded-2xl">
+                                <div className="flex items-center gap-2 min-w-0">
+                                  {rev.cleanerImage ? (
+                                    <img
+                                      src={rev.cleanerImage}
+                                      alt={rev.cleanerName}
+                                      className="w-6 h-6 rounded-xl object-cover border border-slate-200 shrink-0"
+                                    />
+                                  ) : (
+                                    <div className="w-6 h-6 rounded-xl bg-electric-100 text-electric-700 font-bold text-[10px] flex items-center justify-center shrink-0">
+                                      {rev.cleanerName.slice(0, 2).toUpperCase()}
+                                    </div>
+                                  )}
+                                  <div className="truncate">
+                                    <p className="text-[11px] font-bold text-slate-900 truncate">{rev.cleanerName}</p>
+                                    <span className="text-[9px] text-emerald-700 font-bold inline-flex items-center gap-0.5">
+                                      <ShieldCheck className="w-2.5 h-2.5 text-emerald-600" />
+                                      <span>IPS Verificado</span>
+                                    </span>
+                                  </div>
+                                </div>
+
+                                {rev.bookingNumber && (
+                                  <span className="text-[10px] font-mono text-slate-500 bg-white px-2 py-0.5 rounded-lg border border-slate-200 shrink-0">
+                                    {rev.bookingNumber}
+                                  </span>
+                                )}
+                              </div>
+
+                              {/* Comentario / Opinión de Cliente */}
+                              <div className="p-3.5 bg-slate-50/60 rounded-2xl border border-slate-100 text-slate-800 text-xs leading-relaxed italic relative">
+                                <Quote className="w-3 h-3 text-slate-300 absolute top-2 right-2 rotate-180" />
+                                "{rev.comment}"
+                              </div>
+                            </div>
+
+                            {/* Footer de la tarjeta */}
+                            <div className="pt-2.5 border-t border-slate-100 flex items-center justify-between text-[10px] text-slate-400">
+                              <span className="font-medium truncate max-w-[180px]">{rev.serviceType}</span>
+                              <span className="inline-flex items-center gap-1 font-bold text-emerald-600">
+                                <CheckCircle2 className="w-3 h-3 text-emerald-600" />
+                                <span>Verificada</span>
+                              </span>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  ) : (
+                    /* Estado Vacío Apple Style */
+                    <div className="bg-white p-12 rounded-3xl border border-slate-200/80 text-center space-y-3">
+                      <div className="w-12 h-12 rounded-2xl bg-slate-100 text-slate-400 flex items-center justify-center mx-auto">
+                        <Star className="w-6 h-6 text-slate-400" />
+                      </div>
+                      <div className="space-y-1">
+                        <h4 className="text-sm font-bold text-slate-900">No se encontraron calificaciones</h4>
+                        <p className="text-xs text-slate-500 max-w-sm mx-auto">
+                          {reviewSearchText || reviewEmployeeFilter !== "ALL" || reviewRatingFilter !== "ALL"
+                            ? "No hay evaluaciones que coincidan con los filtros seleccionados."
+                            : "Aún no se han registrado calificaciones de clientes en el sistema."}
+                        </p>
+                      </div>
+                      {(reviewSearchText || reviewEmployeeFilter !== "ALL" || reviewRatingFilter !== "ALL") && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setReviewSearchText("");
+                            setReviewEmployeeFilter("ALL");
+                            setReviewRatingFilter("ALL");
+                          }}
+                          className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-xl transition-all cursor-pointer"
+                        >
+                          Limpiar filtros
+                        </button>
+                      )}
+                    </div>
+                  )}
                 </div>
               </div>
             )}
