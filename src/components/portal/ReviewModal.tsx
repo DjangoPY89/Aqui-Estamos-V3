@@ -45,6 +45,7 @@ export default function ReviewModal({
   if (!isOpen || !booking) return null;
 
   const assignedCleaner = (booking as any).employeeName || (booking as any).assignedTo || booking.assignedCleaner || "Profesional de Cuadrilla Aquí Estamos";
+  const assignedImage = (booking as any).employeeImage || (booking as any).cleanerImage;
   const hours = (booking as any).hours || booking.serviceHours || 4;
   const bookingNum = (booking as any).bookingNumber || booking.id.slice(-4);
 
@@ -59,10 +60,10 @@ export default function ReviewModal({
   const quickTags = [
     "⚡ Muy puntual",
     "✨ Limpieza impecable",
-    "🛡️ Trato amable y educado",
-    "🧼 Cuidado minucioso de objetos",
-    "👌 Dejó todo reluciente",
-    "🏠 Muy confiable",
+    "🤝 Muy respetuosa y amable",
+    "🧼 Detallista con rincones",
+    "🔒 100% de confianza",
+    "⏱️ Excelente ritmo de trabajo",
   ];
 
   const toggleTag = (tag: string) => {
@@ -138,9 +139,17 @@ export default function ReviewModal({
             {/* Tarjeta Destacada de la Empleada Asignada */}
             <div className="p-4 rounded-2xl bg-slate-900 text-white flex items-center justify-between gap-3 shadow-sm">
               <div className="flex items-center gap-3">
-                <div className="w-11 h-11 rounded-full bg-white/10 text-white flex items-center justify-center font-black text-base shrink-0 border border-white/20">
-                  {assignedCleaner.charAt(0).toUpperCase()}
-                </div>
+                {assignedImage ? (
+                  <img
+                    src={assignedImage}
+                    alt={assignedCleaner}
+                    className="w-11 h-11 rounded-full object-cover shrink-0 border border-white/30 shadow-xs"
+                  />
+                ) : (
+                  <div className="w-11 h-11 rounded-full bg-white/10 text-white flex items-center justify-center font-black text-base shrink-0 border border-white/20">
+                    {assignedCleaner.charAt(0).toUpperCase()}
+                  </div>
+                )}
                 <div>
                   <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">
                     Personal de Limpieza

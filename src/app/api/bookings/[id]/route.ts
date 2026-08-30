@@ -1,14 +1,48 @@
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
-import { deleteBooking, getBookingById, updateBooking } from "@/lib/db";
+import { deleteBooking, getBookingById, updateBooking, getAllEmployees } from "@/lib/db";
 import {
   supabaseDeleteBooking,
   supabaseGetBookingById,
   supabaseUpdateBooking,
+  supabaseGetAllEmployees,
 } from "@/lib/supabase-db";
 
 export const dynamic = "force-dynamic";
+
+async function enrichSingleBooking(booking: any) {
+  if (!booking) return null;
+  let cleaner: any = null;
+  if (booking.assignedCleaner) {
+    let employees: any[] = [];
+    try {
+      employees = await supabaseGetAllEmployees();
+    } catch (e) {
+      try {
+        employees = getAllEmployees();
+      } catch (e2) {}
+    }
+
+    const target = booking.assignedCleaner.trim().toLowerCase();
+    cleaner = employees.find((e) => 
+      (e.id && e.id.toLowerCase() === target) ||
+      (e.name && e.name.toLowerCase() === target) ||
+      (e.name && target.includes(e.name.toLowerCase())) ||
+      (e.name && e.name.toLowerCase().includes(target))
+    );
+  }
+
+  return {
+    ...booking,
+    employeeName: cleaner?.name || booking.assignedCleaner || null,
+    employeePhone: cleaner?.phone || null,
+    employeeImage: cleaner?.image || null,
+    employeeRating: cleaner?.rating !== undefined && cleaner?.rating !== null ? cleaner.rating : 5.0,
+    employeeZone: cleaner?.zone || null,
+    employeeIps: cleaner?.ipsVerified ?? true,
+  };
+}
 
 export async function GET(
   req: Request,
@@ -29,7 +63,8 @@ export async function GET(
     if (!booking) {
       return NextResponse.json({ error: "Reserva no encontrada." }, { status: 404 });
     }
-    return NextResponse.json({ booking });
+    const enriched = await enrichSingleBooking(booking);
+    return NextResponse.json({ booking: enriched });
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }

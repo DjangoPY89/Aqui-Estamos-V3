@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
-import { createBooking, getBookings, getUserByEmail, createUser, updateUserProfile } from "@/lib/db";
+import { createBooking, getBookings, getUserByEmail, createUser, updateUserProfile, getAllEmployees } from "@/lib/db";
 import {
   supabaseCreateBooking,
   supabaseCreateUser,
@@ -9,6 +9,7 @@ import {
   supabaseGetBookingsByUserId,
   supabaseGetUserByEmail,
   supabaseUpdateUser,
+  supabaseGetAllEmployees,
 } from "@/lib/supabase-db";
 import { calculatePricing } from "@/lib/pricing";
 import { generateBookingNumber } from "@/lib/utils";
@@ -16,6 +17,41 @@ import { sendNewBookingAdminNotification, sendBookingConfirmationToCustomer, sen
 import { checkDateAvailability } from "@/lib/availability";
 
 export const dynamic = "force-dynamic";
+
+async function enrichBookingsWithEmployees(bookings: any[]) {
+  if (!bookings || bookings.length === 0) return [];
+  let employees: any[] = [];
+  try {
+    employees = await supabaseGetAllEmployees();
+  } catch (e) {
+    try {
+      employees = getAllEmployees();
+    } catch (e2) {}
+  }
+
+  return bookings.map((b) => {
+    let cleaner: any = null;
+    if (b.assignedCleaner) {
+      const target = b.assignedCleaner.trim().toLowerCase();
+      cleaner = employees.find((e) => 
+        (e.id && e.id.toLowerCase() === target) ||
+        (e.name && e.name.toLowerCase() === target) ||
+        (e.name && target.includes(e.name.toLowerCase())) ||
+        (e.name && e.name.toLowerCase().includes(target))
+      );
+    }
+
+    return {
+      ...b,
+      employeeName: cleaner?.name || b.assignedCleaner || null,
+      employeePhone: cleaner?.phone || null,
+      employeeImage: cleaner?.image || null,
+      employeeRating: cleaner?.rating !== undefined && cleaner?.rating !== null ? cleaner.rating : 5.0,
+      employeeZone: cleaner?.zone || null,
+      employeeIps: cleaner?.ipsVerified ?? true,
+    };
+  });
+}
 
 export async function GET(req: Request) {
   try {
@@ -48,7 +84,8 @@ export async function GET(req: Request) {
           status,
         });
       }
-      return NextResponse.json({ bookings: clientBookings });
+      const enriched = await enrichBookingsWithEmployees(clientBookings);
+      return NextResponse.json({ bookings: enriched });
     }
 
     // Si el usuario es administrador (y no es consulta de portal propio), puede ver todas las reservas
@@ -65,7 +102,8 @@ export async function GET(req: Request) {
       } catch (e) {
         allBookings = getBookings({ status, email });
       }
-      return NextResponse.json({ bookings: allBookings });
+      const enriched = await enrichBookingsWithEmployees(allBookings);
+      return NextResponse.json({ bookings: enriched });
     }
 
     // Si es cliente autenticado, filtrar por su ID o email
@@ -89,7 +127,8 @@ export async function GET(req: Request) {
           status,
         });
       }
-      return NextResponse.json({ bookings: clientBookings });
+      const enriched = await enrichBookingsWithEmployees(clientBookings);
+      return NextResponse.json({ bookings: enriched });
     }
 
     // Si no está autenticado pero consulta con su email específico
@@ -104,7 +143,8 @@ export async function GET(req: Request) {
       } catch (e) {
         clientBookings = getBookings({ email, status });
       }
-      return NextResponse.json({ bookings: clientBookings });
+      const enriched = await enrichBookingsWithEmployees(clientBookings);
+      return NextResponse.json({ bookings: enriched });
     }
 
     return NextResponse.json({ bookings: [] });

@@ -95,6 +95,8 @@ export default function ActiveBookingsTab({
 
           const assignedName = (booking as any).employeeName || (booking as any).assignedTo || booking.assignedCleaner;
           const assignedPhone = (booking as any).employeePhone;
+          const assignedImage = (booking as any).employeeImage || (booking as any).cleanerImage;
+          const assignedRating = (booking as any).employeeRating || 5.0;
           const hours = (booking as any).hours || booking.serviceHours || 4;
           const price = (booking as any).totalPriceGs || booking.totalPrice || 0;
           const bookingNum = (booking as any).bookingNumber || booking.id.slice(-4);
@@ -154,10 +156,18 @@ export default function ActiveBookingsTab({
               {assignedName ? (
                 <div className="p-4 sm:p-5 rounded-2xl bg-slate-50/80 border border-slate-200/60 flex flex-col md:flex-row md:items-center justify-between gap-4">
                   <div className="flex items-center gap-3.5">
-                    <div className="relative">
-                      <div className="w-12 h-12 rounded-full bg-slate-900 text-white flex items-center justify-center font-black text-base shadow-xs">
-                        {assignedName.charAt(0)}
-                      </div>
+                    <div className="relative shrink-0">
+                      {assignedImage ? (
+                        <img
+                          src={assignedImage}
+                          alt={assignedName}
+                          className="w-12 h-12 rounded-full object-cover border border-slate-200 shadow-xs"
+                        />
+                      ) : (
+                        <div className="w-12 h-12 rounded-full bg-slate-900 text-white flex items-center justify-center font-black text-base shadow-xs">
+                          {assignedName.charAt(0)}
+                        </div>
+                      )}
                       <div className="absolute -bottom-1 -right-1 bg-emerald-500 text-white p-0.5 rounded-full border-2 border-white">
                         <ShieldCheck className="w-3 h-3" />
                       </div>
@@ -178,7 +188,7 @@ export default function ActiveBookingsTab({
                         <span className="text-slate-300">•</span>
                         <span className="text-amber-700 font-bold flex items-center gap-0.5">
                           <Star className="w-3 h-3 fill-amber-400 text-amber-400" />
-                          <span>5.0 / 5.0</span>
+                          <span>{assignedRating.toFixed(1)} / 5.0</span>
                         </span>
                       </p>
                     </div>

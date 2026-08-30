@@ -34,6 +34,12 @@ export interface Booking {
   paymentStatus: PaymentStatus;
   status: BookingStatus;
   assignedCleaner?: string | null;
+  employeeName?: string | null;
+  employeeImage?: string | null;
+  employeePhone?: string | null;
+  employeeRating?: number | null;
+  employeeZone?: string | null;
+  employeeIps?: boolean | null;
   notes?: string | null;
   rating?: number | null;
   reviewComment?: string | null;

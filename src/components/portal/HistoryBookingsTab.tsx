@@ -62,6 +62,7 @@ export default function HistoryBookingsTab({
         {completedList.map((booking) => {
           const isCancelled = booking.status === "CANCELLED";
           const assignedName = (booking as any).employeeName || (booking as any).assignedTo || booking.assignedCleaner;
+          const assignedImage = (booking as any).employeeImage || (booking as any).cleanerImage;
           const hasReview = Boolean(
             ((booking as any).rating && Number((booking as any).rating) > 0) ||
             (booking as any).reviewComment ||
@@ -118,9 +119,22 @@ export default function HistoryBookingsTab({
 
                 <div className="space-y-0.5">
                   <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Personal Asignado</span>
-                  <p className="font-semibold text-slate-800">
-                    {assignedName ? `${assignedName} (IPS)` : "Cuadrilla Oficial"}
-                  </p>
+                  <div className="flex items-center gap-2 pt-0.5">
+                    {assignedImage ? (
+                      <img
+                        src={assignedImage}
+                        alt={assignedName || "Personal"}
+                        className="w-6 h-6 rounded-full object-cover border border-slate-200 shadow-2xs shrink-0"
+                      />
+                    ) : assignedName ? (
+                      <div className="w-6 h-6 rounded-full bg-slate-800 text-white flex items-center justify-center text-[10px] font-black shrink-0">
+                        {assignedName.charAt(0)}
+                      </div>
+                    ) : null}
+                    <p className="font-semibold text-slate-800 truncate">
+                      {assignedName ? `${assignedName} (IPS)` : "Cuadrilla Oficial"}
+                    </p>
+                  </div>
                 </div>
 
                 <div className="space-y-0.5">
