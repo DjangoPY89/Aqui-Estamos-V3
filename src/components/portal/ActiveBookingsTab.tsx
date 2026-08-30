@@ -327,14 +327,10 @@ export default function ActiveBookingsTab({
                     <span>Ver Recibo Digital</span>
                   </button>
 
-                  <button
-                    type="button"
-                    onClick={() => onOpenInvoice(booking)}
-                    className="inline-flex items-center gap-1.5 px-4 py-2.5 bg-purple-50 hover:bg-purple-100 text-purple-700 rounded-xl text-xs font-bold transition-all border border-purple-200/80 shadow-2xs active:scale-98"
-                  >
-                    <FileText className="w-3.5 h-3.5" />
-                    <span>Factura Legal KUDE (SIFEN)</span>
-                  </button>
+                  <span className="inline-flex items-center gap-1.5 px-3 py-2 bg-slate-50 text-slate-500 rounded-xl text-[11px] font-semibold border border-slate-200">
+                    <FileText className="w-3.5 h-3.5 text-slate-400" />
+                    <span>Factura Legal: Al finalizar</span>
+                  </span>
                 </div>
 
                 <a

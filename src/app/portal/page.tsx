@@ -440,7 +440,7 @@ export default function CustomerPortalPage() {
     b.status === "COMPLETED" || b.status === "CANCELLED"
   ).length;
 
-  const invoicesCount = bookings.filter((b) => b.status !== "CANCELLED").length;
+  const invoicesCount = bookings.filter((b) => b.status === "COMPLETED").length;
 
   return (
     <main className="min-h-screen bg-[#F8FAFC] pb-16">

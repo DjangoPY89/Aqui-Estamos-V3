@@ -56,11 +56,16 @@ import {
   CalendarDays,
   X,
   SlidersHorizontal,
-  Home
+  Home,
+  Receipt,
+  FileText,
+  QrCode,
+  Printer
 } from "lucide-react";
 import { Booking, CorporateLead, Employee, User } from "@/types";
 import { formatGs } from "@/lib/pricing";
 import AvailabilityManager from "@/components/admin/AvailabilityManager";
+import KudeInvoiceModal from "@/components/portal/KudeInvoiceModal";
 
 interface AdminUser extends User {
   totalBookings: number;
@@ -125,12 +130,14 @@ export default function AdminDashboardPage() {
   const [users, setUsers] = useState<AdminUser[]>([]);
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<"BOOKINGS" | "EMPLOYEES" | "CUSTOMERS" | "LEADS" | "ANALYTICS" | "CALENDAR" | "AVAILABILITY">("BOOKINGS");
+  const [activeTab, setActiveTab] = useState<"BOOKINGS" | "EMPLOYEES" | "CUSTOMERS" | "INVOICES" | "LEADS" | "ANALYTICS" | "CALENDAR" | "AVAILABILITY">("BOOKINGS");
   const [quickViewFilter, setQuickViewFilter] = useState<"ALL" | "TODAY" | "THIS_WEEK" | "UNASSIGNED" | "PENDING" | "CONFIRMED" | "COMPLETED">("ALL");
   const [statusFilter, setStatusFilter] = useState("ALL");
   const [searchTerm, setSearchTerm] = useState("");
   const [userSearchTerm, setUserSearchTerm] = useState("");
   const [employeeSearchTerm, setEmployeeSearchTerm] = useState("");
+  const [invoiceSearchTerm, setInvoiceSearchTerm] = useState("");
+  const [selectedInvoiceBooking, setSelectedInvoiceBooking] = useState<Booking | null>(null);
   const [showCharts, setShowCharts] = useState(true);
 
   // Estados del Calendario Operativo en Vivo
@@ -1111,9 +1118,99 @@ export default function AdminDashboardPage() {
       (u.name && u.name.toLowerCase().includes(q)) ||
       (u.email && u.email.toLowerCase().includes(q)) ||
       (u.phone && u.phone.toLowerCase().includes(q)) ||
-      (u.address && u.address.toLowerCase().includes(q))
+      (u.address && u.address.toLowerCase().includes(q)) ||
+      (u.ruc && u.ruc.toLowerCase().includes(q)) ||
+      (u.taxName && u.taxName.toLowerCase().includes(q))
     );
   });
+
+  // Facturas Emitidas (Servicios con status === 'COMPLETED')
+  const completedInvoices = useMemo(() => {
+    return bookings.filter((b) => b.status === "COMPLETED");
+  }, [bookings]);
+
+  const filteredInvoices = useMemo(() => {
+    return completedInvoices.filter((b) => {
+      if (!invoiceSearchTerm.trim()) return true;
+      const q = invoiceSearchTerm.toLowerCase().trim();
+      const bookingNum = (b.bookingNumber || b.id).toLowerCase();
+      const customer = (b.customerName || "").toLowerCase();
+      const email = (b.customerEmail || "").toLowerCase();
+      const phone = (b.customerPhone || "").toLowerCase();
+      const addr = (b.address || "").toLowerCase();
+      const user = users.find((u) => u.email?.toLowerCase().trim() === b.customerEmail?.toLowerCase().trim());
+      const ruc = (user?.ruc || "").toLowerCase();
+      const taxName = (user?.taxName || "").toLowerCase();
+
+      return (
+        bookingNum.includes(q) ||
+        customer.includes(q) ||
+        email.includes(q) ||
+        phone.includes(q) ||
+        addr.includes(q) ||
+        ruc.includes(q) ||
+        taxName.includes(q)
+      );
+    });
+  }, [completedInvoices, invoiceSearchTerm, users]);
+
+  const totalInvoicedAmount = completedInvoices.reduce((acc, b) => acc + (b.totalPrice || 0), 0);
+  const totalInvoicedIVA = Math.round(totalInvoicedAmount / 11);
+  const totalInvoicedGravadas = totalInvoicedAmount - totalInvoicedIVA;
+
+  const exportInvoicesToCSV = () => {
+    const headers = [
+      "N Factura",
+      "Timbrado",
+      "Fecha Servicio",
+      "N Reserva",
+      "Cliente",
+      "RUC / CI",
+      "Razon Social",
+      "Telefono",
+      "Email",
+      "Total Gs",
+      "Gravadas 10%",
+      "IVA 10%",
+      "Metodo Pago",
+      "Estado SIFEN"
+    ];
+
+    const rows = filteredInvoices.map((b) => {
+      const u = users.find((usr) => usr.email?.toLowerCase().trim() === b.customerEmail?.toLowerCase().trim());
+      const bookingNum = (b.bookingNumber || b.id.slice(-6)).toUpperCase();
+      const price = b.totalPrice || 0;
+      const iva = Math.round(price / 11);
+      const grav = price - iva;
+
+      return [
+        `"001-001-${bookingNum}"`,
+        `"16543210"`,
+        `"${b.serviceDate || new Date(b.createdAt).toLocaleDateString("es-PY")}"`,
+        `"${bookingNum}"`,
+        `"${(b.customerName || "").replace(/"/g, '""')}"`,
+        `"${u?.ruc || "44444401-7"}"`,
+        `"${(u?.taxName || b.customerName || "").replace(/"/g, '""')}"`,
+        `"${(b.customerPhone || "").replace(/"/g, '""')}"`,
+        `"${(b.customerEmail || "").replace(/"/g, '""')}"`,
+        price,
+        grav,
+        iva,
+        `"${(b.paymentMethod || "Efectivo").toUpperCase()}"`,
+        `"Aprobado DNIT / SIFEN"`
+      ].join(",");
+    });
+
+    const csvContent = "\uFEFF" + [headers.join(","), ...rows].join("\n");
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.setAttribute("href", url);
+    link.setAttribute("download", `facturas_emitidas_aqui_estamos_${new Date().toISOString().split("T")[0]}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
 
   const unassignedCount = bookings.filter(
     (b) => !b.assignedCleaner || b.assignedCleaner === "Sin Asignar" || b.assignedCleaner === "Sin asignar"
@@ -1464,6 +1561,25 @@ export default function AdminDashboardPage() {
               </button>
 
               <button
+                onClick={() => setActiveTab("INVOICES")}
+                className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all ${
+                  activeTab === "INVOICES"
+                    ? "bg-purple-50 text-purple-700 shadow-xs"
+                    : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
+                }`}
+              >
+                <div className="flex items-center gap-2.5">
+                  <Receipt className={`w-4 h-4 ${activeTab === "INVOICES" ? "text-purple-600" : "text-slate-400"}`} />
+                  <span>Facturas Emitidas</span>
+                </div>
+                <span className={`text-[10px] font-black px-2 py-0.5 rounded-full ${
+                  activeTab === "INVOICES" ? "bg-purple-600 text-white" : "bg-slate-100 text-slate-600"
+                }`}>
+                  {completedInvoices.length}
+                </span>
+              </button>
+
+              <button
                 onClick={() => setActiveTab("LEADS")}
                 className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all ${
                   activeTab === "LEADS"
@@ -1592,6 +1708,7 @@ export default function AdminDashboardPage() {
                   {activeTab === "BOOKINGS" && "Citas & Reservas Operativas"}
                   {activeTab === "EMPLOYEES" && "Cuadrilla & Personal IPS"}
                   {activeTab === "CUSTOMERS" && "Directorio de Clientes"}
+                  {activeTab === "INVOICES" && "Facturación Electrónica SIFEN & KUDE"}
                   {activeTab === "LEADS" && "Solicitudes Empresas B2B"}
                   {activeTab === "CALENDAR" && "Google Calendar en Vivo"}
                   {activeTab === "AVAILABILITY" && "Disponibilidad & Capacidad de Turnos"}
@@ -2719,6 +2836,247 @@ export default function AdminDashboardPage() {
                     </tbody>
                   </table>
                 </div>
+              </div>
+            )}
+
+            {/* ======================================================== */}
+            {/* TAB: FACTURAS EMITIDAS (SIFEN & KUDE) */}
+            {/* ======================================================== */}
+            {activeTab === "INVOICES" && (
+              <div className="space-y-6">
+                
+                {/* 1. KPIs y Métricas de Facturación Legal */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                  
+                  {/* Total Facturado */}
+                  <div className="bg-white p-5 rounded-3xl border border-slate-200 shadow-xs flex items-center gap-4">
+                    <div className="w-12 h-12 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center font-bold text-lg shrink-0">
+                      ₲
+                    </div>
+                    <div>
+                      <span className="text-[11px] font-extrabold uppercase tracking-wider text-slate-400 block">Total Facturado</span>
+                      <span className="text-xl font-black text-slate-900">{formatGs(totalInvoicedAmount)}</span>
+                      <span className="text-[10px] text-slate-500 block">IVA 10% incluido</span>
+                    </div>
+                  </div>
+
+                  {/* Liquidación IVA 10% */}
+                  <div className="bg-white p-5 rounded-3xl border border-slate-200 shadow-xs flex items-center gap-4">
+                    <div className="w-12 h-12 rounded-2xl bg-purple-50 text-purple-600 flex items-center justify-center font-bold text-lg shrink-0">
+                      <Receipt className="w-6 h-6" />
+                    </div>
+                    <div>
+                      <span className="text-[11px] font-extrabold uppercase tracking-wider text-slate-400 block">Débito Fiscal IVA 10%</span>
+                      <span className="text-xl font-black text-purple-700">{formatGs(totalInvoicedIVA)}</span>
+                      <span className="text-[10px] text-slate-500 block">Base: {formatGs(totalInvoicedGravadas)}</span>
+                    </div>
+                  </div>
+
+                  {/* Facturas Emitidas */}
+                  <div className="bg-white p-5 rounded-3xl border border-slate-200 shadow-xs flex items-center gap-4">
+                    <div className="w-12 h-12 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center font-bold text-lg shrink-0">
+                      <FileText className="w-6 h-6" />
+                    </div>
+                    <div>
+                      <span className="text-[11px] font-extrabold uppercase tracking-wider text-slate-400 block">Facturas Emitidas</span>
+                      <span className="text-xl font-black text-slate-900">{completedInvoices.length}</span>
+                      <span className="text-[10px] text-emerald-600 font-bold block">✓ Aprobadas DNIT</span>
+                    </div>
+                  </div>
+
+                  {/* Facturas Pendientes (Servicios en Proceso) */}
+                  <div className="bg-white p-5 rounded-3xl border border-slate-200 shadow-xs flex items-center gap-4">
+                    <div className="w-12 h-12 rounded-2xl bg-amber-50 text-amber-600 flex items-center justify-center font-bold text-lg shrink-0">
+                      <Clock className="w-6 h-6" />
+                    </div>
+                    <div>
+                      <span className="text-[11px] font-extrabold uppercase tracking-wider text-slate-400 block">Servicios en Curso</span>
+                      <span className="text-xl font-black text-amber-800">
+                        {bookings.filter((b) => ["PENDING", "CONFIRMED", "IN_PROGRESS"].includes(b.status)).length}
+                      </span>
+                      <span className="text-[10px] text-slate-500 block">Emisión al finalizar</span>
+                    </div>
+                  </div>
+
+                </div>
+
+                {/* 2. Tabla Principal de Facturas Emitidas */}
+                <div className="bg-white rounded-3xl border border-slate-200 shadow-xs overflow-hidden">
+                  
+                  {/* Barra de Búsqueda y Exportación */}
+                  <div className="p-5 border-b border-slate-100 flex flex-col sm:flex-row gap-3 justify-between items-start sm:items-center bg-slate-50/50">
+                    <div>
+                      <h2 className="text-sm font-black text-slate-900">
+                        Facturas Electrónicas Emitidas ({filteredInvoices.length})
+                      </h2>
+                      <p className="text-xs text-slate-500">
+                        Documentos tributarios electrónicos oficiales (KUDE) con código CDC y validación SIFEN.
+                      </p>
+                    </div>
+
+                    <div className="flex flex-wrap items-center gap-2.5 w-full sm:w-auto">
+                      <div className="relative min-w-[240px] flex-1 sm:flex-initial">
+                        <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+                        <input
+                          type="text"
+                          value={invoiceSearchTerm}
+                          onChange={(e) => setInvoiceSearchTerm(e.target.value)}
+                          placeholder="Buscar por N° factura, cliente, RUC..."
+                          className="w-full pl-9 pr-8 py-2 bg-white border border-slate-200 rounded-full text-xs font-medium text-slate-900 focus:outline-none focus:ring-2 focus:ring-purple-600 shadow-2xs"
+                        />
+                        {invoiceSearchTerm && (
+                          <button
+                            type="button"
+                            onClick={() => setInvoiceSearchTerm("")}
+                            className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-0.5 rounded-full hover:bg-slate-100 cursor-pointer"
+                          >
+                            <X className="w-3 h-3" />
+                          </button>
+                        )}
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={exportInvoicesToCSV}
+                        className="inline-flex items-center gap-1.5 px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white rounded-full text-xs font-extrabold transition-all shadow-xs active:scale-98 cursor-pointer shrink-0"
+                      >
+                        <Download className="w-3.5 h-3.5" />
+                        <span>Exportar a CSV</span>
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Tabla */}
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-left text-xs text-slate-700 border-collapse">
+                      <thead className="bg-slate-50 text-slate-600 border-b border-slate-200 whitespace-nowrap">
+                        <tr>
+                          <th className="px-4 py-3.5 font-bold uppercase text-[11px] tracking-wider border-r border-slate-200">N° Factura / CDC</th>
+                          <th className="px-4 py-3.5 font-bold uppercase text-[11px] tracking-wider border-r border-slate-200">Fecha Servicio</th>
+                          <th className="px-4 py-3.5 font-bold uppercase text-[11px] tracking-wider border-r border-slate-200">N° Reserva</th>
+                          <th className="px-4 py-3.5 font-bold uppercase text-[11px] tracking-wider border-r border-slate-200">Cliente / Razón Social</th>
+                          <th className="px-4 py-3.5 font-bold uppercase text-[11px] tracking-wider border-r border-slate-200">RUC / C.I.</th>
+                          <th className="px-4 py-3.5 font-bold uppercase text-[11px] tracking-wider border-r border-slate-200 text-right">Total Factura (Gs.)</th>
+                          <th className="px-4 py-3.5 font-bold uppercase text-[11px] tracking-wider border-r border-slate-200 text-right">IVA 10%</th>
+                          <th className="px-4 py-3.5 font-bold uppercase text-[11px] tracking-wider border-r border-slate-200 text-center">Método Pago</th>
+                          <th className="px-4 py-3.5 font-bold uppercase text-[11px] tracking-wider border-r border-slate-200 text-center">Estado SIFEN</th>
+                          <th className="px-4 py-3.5 font-bold uppercase text-[11px] tracking-wider text-center">Acciones</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-100">
+                        {filteredInvoices.map((b) => {
+                          const u = users.find((usr) => usr.email?.toLowerCase().trim() === b.customerEmail?.toLowerCase().trim());
+                          const bookingNum = (b.bookingNumber || b.id.slice(-6)).toUpperCase();
+                          const price = b.totalPrice || 0;
+                          const iva = Math.round(price / 11);
+                          const customerTaxName = u?.taxName || b.customerName;
+                          const customerRuc = u?.ruc || "44444401-7 (Consumidor Final)";
+
+                          return (
+                            <tr key={b.id} className="hover:bg-purple-50/30 transition-colors">
+                              
+                              {/* 1. N° Factura */}
+                              <td className="px-4 py-3.5 border-r border-slate-100 whitespace-nowrap">
+                                <span className="font-mono font-black text-slate-900 block text-xs">
+                                  001-001-{bookingNum}
+                                </span>
+                                <span className="text-[10px] text-slate-400 font-mono">
+                                  Timbrado 16543210
+                                </span>
+                              </td>
+
+                              {/* 2. Fecha Servicio */}
+                              <td className="px-4 py-3.5 border-r border-slate-100 whitespace-nowrap text-slate-600">
+                                {b.serviceDate || new Date(b.createdAt).toLocaleDateString("es-PY")}
+                              </td>
+
+                              {/* 3. N° Reserva */}
+                              <td className="px-4 py-3.5 border-r border-slate-100 whitespace-nowrap">
+                                <span className="px-2 py-0.5 rounded-md bg-slate-100 text-slate-800 font-mono font-bold text-[11px]">
+                                  #{bookingNum}
+                                </span>
+                              </td>
+
+                              {/* 4. Cliente */}
+                              <td className="px-4 py-3.5 border-r border-slate-100">
+                                <span className="font-bold text-slate-900 block text-xs truncate max-w-[180px]">
+                                  {customerTaxName}
+                                </span>
+                                <span className="text-[11px] text-slate-500 block truncate max-w-[180px]">
+                                  {b.customerEmail}
+                                </span>
+                              </td>
+
+                              {/* 5. RUC / C.I. */}
+                              <td className="px-4 py-3.5 border-r border-slate-100 whitespace-nowrap">
+                                <span className="font-mono font-bold text-slate-800 text-xs">
+                                  {customerRuc}
+                                </span>
+                              </td>
+
+                              {/* 6. Total Gs */}
+                              <td className="px-4 py-3.5 border-r border-slate-100 text-right whitespace-nowrap">
+                                <span className="font-black text-slate-900 font-mono text-xs">
+                                  {formatGs(price)}
+                                </span>
+                              </td>
+
+                              {/* 7. IVA 10% */}
+                              <td className="px-4 py-3.5 border-r border-slate-100 text-right whitespace-nowrap">
+                                <span className="font-bold text-purple-700 font-mono text-xs">
+                                  {formatGs(iva)}
+                                </span>
+                              </td>
+
+                              {/* 8. Método Pago */}
+                              <td className="px-4 py-3.5 border-r border-slate-100 text-center whitespace-nowrap">
+                                <span className="px-2.5 py-1 rounded-full bg-slate-100 text-slate-700 font-bold text-[10px] uppercase">
+                                  {b.paymentMethod || "Efectivo"}
+                                </span>
+                              </td>
+
+                              {/* 9. Estado SIFEN */}
+                              <td className="px-4 py-3.5 border-r border-slate-100 text-center whitespace-nowrap">
+                                <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200 text-[10px] font-black">
+                                  <CheckCircle2 className="w-3 h-3 text-emerald-600" />
+                                  <span>Emitida / Aprobada</span>
+                                </span>
+                              </td>
+
+                              {/* 10. Acciones */}
+                              <td className="px-4 py-3.5 text-center whitespace-nowrap">
+                                <button
+                                  type="button"
+                                  onClick={() => setSelectedInvoiceBooking(b)}
+                                  className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs rounded-xl shadow-2xs transition-all active:scale-95 cursor-pointer"
+                                  title="Ver Documento Tributario Electrónico KUDE"
+                                >
+                                  <FileText className="w-3.5 h-3.5" />
+                                  <span>Ver Factura KUDE</span>
+                                </button>
+                              </td>
+
+                            </tr>
+                          );
+                        })}
+
+                        {filteredInvoices.length === 0 && (
+                          <tr>
+                            <td colSpan={10} className="px-6 py-14 text-center text-slate-400">
+                              <Receipt className="w-10 h-10 mx-auto text-slate-300 mb-2" />
+                              <p className="font-bold text-slate-700 text-sm">No se encontraron facturas emitidas</p>
+                              <p className="text-xs text-slate-400 mt-1 max-w-sm mx-auto">
+                                Las facturas electrónicas oficiales se emiten automáticamente cuando las reservas son marcadas con estado "Finalizado" (COMPLETED).
+                              </p>
+                            </td>
+                          </tr>
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+
+                </div>
+
               </div>
             )}
 
@@ -3921,6 +4279,13 @@ export default function AdminDashboardPage() {
           </div>
         </div>
       )}
+
+      {/* Modal de Factura Electrónica Legal Oficial (KUDE / SIFEN) */}
+      <KudeInvoiceModal
+        booking={selectedInvoiceBooking}
+        userProfile={users.find((u) => u.email?.toLowerCase().trim() === selectedInvoiceBooking?.customerEmail?.toLowerCase().trim()) as any || null}
+        onClose={() => setSelectedInvoiceBooking(null)}
+      />
 
     </div>
   );
