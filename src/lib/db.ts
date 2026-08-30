@@ -625,15 +625,26 @@ export function seedInitialData() {
 export function getAllEmployees(): Employee[] {
   const store = getMemoryStore();
   return store.employees.map((emp) => {
-    const activeCount = store.bookings.filter(
-      (b) => b.assignedCleaner?.includes(emp.name) && ["PENDING", "CONFIRMED", "IN_PROGRESS"].includes(b.status)
+    const empBookings = store.bookings.filter((b) =>
+      (b.assignedCleaner && (
+        b.assignedCleaner.toLowerCase().includes(emp.name.toLowerCase()) ||
+        emp.name.toLowerCase().includes(b.assignedCleaner.toLowerCase())
+      ))
+    );
+    const activeCount = empBookings.filter(
+      (b) => ["PENDING", "CONFIRMED", "IN_PROGRESS"].includes(b.status)
     ).length;
-    const completedCount = store.bookings.filter(
-      (b) => b.assignedCleaner?.includes(emp.name) && b.status === "COMPLETED"
+    const completedCount = empBookings.filter(
+      (b) => b.status === "COMPLETED"
     ).length;
+
+    const ratedBookings = empBookings.filter((b) => (b as any).rating && (b as any).rating > 0);
+    const sumRating = ratedBookings.reduce((sum, b) => sum + Number((b as any).rating), 0);
+    const dynamicRating = ratedBookings.length > 0 ? Number((sumRating / ratedBookings.length).toFixed(1)) : (emp.rating || 5.0);
 
     return {
       ...emp,
+      rating: dynamicRating,
       activeBookingsCount: activeCount,
       completedBookingsCount: completedCount,
     };
@@ -685,6 +696,8 @@ export function updateEmployee(
     ci: string;
     phone: string;
     email: string;
+    image: string | null;
+    rating: number;
     zone: string;
     ipsVerified: boolean;
     status: 'ACTIVE' | 'INACTIVE' | 'ON_LEAVE';

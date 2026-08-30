@@ -35,6 +35,8 @@ export interface Booking {
   status: BookingStatus;
   assignedCleaner?: string | null;
   notes?: string | null;
+  rating?: number | null;
+  reviewComment?: string | null;
   createdAt: string;
   updatedAt: string;
 }
