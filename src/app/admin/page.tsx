@@ -67,6 +67,45 @@ interface AdminUser extends User {
   totalSpentGs: number;
 }
 
+export type BookingColumnId = 
+  | "customerName"
+  | "customerPhone"
+  | "serviceHours"
+  | "extras"
+  | "totalPrice"
+  | "serviceDate"
+  | "serviceTime"
+  | "address"
+  | "map"
+  | "frequency"
+  | "assignedCleaner"
+  | "whatsapp"
+  | "status"
+  | "actions";
+
+export interface BookingColumnConfig {
+  id: BookingColumnId;
+  label: string;
+  defaultVisible: boolean;
+}
+
+const ALL_BOOKING_COLUMNS: BookingColumnConfig[] = [
+  { id: "customerName", label: "Cliente / N° Reserva", defaultVisible: true },
+  { id: "customerPhone", label: "Teléfono", defaultVisible: true },
+  { id: "serviceHours", label: "Horas", defaultVisible: true },
+  { id: "extras", label: "Extras", defaultVisible: true },
+  { id: "totalPrice", label: "Total", defaultVisible: true },
+  { id: "serviceDate", label: "Fecha Servicio", defaultVisible: true },
+  { id: "serviceTime", label: "Hora", defaultVisible: true },
+  { id: "address", label: "Dirección", defaultVisible: true },
+  { id: "map", label: "Mapa / GPS", defaultVisible: true },
+  { id: "frequency", label: "Frecuencia", defaultVisible: true },
+  { id: "assignedCleaner", label: "Empleado Asignado", defaultVisible: true },
+  { id: "whatsapp", label: "Enviar WhatsApp", defaultVisible: true },
+  { id: "status", label: "Estatus", defaultVisible: true },
+  { id: "actions", label: "Acciones", defaultVisible: true },
+];
+
 export default function AdminDashboardPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
@@ -148,6 +187,52 @@ export default function AdminDashboardPage() {
   const [modalNotes, setModalNotes] = useState("");
   const [isSaving, setIsSaving] = useState(false);
 
+  // Estado de Selector de Columnas Visibles
+  const [visibleColumns, setVisibleColumns] = useState<Record<BookingColumnId, boolean>>(() => {
+    const initial: Record<string, boolean> = {};
+    ALL_BOOKING_COLUMNS.forEach((c) => { initial[c.id] = c.defaultVisible; });
+    if (typeof window !== "undefined") {
+      try {
+        const saved = localStorage.getItem("admin_bookings_visible_cols");
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          return { ...initial, ...parsed };
+        }
+      } catch (e) {}
+    }
+    return initial as Record<BookingColumnId, boolean>;
+  });
+
+  const [showColumnMenu, setShowColumnMenu] = useState(false);
+
+  const toggleColumn = (colId: BookingColumnId) => {
+    setVisibleColumns((prev) => {
+      const updated = { ...prev, [colId]: !prev[colId] };
+      try {
+        localStorage.setItem("admin_bookings_visible_cols", JSON.stringify(updated));
+      } catch (e) {}
+      return updated;
+    });
+  };
+
+  const showAllColumns = () => {
+    const updated: Record<string, boolean> = {};
+    ALL_BOOKING_COLUMNS.forEach((c) => { updated[c.id] = true; });
+    setVisibleColumns(updated as Record<BookingColumnId, boolean>);
+    try {
+      localStorage.setItem("admin_bookings_visible_cols", JSON.stringify(updated));
+    } catch (e) {}
+  };
+
+  const resetDefaultColumns = () => {
+    const updated: Record<string, boolean> = {};
+    ALL_BOOKING_COLUMNS.forEach((c) => { updated[c.id] = c.defaultVisible; });
+    setVisibleColumns(updated as Record<BookingColumnId, boolean>);
+    try {
+      localStorage.setItem("admin_bookings_visible_cols", JSON.stringify(updated));
+    } catch (e) {}
+  };
+
   // Modal para agregar nuevo empleado
   const [isCreatingEmployee, setIsCreatingEmployee] = useState(false);
   const [newEmpName, setNewEmpName] = useState("");
@@ -158,11 +243,75 @@ export default function AdminDashboardPage() {
   const [newEmpIps, setNewEmpIps] = useState(true);
   const [isSubmittingEmp, setIsSubmittingEmp] = useState(false);
 
+  // Modal para editar empleado existente
+  const [editingEmployee, setEditingEmployee] = useState<Employee | null>(null);
+  const [empEditName, setEmpEditName] = useState("");
+  const [empEditCi, setEmpEditCi] = useState("");
+  const [empEditPhone, setEmpEditPhone] = useState("");
+  const [empEditEmail, setEmpEditEmail] = useState("");
+  const [empEditZone, setEmpEditZone] = useState("");
+  const [empEditStatus, setEmpEditStatus] = useState<Employee["status"]>("ACTIVE");
+  const [empEditIps, setEmpEditIps] = useState(true);
+  const [isSavingEmp, setIsSavingEmp] = useState(false);
+
+  const handleOpenEditEmployee = (emp: Employee) => {
+    setEditingEmployee(emp);
+    setEmpEditName(emp.name || "");
+    setEmpEditCi(emp.ci || "");
+    setEmpEditPhone(emp.phone || "");
+    setEmpEditEmail(emp.email || "");
+    setEmpEditZone(emp.zone || "Asunción (Villa Morra / Ykua Satî)");
+    setEmpEditStatus(emp.status || "ACTIVE");
+    setEmpEditIps(Boolean(emp.ipsVerified));
+  };
+
+  const handleSaveEmployee = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingEmployee) return;
+    if (!empEditName.trim() || !empEditPhone.trim()) {
+      alert("Nombre y teléfono son campos obligatorios.");
+      return;
+    }
+    setIsSavingEmp(true);
+    try {
+      const res = await fetch("/api/admin/employees", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          id: editingEmployee.id,
+          name: empEditName.trim(),
+          ci: empEditCi.trim(),
+          phone: empEditPhone.trim(),
+          email: empEditEmail.trim(),
+          zone: empEditZone.trim(),
+          status: empEditStatus,
+          ipsVerified: empEditIps,
+        }),
+      });
+
+      if (res.ok) {
+        showNotification(`✓ Datos de ${empEditName} actualizados exitosamente.`);
+        setEditingEmployee(null);
+        loadData();
+      } else {
+        const data = await res.json();
+        alert(data.error || "Error al actualizar empleado.");
+      }
+    } catch (err) {
+      console.error("Error al guardar empleado:", err);
+      alert("Error de conexión al actualizar empleado.");
+    } finally {
+      setIsSavingEmp(false);
+    }
+  };
+
   // Modal para editar dirección y datos del cliente
   const [editingCustomer, setEditingCustomer] = useState<AdminUser | null>(null);
   const [customerEditName, setCustomerEditName] = useState("");
   const [customerEditPhone, setCustomerEditPhone] = useState("");
   const [customerEditAddress, setCustomerEditAddress] = useState("");
+  const [customerEditLat, setCustomerEditLat] = useState<string>("");
+  const [customerEditLng, setCustomerEditLng] = useState<string>("");
   const [customerEditRuc, setCustomerEditRuc] = useState("");
   const [customerEditTaxName, setCustomerEditTaxName] = useState("");
   const [isSavingCustomer, setIsSavingCustomer] = useState(false);
@@ -172,6 +321,8 @@ export default function AdminDashboardPage() {
     setCustomerEditName(u.name || "");
     setCustomerEditPhone(u.phone || "");
     setCustomerEditAddress(u.address || "");
+    setCustomerEditLat(u.latitude !== undefined && u.latitude !== null ? String(u.latitude) : "");
+    setCustomerEditLng(u.longitude !== undefined && u.longitude !== null ? String(u.longitude) : "");
     setCustomerEditRuc((u as any).ruc || "");
     setCustomerEditTaxName((u as any).taxName || "");
   };
@@ -182,6 +333,9 @@ export default function AdminDashboardPage() {
 
     setIsSavingCustomer(true);
     try {
+      const latNum = customerEditLat.trim() ? parseFloat(customerEditLat.trim()) : null;
+      const lngNum = customerEditLng.trim() ? parseFloat(customerEditLng.trim()) : null;
+
       const res = await fetch("/api/admin/users", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
@@ -190,13 +344,15 @@ export default function AdminDashboardPage() {
           name: customerEditName.trim(),
           phone: customerEditPhone.trim(),
           address: customerEditAddress.trim(),
+          latitude: !isNaN(Number(latNum)) ? latNum : null,
+          longitude: !isNaN(Number(lngNum)) ? lngNum : null,
           ruc: customerEditRuc.trim(),
           taxName: customerEditTaxName.trim(),
         }),
       });
 
       if (res.ok) {
-        showNotification(`✓ Dirección y datos de ${customerEditName || "cliente"} actualizados.`);
+        showNotification(`✓ Datos y ubicación de ${customerEditName || "cliente"} actualizados.`);
         setEditingCustomer(null);
         loadData();
       } else {
@@ -1850,6 +2006,73 @@ export default function AdminDashboardPage() {
                       </select>
                     </div>
 
+                    {/* Selector Desplegable de Columnas */}
+                    <div className="relative">
+                      <button
+                        type="button"
+                        onClick={() => setShowColumnMenu(!showColumnMenu)}
+                        className="px-3 py-1.5 bg-white hover:bg-slate-50 text-slate-700 font-bold text-xs rounded-full border border-slate-200 shadow-2xs transition-all flex items-center gap-1.5 cursor-pointer"
+                        title="Personalizar columnas visibles"
+                      >
+                        <SlidersHorizontal className="w-3.5 h-3.5 text-slate-500" />
+                        <span>Columnas ({Object.values(visibleColumns).filter(Boolean).length}/{ALL_BOOKING_COLUMNS.length})</span>
+                        <ChevronDown className={`w-3.5 h-3.5 text-slate-400 transition-transform ${showColumnMenu ? "rotate-180" : ""}`} />
+                      </button>
+
+                      {showColumnMenu && (
+                        <>
+                          <div 
+                            className="fixed inset-0 z-20" 
+                            onClick={() => setShowColumnMenu(false)} 
+                          />
+                          <div className="absolute right-0 mt-2 w-72 bg-white rounded-2xl border border-slate-200 shadow-xl p-3 z-30 space-y-2 animate-in fade-in zoom-in-95 text-xs">
+                            <div className="flex items-center justify-between pb-2 border-b border-slate-100">
+                              <span className="font-black text-slate-900">Personalizar Columnas</span>
+                              <div className="flex items-center gap-2">
+                                <button
+                                  type="button"
+                                  onClick={showAllColumns}
+                                  className="text-[10px] font-bold text-electric-600 hover:underline cursor-pointer"
+                                >
+                                  Ver Todas
+                                </button>
+                                <span className="text-slate-300">|</span>
+                                <button
+                                  type="button"
+                                  onClick={resetDefaultColumns}
+                                  className="text-[10px] font-bold text-slate-500 hover:underline cursor-pointer"
+                                >
+                                  Por Defecto
+                                </button>
+                              </div>
+                            </div>
+
+                            <div className="max-h-64 overflow-y-auto space-y-1 pr-1">
+                              {ALL_BOOKING_COLUMNS.map((col) => (
+                                <label
+                                  key={col.id}
+                                  className="flex items-center justify-between p-1.5 hover:bg-slate-50 rounded-xl cursor-pointer transition-colors text-xs font-medium text-slate-700"
+                                >
+                                  <div className="flex items-center gap-2">
+                                    <input
+                                      type="checkbox"
+                                      checked={Boolean(visibleColumns[col.id])}
+                                      onChange={() => toggleColumn(col.id)}
+                                      className="w-4 h-4 text-electric-600 rounded border-slate-300 focus:ring-electric-500 cursor-pointer"
+                                    />
+                                    <span>{col.label}</span>
+                                  </div>
+                                  <span className={`text-[10px] font-bold ${visibleColumns[col.id] ? "text-emerald-600" : "text-slate-400"}`}>
+                                    {visibleColumns[col.id] ? "Visible" : "Oculta"}
+                                  </span>
+                                </label>
+                              ))}
+                            </div>
+                          </div>
+                        </>
+                      )}
+                    </div>
+
                     <button
                       type="button"
                       onClick={() => setShowCharts(!showCharts)}
@@ -1866,26 +2089,32 @@ export default function AdminDashboardPage() {
                   <table className="w-full text-left text-xs text-slate-700 border-collapse">
                     <thead className="bg-slate-50 text-slate-600 border-b border-slate-200 whitespace-nowrap sticky top-0 z-10">
                       <tr>
-                        {renderSortHeader("Cliente", "customerName", "left")}
-                        {renderSortHeader("Teléfono", "customerPhone", "left")}
-                        {renderSortHeader("Horas", "serviceHours", "center")}
-                        {renderSortHeader("Extras", "extras", "left")}
-                        {renderSortHeader("Total", "totalPrice", "left")}
-                        {renderSortHeader("Fecha Servicio", "serviceDate", "left")}
-                        {renderSortHeader("Hora", "serviceTime", "center")}
-                        {renderSortHeader("Dirección", "address", "left", "min-w-[220px]")}
-                        <th className="px-3 py-3.5 border-r border-slate-200 text-center font-bold uppercase text-[11px] tracking-wider text-slate-600">
-                          Mapa
-                        </th>
-                        {renderSortHeader("Frecuencia", "frequency", "center")}
-                        {renderSortHeader("Empleado Asignado", "assignedCleaner", "left", "min-w-[190px]")}
-                        <th className="px-4 py-3.5 border-r border-slate-200 text-center font-bold uppercase text-[11px] tracking-wider text-slate-600">
-                          Enviar WhatsApp
-                        </th>
-                        {renderSortHeader("Estatus", "status", "center")}
-                        <th className="px-4 py-3.5 text-center font-bold uppercase text-[11px] tracking-wider text-slate-600">
-                          Acciones
-                        </th>
+                        {visibleColumns.customerName && renderSortHeader("Cliente", "customerName", "left")}
+                        {visibleColumns.customerPhone && renderSortHeader("Teléfono", "customerPhone", "left")}
+                        {visibleColumns.serviceHours && renderSortHeader("Horas", "serviceHours", "center")}
+                        {visibleColumns.extras && renderSortHeader("Extras", "extras", "left")}
+                        {visibleColumns.totalPrice && renderSortHeader("Total", "totalPrice", "left")}
+                        {visibleColumns.serviceDate && renderSortHeader("Fecha Servicio", "serviceDate", "left")}
+                        {visibleColumns.serviceTime && renderSortHeader("Hora", "serviceTime", "center")}
+                        {visibleColumns.address && renderSortHeader("Dirección", "address", "left", "min-w-[220px]")}
+                        {visibleColumns.map && (
+                          <th className="px-3 py-3.5 border-r border-slate-200 text-center font-bold uppercase text-[11px] tracking-wider text-slate-600">
+                            Mapa
+                          </th>
+                        )}
+                        {visibleColumns.frequency && renderSortHeader("Frecuencia", "frequency", "center")}
+                        {visibleColumns.assignedCleaner && renderSortHeader("Empleado Asignado", "assignedCleaner", "left", "min-w-[190px]")}
+                        {visibleColumns.whatsapp && (
+                          <th className="px-4 py-3.5 border-r border-slate-200 text-center font-bold uppercase text-[11px] tracking-wider text-slate-600">
+                            Enviar WhatsApp
+                          </th>
+                        )}
+                        {visibleColumns.status && renderSortHeader("Estatus", "status", "center")}
+                        {visibleColumns.actions && (
+                          <th className="px-4 py-3.5 text-center font-bold uppercase text-[11px] tracking-wider text-slate-600">
+                            Acciones
+                          </th>
+                        )}
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100 font-sans text-xs">
@@ -1925,249 +2154,257 @@ export default function AdminDashboardPage() {
                           }
                         };
 
-                        const formatCreatedDate = () => {
-                          if (!b.createdAt) return "-";
-                          try {
-                            const d = new Date(b.createdAt);
-                            return d.toLocaleString("es-PY", {
-                              day: "2-digit",
-                              month: "2-digit",
-                              year: "numeric",
-                              hour: "2-digit",
-                              minute: "2-digit"
-                            });
-                          } catch (e) {
-                            return b.createdAt;
-                          }
-                        };
-
                         return (
                           <tr key={b.id} className="hover:bg-slate-50/80 transition-colors">
                             {/* 1. Nombre */}
-                            <td className="px-4 py-3 border-r border-slate-100 font-bold text-slate-900 whitespace-nowrap">
-                              <p>{b.customerName}</p>
-                              <span className="text-[10px] font-mono text-slate-400 font-normal">{b.bookingNumber}</span>
-                            </td>
+                            {visibleColumns.customerName && (
+                              <td className="px-4 py-3 border-r border-slate-100 font-bold text-slate-900 whitespace-nowrap">
+                                <p>{b.customerName}</p>
+                                <span className="text-[10px] font-mono text-slate-400 font-normal">{b.bookingNumber}</span>
+                              </td>
+                            )}
 
                             {/* 2. Teléfono */}
-                            <td className="px-4 py-3 border-r border-slate-100 text-slate-700 whitespace-nowrap">
-                              <a
-                                href={generateWhatsAppCustomerUrl(b)}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="text-emerald-700 hover:text-emerald-800 hover:underline flex items-center gap-1 font-medium"
-                                title="Abrir WhatsApp del cliente"
-                              >
-                                <MessageSquare className="w-3 h-3 text-emerald-600" />
-                                <span>{b.customerPhone}</span>
-                              </a>
-                            </td>
-
-                            {/* 3. Horas */}
-                            <td className="px-3 py-3 border-r border-slate-100 text-center font-bold text-slate-900">
-                              <span className="px-2 py-0.5 rounded-md bg-slate-100 text-slate-700 text-[11px]">
-                                {b.serviceHours} hs
-                              </span>
-                            </td>
-
-                            {/* 4. Extras */}
-                            <td className="px-4 py-3 border-r border-slate-100 max-w-[180px]">
-                              {formatExtras()}
-                            </td>
-
-                            {/* 5. Total */}
-                            <td className="px-4 py-3 border-r border-slate-100 font-black text-slate-900 whitespace-nowrap">
-                              {formatGs(b.totalPrice)}
-                            </td>
-
-                            {/* 6. Fecha Servicio */}
-                            <td className="px-4 py-3 border-r border-slate-100 font-bold text-slate-900 whitespace-nowrap">
-                              {b.serviceDate}
-                            </td>
-
-                            {/* 7. Hora */}
-                            <td className="px-3 py-3 border-r border-slate-100 text-center font-semibold text-slate-700 whitespace-nowrap">
-                              {b.serviceTime} hs
-                            </td>
-
-                            {/* 8. Dirección */}
-                            <td className="px-4 py-3 border-r border-slate-100 text-slate-700">
-                              <p className="line-clamp-2 max-w-[240px]" title={b.address}>
-                                {b.address}
-                              </p>
-                            </td>
-
-                            {/* 9. Ubicación Maps */}
-                            <td className="px-3 py-3 border-r border-slate-100 text-center whitespace-nowrap">
-                              <a
-                                href={mapsQueryUrl}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-electric-50 text-slate-700 hover:text-electric-700 text-[11px] font-bold border border-slate-200 transition-colors shadow-2xs"
-                              >
-                                <MapPin className="w-3 h-3 text-electric-600" />
-                                <span>Mapa</span>
-                              </a>
-                            </td>
-
-                            {/* 10. Frecuencia */}
-                            <td className="px-3 py-3 border-r border-slate-100 text-center whitespace-nowrap">
-                              {formatFrequency()}
-                            </td>
-
-                            {/* 11. Empleado Asignado (Selector Apple Style con Punto de Color) */}
-                            <td className="px-3 py-2.5 border-r border-slate-100 min-w-[175px]">
-                              {(() => {
-                                const empColor = getEmployeeColor(b.assignedCleaner);
-                                return (
-                                  <div className="relative inline-block w-full">
-                                    {/* Apple Pill Presentation */}
-                                    <div className={`w-full flex items-center justify-between gap-2 px-3 py-1.5 rounded-full border shadow-2xs transition-all duration-150 ${
-                                      b.assignedCleaner
-                                        ? "bg-white/95 hover:bg-slate-50 border-slate-200/90 text-slate-800"
-                                        : "bg-slate-50/80 hover:bg-slate-100/80 border-dashed border-slate-300 text-slate-500"
-                                    }`}>
-                                      <div className="flex items-center gap-2 truncate min-w-0">
-                                        <span
-                                          className={`w-2 h-2 rounded-full shrink-0 ${empColor.bg} ring-2 ring-white shadow-2xs`}
-                                        />
-                                        <span className="text-xs font-semibold tracking-tight truncate">
-                                          {b.assignedCleaner || "Sin Asignar"}
-                                        </span>
-                                      </div>
-                                      <ChevronDown className="w-3 h-3 text-slate-400 shrink-0 ml-1" />
-                                    </div>
-
-                                    {/* Native Select Overlay */}
-                                    <select
-                                      value={b.assignedCleaner || "UNASSIGNED"}
-                                      onChange={(e) => handleQuickAssignCleaner(b.id, e.target.value)}
-                                      className="absolute inset-0 w-full h-full opacity-0 cursor-pointer text-xs"
-                                      title="Cambiar empleado asignado"
-                                    >
-                                      <option value="UNASSIGNED">⚪ Sin Asignar</option>
-                                      <option value="RANDOM">🎲 Asignar al Azar</option>
-                                      <optgroup label="Personal Activo">
-                                        {employees
-                                          .filter((e) => e.status === "ACTIVE")
-                                          .map((emp) => (
-                                            <option key={emp.id} value={`${emp.name}`}>
-                                              ● {emp.name} ({emp.zone.split(" ")[0]})
-                                            </option>
-                                          ))}
-                                      </optgroup>
-                                    </select>
-                                  </div>
-                                );
-                              })()}
-                            </td>
-
-                            {/* Enviar Mensaje WhatsApp */}
-                            <td className="px-4 py-3 border-r border-slate-100 text-center whitespace-nowrap">
-                              {assignedEmp ? (
-                                <div className="inline-flex items-center gap-1.5 justify-center">
-                                  <a
-                                    href={generateWhatsAppEmployeeUrl(b, assignedEmp)}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] font-bold shadow-xs transition-all active:scale-95"
-                                    title={`Enviar orden con ubicación en Google Maps a ${assignedEmp.name}`}
-                                  >
-                                    <Send className="w-3 h-3" />
-                                    <span>WhatsApp Empleado</span>
-                                  </a>
-                                  <a
-                                    href={generateWhatsAppCustomerUrl(b)}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="p-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-emerald-700 border border-slate-200 transition-all"
-                                    title="Enviar confirmación al cliente"
-                                  >
-                                    <MessageSquare className="w-3.5 h-3.5" />
-                                  </a>
-                                </div>
-                              ) : (
+                            {visibleColumns.customerPhone && (
+                              <td className="px-4 py-3 border-r border-slate-100 text-slate-700 whitespace-nowrap">
                                 <a
                                   href={generateWhatsAppCustomerUrl(b)}
                                   target="_blank"
                                   rel="noopener noreferrer"
-                                  className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-900 text-white text-[11px] font-bold shadow-xs transition-all active:scale-95"
-                                  title="Enviar WhatsApp al cliente"
+                                  className="text-emerald-700 hover:text-emerald-800 hover:underline flex items-center gap-1 font-medium"
+                                  title="Abrir WhatsApp del cliente"
                                 >
-                                  <Send className="w-3 h-3 text-emerald-400" />
-                                  <span>WhatsApp Cliente</span>
+                                  <MessageSquare className="w-3 h-3 text-emerald-600" />
+                                  <span>{b.customerPhone}</span>
                                 </a>
-                              )}
-                            </td>
+                              </td>
+                            )}
 
-                            {/* Estatus (Selector Apple Style con Indicador LED) */}
-                            <td className="px-3 py-2.5 border-r border-slate-100 text-center whitespace-nowrap min-w-[130px]">
-                              {(() => {
-                                const st = getStatusBadge(b.status);
-                                return (
-                                  <div className="relative inline-block">
-                                    {/* Apple Pill Presentation */}
-                                    <div className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold tracking-tight border shadow-2xs transition-all duration-150 ${st.bg} ${st.text} ${st.border}`}>
-                                      <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${st.dot} ring-1 ring-white/60`} />
-                                      <span>{st.label}</span>
-                                      <ChevronDown className="w-3 h-3 opacity-60 ml-0.5" />
-                                    </div>
+                            {/* 3. Horas */}
+                            {visibleColumns.serviceHours && (
+                              <td className="px-3 py-3 border-r border-slate-100 text-center font-bold text-slate-900">
+                                <span className="px-2 py-0.5 rounded-md bg-slate-100 text-slate-700 text-[11px]">
+                                  {b.serviceHours} hs
+                                </span>
+                              </td>
+                            )}
 
-                                    {/* Native Select Overlay */}
-                                    <select
-                                      value={b.status}
-                                      onChange={(e) => handleQuickStatusChange(b.id, e.target.value)}
-                                      className="absolute inset-0 w-full h-full opacity-0 cursor-pointer text-xs"
-                                      title="Cambiar estado del servicio"
-                                    >
-                                      <option value="PENDING">Pendiente</option>
-                                      <option value="CONFIRMED">Confirmado</option>
-                                      <option value="IN_PROGRESS">En Curso</option>
-                                      <option value="COMPLETED">Finalizado</option>
-                                      <option value="CANCELLED">Cancelado</option>
-                                    </select>
-                                  </div>
-                                );
-                              })()}
-                            </td>
+                            {/* 4. Extras */}
+                            {visibleColumns.extras && (
+                              <td className="px-4 py-3 border-r border-slate-100 max-w-[180px]">
+                                {formatExtras()}
+                              </td>
+                            )}
 
-                            {/* 18. Acciones: Google Calendar, Editar, Eliminar */}
-                            <td className="px-4 py-3 text-center whitespace-nowrap">
-                              <div className="flex items-center justify-center gap-1">
+                            {/* 5. Total */}
+                            {visibleColumns.totalPrice && (
+                              <td className="px-4 py-3 border-r border-slate-100 font-black text-slate-900 whitespace-nowrap">
+                                {formatGs(b.totalPrice)}
+                              </td>
+                            )}
+
+                            {/* 6. Fecha Servicio */}
+                            {visibleColumns.serviceDate && (
+                              <td className="px-4 py-3 border-r border-slate-100 font-bold text-slate-900 whitespace-nowrap">
+                                {b.serviceDate}
+                              </td>
+                            )}
+
+                            {/* 7. Hora */}
+                            {visibleColumns.serviceTime && (
+                              <td className="px-3 py-3 border-r border-slate-100 text-center font-semibold text-slate-700 whitespace-nowrap">
+                                {b.serviceTime} hs
+                              </td>
+                            )}
+
+                            {/* 8. Dirección */}
+                            {visibleColumns.address && (
+                              <td className="px-4 py-3 border-r border-slate-100 text-slate-700">
+                                <p className="line-clamp-2 max-w-[240px]" title={b.address}>
+                                  {b.address}
+                                </p>
+                              </td>
+                            )}
+
+                            {/* 9. Ubicación Maps */}
+                            {visibleColumns.map && (
+                              <td className="px-3 py-3 border-r border-slate-100 text-center whitespace-nowrap">
                                 <a
-                                  href={generateGoogleCalendarUrl(b)}
+                                  href={mapsQueryUrl}
                                   target="_blank"
                                   rel="noopener noreferrer"
-                                  className="px-2 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-700 rounded-xl font-bold text-[10px] border border-blue-200 transition-all flex items-center gap-1"
-                                  title="Crear Evento en Google Calendar"
+                                  className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-electric-50 text-slate-700 hover:text-electric-700 text-[11px] font-bold border border-slate-200 transition-colors shadow-2xs"
                                 >
-                                  <CalendarPlus className="w-3 h-3" />
-                                  <span>Calendar</span>
+                                  <MapPin className="w-3 h-3 text-electric-600" />
+                                  <span>Mapa</span>
                                 </a>
-                                <button
-                                  type="button"
-                                  onClick={() => openEditModal(b)}
-                                  className="p-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl font-bold border border-slate-200 transition-all"
-                                  title="Editar reserva"
-                                >
-                                  <Edit3 className="w-3.5 h-3.5" />
-                                </button>
-                                <button
-                                  type="button"
-                                  onClick={() => handleDeleteBooking(b.id, b.bookingNumber)}
-                                  className="p-1.5 bg-rose-50 hover:bg-rose-100 text-rose-600 rounded-xl font-bold border border-rose-200 transition-all"
-                                  title="Eliminar reserva"
-                                >
-                                  <Trash2 className="w-3.5 h-3.5" />
-                                </button>
-                              </div>
-                            </td>
+                              </td>
+                            )}
+
+                            {/* 10. Frecuencia */}
+                            {visibleColumns.frequency && (
+                              <td className="px-3 py-3 border-r border-slate-100 text-center whitespace-nowrap">
+                                {formatFrequency()}
+                              </td>
+                            )}
+
+                            {/* 11. Empleado Asignado */}
+                            {visibleColumns.assignedCleaner && (
+                              <td className="px-3 py-2.5 border-r border-slate-100 min-w-[175px]">
+                                {(() => {
+                                  const empColor = getEmployeeColor(b.assignedCleaner);
+                                  return (
+                                    <div className="relative inline-block w-full">
+                                      <div className={`w-full flex items-center justify-between gap-2 px-3 py-1.5 rounded-full border shadow-2xs transition-all duration-150 ${
+                                        b.assignedCleaner
+                                          ? "bg-white/95 hover:bg-slate-50 border-slate-200/90 text-slate-800"
+                                          : "bg-slate-50/80 hover:bg-slate-100/80 border-dashed border-slate-300 text-slate-500"
+                                      }`}>
+                                        <div className="flex items-center gap-2 truncate min-w-0">
+                                          <span
+                                            className={`w-2 h-2 rounded-full shrink-0 ${empColor.bg} ring-2 ring-white shadow-2xs`}
+                                          />
+                                          <span className="text-xs font-semibold tracking-tight truncate">
+                                            {b.assignedCleaner || "Sin Asignar"}
+                                          </span>
+                                        </div>
+                                        <ChevronDown className="w-3 h-3 text-slate-400 shrink-0 ml-1" />
+                                      </div>
+
+                                      <select
+                                        value={b.assignedCleaner || "UNASSIGNED"}
+                                        onChange={(e) => handleQuickAssignCleaner(b.id, e.target.value)}
+                                        className="absolute inset-0 w-full h-full opacity-0 cursor-pointer text-xs"
+                                        title="Cambiar empleado asignado"
+                                      >
+                                        <option value="UNASSIGNED">⚪ Sin Asignar</option>
+                                        <option value="RANDOM">🎲 Asignar al Azar</option>
+                                        <optgroup label="Personal Activo">
+                                          {employees
+                                            .filter((e) => e.status === "ACTIVE")
+                                            .map((emp) => (
+                                              <option key={emp.id} value={`${emp.name}`}>
+                                                ● {emp.name} ({emp.zone.split(" ")[0]})
+                                              </option>
+                                            ))}
+                                        </optgroup>
+                                      </select>
+                                    </div>
+                                  );
+                                })()}
+                              </td>
+                            )}
+
+                            {/* Enviar Mensaje WhatsApp */}
+                            {visibleColumns.whatsapp && (
+                              <td className="px-4 py-3 border-r border-slate-100 text-center whitespace-nowrap">
+                                {assignedEmp ? (
+                                  <div className="inline-flex items-center gap-1.5 justify-center">
+                                    <a
+                                      href={generateWhatsAppEmployeeUrl(b, assignedEmp)}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] font-bold shadow-xs transition-all active:scale-95"
+                                      title={`Enviar orden con ubicación en Google Maps a ${assignedEmp.name}`}
+                                    >
+                                      <Send className="w-3 h-3" />
+                                      <span>WhatsApp Empleado</span>
+                                    </a>
+                                    <a
+                                      href={generateWhatsAppCustomerUrl(b)}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className="p-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-emerald-700 border border-slate-200 transition-all"
+                                      title="Enviar confirmación al cliente"
+                                    >
+                                      <MessageSquare className="w-3.5 h-3.5" />
+                                    </a>
+                                  </div>
+                                ) : (
+                                  <a
+                                    href={generateWhatsAppCustomerUrl(b)}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-900 text-white text-[11px] font-bold shadow-xs transition-all active:scale-95"
+                                    title="Enviar WhatsApp al cliente"
+                                  >
+                                    <Send className="w-3 h-3 text-emerald-400" />
+                                    <span>WhatsApp Cliente</span>
+                                  </a>
+                                )}
+                              </td>
+                            )}
+
+                            {/* Estatus */}
+                            {visibleColumns.status && (
+                              <td className="px-3 py-2.5 border-r border-slate-100 text-center whitespace-nowrap min-w-[130px]">
+                                {(() => {
+                                  const st = getStatusBadge(b.status);
+                                  return (
+                                    <div className="relative inline-block">
+                                      <div className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold tracking-tight border shadow-2xs transition-all duration-150 ${st.bg} ${st.text} ${st.border}`}>
+                                        <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${st.dot} ring-1 ring-white/60`} />
+                                        <span>{st.label}</span>
+                                        <ChevronDown className="w-3 h-3 opacity-60 ml-0.5" />
+                                      </div>
+
+                                      <select
+                                        value={b.status}
+                                        onChange={(e) => handleQuickStatusChange(b.id, e.target.value)}
+                                        className="absolute inset-0 w-full h-full opacity-0 cursor-pointer text-xs"
+                                        title="Cambiar estado del servicio"
+                                      >
+                                        <option value="PENDING">Pendiente</option>
+                                        <option value="CONFIRMED">Confirmado</option>
+                                        <option value="IN_PROGRESS">En Curso</option>
+                                        <option value="COMPLETED">Finalizado</option>
+                                        <option value="CANCELLED">Cancelado</option>
+                                      </select>
+                                    </div>
+                                  );
+                                })()}
+                              </td>
+                            )}
+
+                            {/* Acciones */}
+                            {visibleColumns.actions && (
+                              <td className="px-4 py-3 text-center whitespace-nowrap">
+                                <div className="flex items-center justify-center gap-1">
+                                  <a
+                                    href={generateGoogleCalendarUrl(b)}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="px-2 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-700 rounded-xl font-bold text-[10px] border border-blue-200 transition-all flex items-center gap-1"
+                                    title="Crear Evento en Google Calendar"
+                                  >
+                                    <CalendarPlus className="w-3 h-3" />
+                                    <span>Calendar</span>
+                                  </a>
+                                  <button
+                                    type="button"
+                                    onClick={() => openEditModal(b)}
+                                    className="p-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl font-bold border border-slate-200 transition-all"
+                                    title="Editar reserva"
+                                  >
+                                    <Edit3 className="w-3.5 h-3.5" />
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => handleDeleteBooking(b.id, b.bookingNumber)}
+                                    className="p-1.5 bg-rose-50 hover:bg-rose-100 text-rose-600 rounded-xl font-bold border border-rose-200 transition-all"
+                                    title="Eliminar reserva"
+                                  >
+                                    <Trash2 className="w-3.5 h-3.5" />
+                                  </button>
+                                </div>
+                              </td>
+                            )}
                           </tr>
                         );
                       })}
                       {sortedBookings.length === 0 && (
                         <tr>
-                          <td colSpan={18} className="px-6 py-12 text-center text-slate-400">
+                          <td colSpan={Object.values(visibleColumns).filter(Boolean).length || 1} className="px-6 py-12 text-center text-slate-400">
                             No se encontraron reservas con los filtros seleccionados.
                           </td>
                         </tr>
@@ -2235,11 +2472,11 @@ export default function AdminDashboardPage() {
                         </p>
                       </div>
 
-                      <div className="pt-3 border-t border-slate-100 flex items-center justify-between">
+                      <div className="pt-3 border-t border-slate-100 flex items-center justify-between gap-2">
                         <button
                           type="button"
                           onClick={() => handleToggleIps(emp.id, Boolean(emp.ipsVerified))}
-                          className={`px-2.5 py-1 rounded-xl text-[10px] font-bold border transition-all flex items-center gap-1 ${
+                          className={`px-2.5 py-1 rounded-xl text-[10px] font-bold border transition-all flex items-center gap-1 cursor-pointer ${
                             emp.ipsVerified 
                               ? "bg-emerald-50 text-emerald-800 border-emerald-200" 
                               : "bg-amber-50 text-amber-800 border-amber-200"
@@ -2249,14 +2486,26 @@ export default function AdminDashboardPage() {
                           <span>{emp.ipsVerified ? "IPS Verificado" : "IPS en Trámite"}</span>
                         </button>
 
-                        <button
-                          type="button"
-                          onClick={() => handleDeleteEmployee(emp.id, emp.name)}
-                          className="p-1 text-slate-400 hover:text-rose-600 rounded-lg"
-                          title="Eliminar empleado"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
+                        <div className="flex items-center gap-1.5">
+                          <button
+                            type="button"
+                            onClick={() => handleOpenEditEmployee(emp)}
+                            className="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl font-bold border border-slate-200 transition-all flex items-center gap-1 text-[11px] cursor-pointer"
+                            title="Editar empleado"
+                          >
+                            <Edit3 className="w-3 h-3 text-slate-600" />
+                            <span>Editar</span>
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={() => handleDeleteEmployee(emp.id, emp.name)}
+                            className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-xl border border-transparent hover:border-rose-200 transition-all cursor-pointer"
+                            title="Eliminar empleado"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
                       </div>
                     </div>
                   ))}
@@ -2269,46 +2518,204 @@ export default function AdminDashboardPage() {
             {/* ======================================================== */}
             {activeTab === "CUSTOMERS" && (
               <div className="bg-white rounded-3xl border border-slate-200 shadow-xs overflow-hidden">
-                <div className="p-5 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
-                  <h2 className="text-sm font-black text-slate-900">Directorio de Clientes ({users.length})</h2>
-                  <input
-                    type="text"
-                    value={userSearchTerm}
-                    onChange={(e) => setUserSearchTerm(e.target.value)}
-                    placeholder="Filtrar clientes..."
-                    className="px-3 py-1.5 bg-white border border-slate-200 rounded-xl text-xs focus:outline-none"
-                  />
+                <div className="p-5 border-b border-slate-100 flex flex-col sm:flex-row gap-3 justify-between items-start sm:items-center bg-slate-50/50">
+                  <div>
+                    <h2 className="text-sm font-black text-slate-900">Directorio de Clientes ({filteredUsers.length})</h2>
+                    <p className="text-xs text-slate-500">Gestión de cuentas, direcciones de servicio, coordenadas GPS y datos fiscales de facturación.</p>
+                  </div>
+                  <div className="relative min-w-[240px] w-full sm:w-auto">
+                    <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+                    <input
+                      type="text"
+                      value={userSearchTerm}
+                      onChange={(e) => setUserSearchTerm(e.target.value)}
+                      placeholder="Buscar por nombre, email, dir, RUC..."
+                      className="w-full pl-9 pr-8 py-1.5 bg-white border border-slate-200 rounded-full text-xs font-medium text-slate-900 focus:outline-none focus:ring-2 focus:ring-electric-500 shadow-2xs"
+                    />
+                    {userSearchTerm && (
+                      <button
+                        type="button"
+                        onClick={() => setUserSearchTerm("")}
+                        className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-0.5 rounded-full hover:bg-slate-100 cursor-pointer"
+                      >
+                        <X className="w-3 h-3" />
+                      </button>
+                    )}
+                  </div>
                 </div>
+
                 <div className="overflow-x-auto">
-                  <table className="w-full text-left text-xs text-slate-700">
-                    <thead className="bg-slate-50 text-slate-600 border-b border-slate-200">
+                  <table className="w-full text-left text-xs text-slate-700 border-collapse">
+                    <thead className="bg-slate-50 text-slate-600 border-b border-slate-200 whitespace-nowrap">
                       <tr>
-                        <th className="px-5 py-3 font-bold">Cliente</th>
-                        <th className="px-5 py-3 font-bold">Contacto</th>
-                        <th className="px-5 py-3 font-bold">Dirección Registrada</th>
-                        <th className="px-5 py-3 font-bold text-right">Acciones</th>
+                        <th className="px-4 py-3.5 font-bold uppercase text-[11px] tracking-wider border-r border-slate-200">Cliente</th>
+                        <th className="px-4 py-3.5 font-bold uppercase text-[11px] tracking-wider border-r border-slate-200">Mail</th>
+                        <th className="px-4 py-3.5 font-bold uppercase text-[11px] tracking-wider border-r border-slate-200">Teléfono</th>
+                        <th className="px-4 py-3.5 font-bold uppercase text-[11px] tracking-wider border-r border-slate-200 min-w-[200px]">Dirección</th>
+                        <th className="px-4 py-3.5 font-bold uppercase text-[11px] tracking-wider border-r border-slate-200 text-center">Ubicación GPS</th>
+                        <th className="px-4 py-3.5 font-bold uppercase text-[11px] tracking-wider border-r border-slate-200 min-w-[170px]">Datos de Facturación</th>
+                        <th className="px-4 py-3.5 font-bold uppercase text-[11px] tracking-wider border-r border-slate-200 text-center">Historial</th>
+                        <th className="px-4 py-3.5 font-bold uppercase text-[11px] tracking-wider text-center">Acciones</th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-slate-100">
-                      {filteredUsers.map((u) => (
-                        <tr key={u.id} className="hover:bg-slate-50/80">
-                          <td className="px-5 py-3 font-bold text-slate-900">{u.name}</td>
-                          <td className="px-5 py-3 text-slate-600">
-                            <p>{u.phone || "Sin teléfono"}</p>
-                            <p className="text-[10px] text-slate-400">{u.email}</p>
-                          </td>
-                          <td className="px-5 py-3 text-slate-600">{u.address || "Sin dirección"}</td>
-                          <td className="px-5 py-3 text-right">
-                            <button
-                              type="button"
-                              onClick={() => handleOpenEditCustomer(u)}
-                              className="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-[11px] rounded-lg border border-slate-200"
-                            >
-                              Editar
-                            </button>
+                    <tbody className="divide-y divide-slate-100 font-sans text-xs">
+                      {filteredUsers.map((u) => {
+                        const mapsUrl = u.latitude && u.longitude 
+                          ? `https://www.google.com/maps?q=${u.latitude},${u.longitude}`
+                          : u.address ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(u.address)}` : null;
+
+                        const cleanPhone = u.phone ? u.phone.replace(/[^0-9]/g, "") : "";
+                        const waLink = cleanPhone ? `https://wa.me/${cleanPhone.startsWith("595") ? cleanPhone : `595${cleanPhone.replace(/^0+/, "")}`}` : null;
+
+                        return (
+                          <tr key={u.id} className="hover:bg-slate-50/80 transition-colors">
+                            {/* 1. Cliente */}
+                            <td className="px-4 py-3.5 border-r border-slate-100 whitespace-nowrap">
+                              <div className="flex items-center gap-2.5">
+                                <div className="w-8 h-8 rounded-full bg-slate-100 border border-slate-200 text-slate-700 font-bold flex items-center justify-center text-xs shrink-0">
+                                  {u.name ? u.name.slice(0, 2).toUpperCase() : "US"}
+                                </div>
+                                <div>
+                                  <p className="font-bold text-slate-900">{u.name || "Usuario Sin Nombre"}</p>
+                                  <span className="text-[10px] font-mono text-slate-400">{u.id}</span>
+                                </div>
+                              </div>
+                            </td>
+
+                            {/* 2. Mail */}
+                            <td className="px-4 py-3.5 border-r border-slate-100 whitespace-nowrap">
+                              <a
+                                href={`mailto:${u.email}`}
+                                className="text-electric-600 hover:text-electric-700 hover:underline flex items-center gap-1 font-medium"
+                                title="Enviar correo electrónico"
+                              >
+                                <Mail className="w-3 h-3 text-slate-400" />
+                                <span>{u.email}</span>
+                              </a>
+                            </td>
+
+                            {/* 3. Teléfono */}
+                            <td className="px-4 py-3.5 border-r border-slate-100 whitespace-nowrap">
+                              {u.phone ? (
+                                <div className="flex items-center gap-1.5">
+                                  {waLink ? (
+                                    <a
+                                      href={waLink}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className="text-emerald-700 hover:text-emerald-800 hover:underline flex items-center gap-1 font-semibold"
+                                      title="Abrir WhatsApp directo"
+                                    >
+                                      <MessageSquare className="w-3 h-3 text-emerald-600" />
+                                      <span>{u.phone}</span>
+                                    </a>
+                                  ) : (
+                                    <span className="text-slate-700 font-medium">{u.phone}</span>
+                                  )}
+                                </div>
+                              ) : (
+                                <span className="text-slate-400 italic text-[11px]">Sin teléfono</span>
+                              )}
+                            </td>
+
+                            {/* 4. Dirección */}
+                            <td className="px-4 py-3.5 border-r border-slate-100 text-slate-700">
+                              {u.address ? (
+                                <p className="line-clamp-2 max-w-[220px]" title={u.address}>
+                                  {u.address}
+                                </p>
+                              ) : (
+                                <span className="text-slate-400 italic text-[11px]">Sin dirección registrada</span>
+                              )}
+                            </td>
+
+                            {/* 5. Ubicación GPS */}
+                            <td className="px-4 py-3.5 border-r border-slate-100 text-center whitespace-nowrap">
+                              {u.latitude && u.longitude ? (
+                                <div className="inline-flex flex-col items-center gap-1">
+                                  <a
+                                    href={mapsUrl!}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-electric-50 text-slate-700 hover:text-electric-700 text-[11px] font-bold border border-slate-200 transition-colors shadow-2xs"
+                                    title="Abrir punto GPS en Google Maps"
+                                  >
+                                    <MapPin className="w-3 h-3 text-rose-500" />
+                                    <span>Google Maps</span>
+                                  </a>
+                                  <span className="text-[9px] font-mono text-slate-400">
+                                    {Number(u.latitude).toFixed(4)}, {Number(u.longitude).toFixed(4)}
+                                  </span>
+                                </div>
+                              ) : mapsUrl ? (
+                                <a
+                                  href={mapsUrl}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-slate-50 hover:bg-slate-100 text-slate-600 text-[10px] font-medium border border-slate-200"
+                                >
+                                  <MapPin className="w-2.5 h-2.5 text-slate-400" />
+                                  <span>Buscar Mapa</span>
+                                </a>
+                              ) : (
+                                <span className="text-slate-400 text-[11px] italic">Sin GPS</span>
+                              )}
+                            </td>
+
+                            {/* 6. Datos de Facturación */}
+                            <td className="px-4 py-3.5 border-r border-slate-100 text-slate-700">
+                              {u.ruc || (u as any).taxName ? (
+                                <div className="space-y-0.5">
+                                  {u.ruc && (
+                                    <p className="font-mono text-xs font-bold text-slate-900">
+                                      RUC: <span className="text-electric-700">{u.ruc}</span>
+                                    </p>
+                                  )}
+                                  {(u as any).taxName && (
+                                    <p className="text-[11px] text-slate-600 line-clamp-1" title={(u as any).taxName}>
+                                      {(u as any).taxName}
+                                    </p>
+                                  )}
+                                </div>
+                              ) : (
+                                <span className="px-2 py-0.5 rounded-full bg-slate-100 text-slate-500 font-medium text-[10px]">
+                                  Consumidor Final
+                                </span>
+                              )}
+                            </td>
+
+                            {/* 7. Historial & Gasto */}
+                            <td className="px-4 py-3.5 border-r border-slate-100 text-center whitespace-nowrap">
+                              <span className="font-bold text-slate-900 block text-xs">
+                                {u.totalBookings || 0} {(u.totalBookings === 1) ? "reserva" : "reservas"}
+                              </span>
+                              <span className="text-[10px] font-mono text-emerald-700 font-semibold">
+                                {formatGs(u.totalSpentGs || 0)}
+                              </span>
+                            </td>
+
+                            {/* 8. Acciones */}
+                            <td className="px-4 py-3.5 text-center whitespace-nowrap">
+                              <button
+                                type="button"
+                                onClick={() => handleOpenEditCustomer(u)}
+                                className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-xl border border-slate-200 transition-all flex items-center gap-1 mx-auto cursor-pointer"
+                                title="Editar datos, dirección y facturación"
+                              >
+                                <Edit3 className="w-3.5 h-3.5 text-slate-500" />
+                                <span>Editar</span>
+                              </button>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                      {filteredUsers.length === 0 && (
+                        <tr>
+                          <td colSpan={8} className="px-6 py-12 text-center text-slate-400">
+                            No se encontraron clientes registrados con el término de búsqueda.
                           </td>
                         </tr>
-                      ))}
+                      )}
                     </tbody>
                   </table>
                 </div>
@@ -3250,21 +3657,154 @@ export default function AdminDashboardPage() {
       )}
 
       {/* ======================================================== */}
+      {/* MODAL PARA EDITAR EMPLEADO */}
+      {/* ======================================================== */}
+      {editingEmployee && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 z-50 animate-in fade-in">
+          <div className="bg-white rounded-3xl shadow-2xl border border-slate-200 max-w-md w-full p-6 space-y-4">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-xl bg-electric-100 text-electric-700 flex items-center justify-center font-bold">
+                  <Edit3 className="w-4 h-4" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-black text-slate-900">Editar Empleado</h3>
+                  <p className="text-[11px] text-slate-500">{editingEmployee.name}</p>
+                </div>
+              </div>
+              <button onClick={() => setEditingEmployee(null)} className="text-slate-400 hover:text-slate-600 cursor-pointer">
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveEmployee} className="space-y-3.5">
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1">Nombre Completo *</label>
+                <input
+                  type="text"
+                  required
+                  value={empEditName}
+                  onChange={(e) => setEmpEditName(e.target.value)}
+                  className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs focus:ring-2 focus:ring-electric-600 focus:outline-none"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">Cédula de Identidad (CI)</label>
+                  <input
+                    type="text"
+                    value={empEditCi}
+                    onChange={(e) => setEmpEditCi(e.target.value)}
+                    placeholder="Ej: 4.123.456"
+                    className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs focus:ring-2 focus:ring-electric-600 focus:outline-none"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">Teléfono / WhatsApp *</label>
+                  <input
+                    type="text"
+                    required
+                    value={empEditPhone}
+                    onChange={(e) => setEmpEditPhone(e.target.value)}
+                    placeholder="0981 123 456"
+                    className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs focus:ring-2 focus:ring-electric-600 focus:outline-none"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1">Correo Electrónico (Opcional)</label>
+                <input
+                  type="email"
+                  value={empEditEmail}
+                  onChange={(e) => setEmpEditEmail(e.target.value)}
+                  placeholder="empleado@aquiestamos.com"
+                  className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs focus:ring-2 focus:ring-electric-600 focus:outline-none"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">Zona Operativa</label>
+                  <select
+                    value={empEditZone}
+                    onChange={(e) => setEmpEditZone(e.target.value)}
+                    className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs focus:ring-2 focus:ring-electric-600 focus:outline-none"
+                  >
+                    <option value="Asunción (Villa Morra / Ykua Satî)">Asunción (Villa Morra / Ykua Satî)</option>
+                    <option value="Asunción (Centro / Barrio Jara)">Asunción (Centro / Barrio Jara)</option>
+                    <option value="Gran Asunción (Lambaré / Fernando)">Gran Asunción (Lambaré / Fernando)</option>
+                    <option value="Gran Asunción (Luque / San Lorenzo)">Gran Asunción (Luque / San Lorenzo)</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">Estado</label>
+                  <select
+                    value={empEditStatus}
+                    onChange={(e) => setEmpEditStatus(e.target.value as any)}
+                    className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs focus:ring-2 focus:ring-electric-600 focus:outline-none font-bold"
+                  >
+                    <option value="ACTIVE">● Activo</option>
+                    <option value="INACTIVE">○ Inactivo</option>
+                    <option value="ON_LEAVE">⏳ De Licencia</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2 pt-1">
+                <input
+                  type="checkbox"
+                  id="empEditIpsCheck"
+                  checked={empEditIps}
+                  onChange={(e) => setEmpEditIps(e.target.checked)}
+                  className="w-4 h-4 text-electric-600 rounded border-slate-300 cursor-pointer"
+                />
+                <label htmlFor="empEditIpsCheck" className="text-xs font-bold text-slate-700 cursor-pointer">
+                  Tiene Seguro IPS Activo y Verificado
+                </label>
+              </div>
+
+              <div className="pt-3 border-t border-slate-100 flex justify-end gap-2">
+                <button
+                  type="button"
+                  onClick={() => setEditingEmployee(null)}
+                  className="px-4 py-2 text-xs font-bold text-slate-600 hover:bg-slate-100 rounded-xl cursor-pointer"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  disabled={isSavingEmp}
+                  className="px-5 py-2 bg-electric-600 hover:bg-electric-700 text-white font-bold text-xs rounded-xl shadow-xs cursor-pointer"
+                >
+                  {isSavingEmp ? "Guardando..." : "Guardar Cambios"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ======================================================== */}
       {/* MODAL PARA EDITAR CLIENTE */}
       {/* ======================================================== */}
       {editingCustomer && (
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 z-50 animate-in fade-in">
           <div className="bg-white rounded-3xl shadow-2xl border border-slate-200 max-w-md w-full p-6 space-y-4">
             <div className="flex items-center justify-between pb-3 border-b border-slate-100">
-              <h3 className="text-sm font-black text-slate-900">Editar Datos del Cliente</h3>
-              <button onClick={() => setEditingCustomer(null)} className="text-slate-400 hover:text-slate-600">
+              <div>
+                <h3 className="text-sm font-black text-slate-900">Editar Ficha de Cliente</h3>
+                <p className="text-[11px] text-slate-500">{editingCustomer.email}</p>
+              </div>
+              <button onClick={() => setEditingCustomer(null)} className="text-slate-400 hover:text-slate-600 cursor-pointer">
                 <X className="w-4 h-4" />
               </button>
             </div>
 
             <form onSubmit={handleSaveCustomer} className="space-y-3.5">
               <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">Nombre</label>
+                <label className="block text-xs font-bold text-slate-700 mb-1">Nombre Completo</label>
                 <input
                   type="text"
                   value={customerEditName}
@@ -3274,25 +3814,70 @@ export default function AdminDashboardPage() {
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">Teléfono</label>
+                <label className="block text-xs font-bold text-slate-700 mb-1">Teléfono / WhatsApp</label>
                 <input
                   type="text"
                   value={customerEditPhone}
                   onChange={(e) => setCustomerEditPhone(e.target.value)}
+                  placeholder="0981 123 456"
                   className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs focus:ring-2 focus:ring-electric-600 focus:outline-none"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">Dirección Habitual</label>
+                <label className="block text-xs font-bold text-slate-700 mb-1">Dirección Habitual (Calle, Edificio, Depto)</label>
                 <input
                   type="text"
                   value={customerEditAddress}
                   onChange={(e) => setCustomerEditAddress(e.target.value)}
+                  placeholder="Ej: Avda. Santa Teresa 2250 c/ Herminio Maldonado, Torre 2, Piso 8"
                   className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs focus:ring-2 focus:ring-electric-600 focus:outline-none"
                 />
               </div>
 
+              {/* Coordenadas GPS Separadas */}
+              <div className="bg-slate-50 p-3 rounded-2xl border border-slate-200/80 space-y-2">
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
+                    <MapPin className="w-3.5 h-3.5 text-rose-500" />
+                    <span>Ubicación GPS (Coordenadas)</span>
+                  </label>
+                  {customerEditLat && customerEditLng && (
+                    <a
+                      href={`https://www.google.com/maps?q=${customerEditLat},${customerEditLng}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-[10px] font-bold text-electric-600 hover:underline flex items-center gap-1"
+                    >
+                      <span>Probar en Maps</span>
+                    </a>
+                  )}
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <label className="block text-[10px] font-semibold text-slate-500 mb-0.5">Latitud</label>
+                    <input
+                      type="text"
+                      value={customerEditLat}
+                      onChange={(e) => setCustomerEditLat(e.target.value)}
+                      placeholder="-25.2867"
+                      className="w-full px-2.5 py-1.5 bg-white border border-slate-200 rounded-xl text-xs font-mono focus:ring-2 focus:ring-electric-600 focus:outline-none"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-semibold text-slate-500 mb-0.5">Longitud</label>
+                    <input
+                      type="text"
+                      value={customerEditLng}
+                      onChange={(e) => setCustomerEditLng(e.target.value)}
+                      placeholder="-57.5684"
+                      className="w-full px-2.5 py-1.5 bg-white border border-slate-200 rounded-xl text-xs font-mono focus:ring-2 focus:ring-electric-600 focus:outline-none"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Datos de Facturación */}
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block text-xs font-bold text-slate-700 mb-1">RUC / CI</label>
@@ -3320,14 +3905,14 @@ export default function AdminDashboardPage() {
                 <button
                   type="button"
                   onClick={() => setEditingCustomer(null)}
-                  className="px-4 py-2 text-xs font-bold text-slate-600 hover:bg-slate-100 rounded-xl"
+                  className="px-4 py-2 text-xs font-bold text-slate-600 hover:bg-slate-100 rounded-xl cursor-pointer"
                 >
                   Cancelar
                 </button>
                 <button
                   type="submit"
                   disabled={isSavingCustomer}
-                  className="px-5 py-2 bg-electric-600 hover:bg-electric-700 text-white font-bold text-xs rounded-xl shadow-xs"
+                  className="px-5 py-2 bg-electric-600 hover:bg-electric-700 text-white font-bold text-xs rounded-xl shadow-xs cursor-pointer"
                 >
                   {isSavingCustomer ? "Guardando..." : "Guardar Cliente"}
                 </button>

@@ -45,11 +45,14 @@ export async function PATCH(req: Request) {
     }
 
     const body = await req.json();
-    const { userId, address, phone, name, ruc, taxName } = body;
+    const { userId, address, phone, name, ruc, taxName, latitude, longitude } = body;
 
     if (!userId) {
       return NextResponse.json({ error: "ID de usuario es obligatorio." }, { status: 400 });
     }
+
+    const latNum = latitude !== undefined && latitude !== null && !isNaN(Number(latitude)) ? Number(latitude) : (latitude === null ? null : undefined);
+    const lngNum = longitude !== undefined && longitude !== null && !isNaN(Number(longitude)) ? Number(longitude) : (longitude === null ? null : undefined);
 
     let updatedUser: any = null;
     try {
@@ -59,6 +62,8 @@ export async function PATCH(req: Request) {
         name,
         ruc,
         taxName,
+        latitude: latNum,
+        longitude: lngNum,
       });
       // Sincronizar en local
       try {

@@ -144,13 +144,17 @@ export async function supabaseGetAllUsers(): Promise<(User & { totalBookings: nu
 
   const { data: bookings } = await supabase
     .from("bookings")
-    .select("user_id, customer_email, total_price");
+    .select("user_id, customer_email, total_price, latitude, longitude, address");
 
   return users.map((u) => {
     const userBookings = (bookings || []).filter(
       (b) => b.user_id === u.id || (b.customer_email && b.customer_email.toLowerCase() === u.email.toLowerCase())
     );
     const totalSpent = userBookings.reduce((sum, b) => sum + (Number(b.total_price) || 0), 0);
+
+    const bookingWithCoords = userBookings.find((b) => b.latitude && b.longitude);
+    const resolvedLat = u.latitude !== undefined && u.latitude !== null ? Number(u.latitude) : (bookingWithCoords?.latitude ? Number(bookingWithCoords.latitude) : null);
+    const resolvedLng = u.longitude !== undefined && u.longitude !== null ? Number(u.longitude) : (bookingWithCoords?.longitude ? Number(bookingWithCoords.longitude) : null);
 
     return {
       id: u.id,
@@ -159,7 +163,9 @@ export async function supabaseGetAllUsers(): Promise<(User & { totalBookings: nu
       image: u.image,
       role: u.role || "CUSTOMER",
       phone: u.phone,
-      address: u.address,
+      address: u.address || bookingWithCoords?.address || null,
+      latitude: resolvedLat,
+      longitude: resolvedLng,
       ruc: u.ruc,
       taxName: u.tax_name,
       createdAt: u.created_at,
@@ -175,6 +181,8 @@ export async function supabaseUpdateUser(
     name: string;
     phone: string;
     address: string;
+    latitude: number | null;
+    longitude: number | null;
     ruc: string;
     taxName: string;
     image: string;
@@ -185,6 +193,8 @@ export async function supabaseUpdateUser(
   if (data.name !== undefined) updatePayload.name = data.name;
   if (data.phone !== undefined) updatePayload.phone = data.phone;
   if (data.address !== undefined) updatePayload.address = data.address;
+  if (data.latitude !== undefined) updatePayload.latitude = data.latitude;
+  if (data.longitude !== undefined) updatePayload.longitude = data.longitude;
   if (data.ruc !== undefined) updatePayload.ruc = data.ruc;
   if (data.taxName !== undefined) updatePayload.tax_name = data.taxName;
   if (data.image !== undefined) updatePayload.image = data.image;
@@ -207,6 +217,8 @@ export async function supabaseUpdateUser(
     role: updated.role,
     phone: updated.phone,
     address: updated.address,
+    latitude: updated.latitude ? Number(updated.latitude) : null,
+    longitude: updated.longitude ? Number(updated.longitude) : null,
     ruc: updated.ruc,
     taxName: updated.tax_name,
     createdAt: updated.created_at,

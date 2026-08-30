@@ -47,6 +47,8 @@ export interface User {
   role: UserRole;
   phone?: string | null;
   address?: string | null;
+  latitude?: number | null;
+  longitude?: number | null;
   ruc?: string | null;
   taxName?: string | null;
   createdAt: string;
