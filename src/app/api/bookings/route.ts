@@ -142,6 +142,15 @@ export async function POST(req: Request) {
       );
     }
 
+    // Validar restricción de horario para servicios de 6 y 8 horas
+    const numHours = Number(serviceHours);
+    if ((numHours === 6 || numHours === 8) && serviceTime > "08:00") {
+      return NextResponse.json(
+        { error: "Los servicios de 6 y 8 horas deben iniciar a las 08:00 AM o antes para garantizar la jornada completa." },
+        { status: 400 }
+      );
+    }
+
     // Validar rigurosamente que la fecha esté abierta en el servidor (bloqueos, feriados, capacidad)
     try {
       const availCheck = await checkDateAvailability(serviceDate);

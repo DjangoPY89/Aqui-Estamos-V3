@@ -209,11 +209,14 @@ function BookingContent() {
             setDateAvailabilityNotice(null);
             // Si el turno actualmente elegido no está habilitado o disponible en esta fecha, elegir el primero disponible
             if (Array.isArray(data.check.slots) && data.check.slots.length > 0) {
+              const isLong = serviceHours === 6 || serviceHours === 8;
               const currentSlot = data.check.slots.find((s: any) => s.time === serviceTime);
-              if (!currentSlot || !currentSlot.available) {
-                const firstAvailable = data.check.slots.find((s: any) => s.available);
+              if (!currentSlot || !currentSlot.available || (isLong && serviceTime > "08:00")) {
+                const firstAvailable = data.check.slots.find((s: any) => s.available && (!isLong || s.time <= "08:00"));
                 if (firstAvailable) {
                   setServiceTime(firstAvailable.time);
+                } else if (isLong) {
+                  setServiceTime("08:00");
                 }
               }
             }
@@ -230,7 +233,7 @@ function BookingContent() {
     return () => {
       isMounted = false;
     };
-  }, [serviceDate]);
+  }, [serviceDate, serviceHours]);
 
   // Cargar perfil y direcciones guardadas del cliente
   useEffect(() => {
@@ -780,7 +783,12 @@ function BookingContent() {
                         <button
                           key={h}
                           type="button"
-                          onClick={() => setServiceHours(h)}
+                          onClick={() => {
+                            setServiceHours(h);
+                            if ((h === 6 || h === 8) && serviceTime > "08:00") {
+                              setServiceTime("08:00");
+                            }
+                          }}
                           className={`p-3.5 rounded-xl text-left border transition-all ${
                             isSelected
                               ? "bg-electric-600 text-white border-electric-600 shadow-electric-sm"
@@ -1325,7 +1333,9 @@ function BookingContent() {
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                       {(availabilityCheck?.slots || configuredSlots.filter((s) => s.enabled)).map((slot: any) => {
-                        const isSlotAvailable = availabilityCheck ? slot.available !== false && availabilityCheck.isOpen : true;
+                        const isLongService = serviceHours === 6 || serviceHours === 8;
+                        const isTimeAllowed = !isLongService || slot.time <= "08:00";
+                        const isSlotAvailable = availabilityCheck ? slot.available !== false && availabilityCheck.isOpen && isTimeAllowed : isTimeAllowed;
                         const isSelected = serviceTime === slot.time;
 
                         return (
@@ -1334,6 +1344,7 @@ function BookingContent() {
                             type="button"
                             disabled={!isSlotAvailable}
                             onClick={() => setServiceTime(slot.time)}
+                            title={!isTimeAllowed ? `Los servicios de ${serviceHours} horas solo inician en el turno de la mañana (hasta las 08:00 AM)` : undefined}
                             className={`py-2 px-2.5 rounded-xl border text-left text-xs transition-all flex items-center justify-between gap-1.5 ${
                               isSelected && isSlotAvailable
                                 ? "bg-electric-600 text-white border-electric-600 shadow-electric-sm font-bold"
@@ -1349,15 +1360,28 @@ function BookingContent() {
                               </p>
                             </div>
 
-                            {!isSlotAvailable && (
+                            {!isTimeAllowed ? (
+                              <span className="text-[9px] font-black uppercase tracking-wider px-1.5 py-0.5 bg-amber-100 text-amber-800 rounded">
+                                Solo 4hs
+                              </span>
+                            ) : !isSlotAvailable ? (
                               <span className="text-[9px] font-black uppercase tracking-wider px-1.5 py-0.5 bg-neutral-200 text-neutral-600 rounded">
                                 Lleno
                               </span>
-                            )}
+                            ) : null}
                           </button>
                         );
                       })}
                     </div>
+
+                    {(serviceHours === 6 || serviceHours === 8) && (
+                      <p className="mt-2 text-[11px] text-amber-800 bg-amber-50 border border-amber-200/80 rounded-xl p-2.5 flex items-center gap-1.5 font-medium">
+                        <span className="text-sm shrink-0">⏰</span>
+                        <span>
+                          <strong>Horario exclusivo:</strong> Los servicios de {serviceHours} horas inician como máximo a las 08:00 AM para cumplir la jornada diurna completa.
+                        </span>
+                      </p>
+                    )}
                   </div>
 
                   {/* Método de Pago */}

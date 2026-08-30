@@ -121,12 +121,31 @@ export default function Footer() {
 
         </div>
 
-        {/* Copyright */}
+        {/* Copyright & Creative Think Lab Attribution */}
         <div className="pt-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-[11px] text-neutral-400">
-          <p>© {new Date().getFullYear()} Aquí Estamos. Todos los derechos reservados.</p>
-          <div className="flex flex-wrap gap-2 text-neutral-400">
-            <span>Asunción</span> • <span>Luque</span> • <span>San Lorenzo</span> • <span>Lambaré</span> • <span>Villa Morra</span>
+          <div className="flex flex-col sm:flex-row items-center gap-2 text-center sm:text-left">
+            <p>© {new Date().getFullYear()} Aquí Estamos. Todos los derechos reservados.</p>
+            <span className="hidden sm:inline text-neutral-700">•</span>
+            <div className="flex flex-wrap gap-1.5 justify-center text-neutral-500 text-[10px]">
+              <span>Asunción</span> • <span>Luque</span> • <span>San Lorenzo</span> • <span>Lambaré</span> • <span>Villa Morra</span>
+            </div>
           </div>
+
+          {/* Badge Creativo Think Lab */}
+          <a
+            href="https://www.thinklabpy.online/"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="group inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white/[0.04] hover:bg-white/[0.08] border border-white/10 hover:border-electric-500/50 transition-all duration-300 shadow-sm"
+          >
+            <span className="text-[10px] text-neutral-400 font-medium group-hover:text-neutral-300 transition-colors">
+              Creado con excelencia por
+            </span>
+            <span className="inline-flex items-center gap-1 font-black text-[11px] text-transparent bg-clip-text bg-gradient-to-r from-electric-400 via-sky-300 to-purple-400 tracking-wide group-hover:brightness-125 transition-all">
+              <span>Think Lab</span>
+              <span className="text-[10px] transform group-hover:translate-x-0.5 transition-transform">⚡</span>
+            </span>
+          </a>
         </div>
 
       </div>
