@@ -173,7 +173,7 @@ export default function AdminDashboardPage() {
   const [newBookingCleaner, setNewBookingCleaner] = useState("");
   const [newBookingStatus, setNewBookingStatus] = useState<Booking["status"]>("CONFIRMED");
   const [newBookingFrequency, setNewBookingFrequency] = useState<string>("once");
-  const [newBookingPrice, setNewBookingPrice] = useState<number>(143000);
+  const [newBookingPrice, setNewBookingPrice] = useState<number>(145000);
   const [newBookingExtras, setNewBookingExtras] = useState<string[]>([]);
   const [isSubmittingNewBooking, setIsSubmittingNewBooking] = useState(false);
 
@@ -3677,12 +3677,18 @@ export default function AdminDashboardPage() {
                   <label className="block text-xs font-bold text-slate-700 mb-1">Horas</label>
                   <select
                     value={newBookingHours}
-                    onChange={(e) => setNewBookingHours(Number(e.target.value))}
+                    onChange={(e) => {
+                      const h = Number(e.target.value);
+                      setNewBookingHours(h);
+                      if (h === 4) setNewBookingPrice(145000);
+                      else if (h === 6) setNewBookingPrice(185000);
+                      else if (h === 8) setNewBookingPrice(245000);
+                    }}
                     className="w-full px-2.5 py-2 border border-slate-200 rounded-xl text-xs focus:ring-2 focus:ring-electric-600 focus:outline-none"
                   >
-                    <option value={4}>4 Horas</option>
-                    <option value={6}>6 Horas</option>
-                    <option value={8}>8 Horas</option>
+                    <option value={4}>4 Horas (145.000 Gs.)</option>
+                    <option value={6}>6 Horas (185.000 Gs.)</option>
+                    <option value={8}>8 Horas (245.000 Gs.)</option>
                   </select>
                 </div>
               </div>

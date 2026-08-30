@@ -9,7 +9,7 @@ export default function ServicesGrid() {
       hours: 4,
       name: "Express (4 Horas)",
       tagline: "Departamentos de 1-2 ambientes",
-      price: 120000,
+      price: 145000,
       description: "Ideal para mantenimiento esencial de superficies, cocina, baños y pisos.",
       features: [
         "Mantenimiento esencial y desinfección",
@@ -24,7 +24,7 @@ export default function ServicesGrid() {
       hours: 6,
       name: "Integral (6 Horas)",
       tagline: "Casas medianas (2-3 habitaciones)",
-      price: 160000,
+      price: 185000,
       description: "Nuestra opción más equilibrada para una limpieza profunda y detallada.",
       features: [
         "Todo lo incluido en el plan Express",
@@ -39,7 +39,7 @@ export default function ServicesGrid() {
       hours: 8,
       name: "Full Day (8 Horas)",
       tagline: "Residencias amplias o mudanzas",
-      price: 200000,
+      price: 245000,
       description: "Jornada completa para limpiezas profundas de fin de obra o reseteo total.",
       features: [
         "Jornada exhaustiva de 8 horas de trabajo",
