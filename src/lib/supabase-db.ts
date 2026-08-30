@@ -300,14 +300,19 @@ export async function supabaseGetAllEmployees(): Promise<Employee[]> {
   if (error || !employees) return [];
 
   const [{ data: bookings }, { data: reviews }] = await Promise.all([
-    supabase.from("bookings").select("assigned_cleaner, status, rating"),
+    supabase.from("bookings").select("id, assigned_cleaner, status, rating, notes"),
     supabase.from("reviews").select("service_type, comment, rating, user_name, created_at"),
   ]);
 
   return employees.map((e) => {
-    const empBookings = (bookings || []).filter(
-      (b) => b.assigned_cleaner && b.assigned_cleaner.toLowerCase().includes(e.name.toLowerCase())
-    );
+    const empBookings = (bookings || []).filter((b) => {
+      if (!b.assigned_cleaner) return false;
+      const target = b.assigned_cleaner.trim().toLowerCase();
+      const empName = e.name.trim().toLowerCase();
+      const empId = e.id.trim().toLowerCase();
+      return target === empId || target === empName || target.includes(empName) || empName.includes(target);
+    });
+
     const activeCount = empBookings.filter(
       (b) => ["PENDING", "CONFIRMED", "IN_PROGRESS"].includes(b.status)
     ).length;
@@ -318,20 +323,27 @@ export async function supabaseGetAllEmployees(): Promise<Employee[]> {
 
     const empReviews = (reviews || []).filter(
       (r) =>
-        (r.service_type && r.service_type.toLowerCase().includes(e.name.toLowerCase())) ||
+        (r.service_type && (r.service_type.toLowerCase().includes(e.name.toLowerCase()) || e.name.toLowerCase().includes(r.service_type.toLowerCase()))) ||
         (r.comment && r.comment.toLowerCase().includes(e.name.toLowerCase()))
     );
 
-    const ratedBookings = empBookings.filter((b) => b.rating && Number(b.rating) > 0);
+    const ratedBookings = empBookings
+      .map((b) => {
+        const ratedMatch = b.notes ? b.notes.match(/\[RATED:(\d+)\]/) : null;
+        return ratedMatch ? Number(ratedMatch[1]) : (b.rating !== undefined && b.rating !== null ? Number(b.rating) : null);
+      })
+      .filter((r) => r !== null && !isNaN(r) && r > 0) as number[];
 
     const allRatings: number[] = [
       ...empReviews.map((r) => Number(r.rating)),
-      ...ratedBookings.map((b) => Number(b.rating)),
+      ...ratedBookings,
     ].filter((n) => !isNaN(n) && n > 0);
 
     const totalCount = allRatings.length;
     const sumRatings = allRatings.reduce((sum, val) => sum + val, 0);
-    const avgRating = totalCount > 0 ? Number((sumRatings / totalCount).toFixed(1)) : (e.rating !== undefined && e.rating !== null ? Number(e.rating) : null);
+    const avgRating = totalCount > 0 
+      ? Number((sumRatings / totalCount).toFixed(1)) 
+      : (e.rating !== undefined && e.rating !== null ? Number(e.rating) : null);
 
     return {
       id: e.id,
@@ -343,7 +355,7 @@ export async function supabaseGetAllEmployees(): Promise<Employee[]> {
       zone: e.zone || "Asunción y Gran Asunción",
       ipsVerified: Boolean(e.ips_verified),
       rating: avgRating,
-      reviewCount: totalCount,
+      reviewCount: totalCount > 0 ? totalCount : (e.review_count !== undefined && e.review_count !== null ? Number(e.review_count) : (avgRating ? 1 : 0)),
       status: e.status as Employee["status"],
       activeBookingsCount: activeCount,
       completedBookingsCount: completedCount,

@@ -2747,26 +2747,40 @@ export default function AdminDashboardPage() {
 
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                   {employees.map((emp) => {
-                    const empBookings = bookings.filter(
-                      (b) =>
-                        b.assignedCleaner?.toLowerCase().includes(emp.name.toLowerCase()) ||
-                        (b as any).employeeName?.toLowerCase().includes(emp.name.toLowerCase())
-                    );
-                    const ratedBookings = empBookings.filter((b) => (b as any).rating && Number((b as any).rating) > 0);
+                    const empReviewsList = (consolidatedReviews || []).filter((r) => {
+                      const cName = (r.cleanerName || "").toLowerCase();
+                      const eName = emp.name.toLowerCase();
+                      return cName === eName || cName.includes(eName) || eName.includes(cName);
+                    });
+
+                    const empBookings = (bookings || []).filter((b) => {
+                      const cleaner = (b.assignedCleaner || (b as any).employeeName || "").toLowerCase();
+                      const eName = emp.name.toLowerCase();
+                      const eId = emp.id.toLowerCase();
+                      return cleaner === eId || cleaner === eName || cleaner.includes(eName) || eName.includes(cleaner);
+                    });
+
                     const historyRatings: any[] = emp.ratingsHistory || [];
 
                     const allEmpRatings: number[] = [
+                      ...empReviewsList.map((r) => Number(r.rating)),
                       ...historyRatings.map((h: any) => Number(h.rating || h)),
-                      ...ratedBookings.map((b) => Number((b as any).rating)),
                     ].filter((n) => !isNaN(n) && n > 0);
 
-                    const reviewsCount = allEmpRatings.length > 0 ? allEmpRatings.length : (emp.reviewCount || 0);
+                    const reviewsCount = allEmpRatings.length > 0 
+                      ? allEmpRatings.length 
+                      : (emp.reviewCount !== undefined && emp.reviewCount !== null && emp.reviewCount > 0 
+                          ? emp.reviewCount 
+                          : (emp.rating && Number(emp.rating) > 0 ? 1 : 0));
+
                     const sumRating = allEmpRatings.reduce((sum, b) => sum + b, 0);
-                    const calculatedAvg =
-                      allEmpRatings.length > 0
-                        ? (sumRating / allEmpRatings.length).toFixed(1)
-                        : (emp.rating && Number(emp.rating) > 0 ? Number(emp.rating).toFixed(1) : null);
-                    const completedCount = emp.completedBookingsCount || empBookings.filter((b) => b.status === "COMPLETED").length;
+                    const calculatedAvg = allEmpRatings.length > 0
+                      ? (sumRating / allEmpRatings.length).toFixed(1)
+                      : (emp.rating && Number(emp.rating) > 0 ? Number(emp.rating).toFixed(1) : null);
+
+                    const completedCount = emp.completedBookingsCount !== undefined
+                      ? emp.completedBookingsCount
+                      : empBookings.filter((b) => b.status === "COMPLETED").length;
 
                     return (
                       <div key={emp.id} className="bg-white p-5 rounded-3xl border border-slate-200/80 shadow-xs space-y-4 flex flex-col justify-between">
@@ -2797,14 +2811,14 @@ export default function AdminDashboardPage() {
                           </div>
 
                           {/* Calificación de Servicio Obtenida (Computada tras evaluación del cliente) */}
-                          {calculatedAvg && (reviewsCount > 0 || (emp.rating && Number(emp.rating) > 0)) ? (
+                          {calculatedAvg && reviewsCount > 0 ? (
                             <div className="flex items-center justify-between p-2.5 bg-amber-50/80 border border-amber-200/70 rounded-2xl">
                               <div className="flex items-center gap-1.5">
                                 <Star className="w-4 h-4 fill-amber-400 text-amber-400 shrink-0" />
                                 <span className="font-black text-xs text-amber-950">{calculatedAvg} / 5.0</span>
                               </div>
                               <span className="text-[10px] font-bold text-amber-800 bg-amber-100/80 px-2 py-0.5 rounded-md">
-                                {reviewsCount || 1} {reviewsCount === 1 ? "calificación" : "calificaciones"}
+                                {reviewsCount} {reviewsCount === 1 ? "calificación" : "calificaciones"}
                               </span>
                             </div>
                           ) : (
