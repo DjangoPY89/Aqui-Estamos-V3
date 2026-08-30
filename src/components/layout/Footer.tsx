@@ -121,31 +121,40 @@ export default function Footer() {
 
         </div>
 
-        {/* Copyright & Creative Think Lab Attribution */}
-        <div className="pt-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-[11px] text-neutral-400">
-          <div className="flex flex-col sm:flex-row items-center gap-2 text-center sm:text-left">
+        {/* Copyright & Think Lab Center Attribution */}
+        <div className="pt-8 space-y-5 border-t border-neutral-800/40">
+          
+          {/* Badge Creativo Think Lab Centrado */}
+          <div className="flex justify-center">
+            <a
+              href="https://www.thinklabpy.online/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="group inline-flex items-center gap-2.5 px-4 py-1.5 rounded-full bg-white/[0.04] hover:bg-white/[0.08] border border-white/10 hover:border-lime-500/50 transition-all duration-300 shadow-sm"
+            >
+              {/* Punto Verde Lima Parpadeando */}
+              <span className="relative flex h-2 w-2">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-lime-400 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-lime-500 shadow-[0_0_8px_#84cc16]"></span>
+              </span>
+
+              <span className="text-[10px] text-neutral-400 font-medium group-hover:text-neutral-300 transition-colors">
+                Creado con excelencia por
+              </span>
+              <span className="font-black text-[11px] text-transparent bg-clip-text bg-gradient-to-r from-electric-400 via-sky-300 to-purple-400 tracking-wide group-hover:brightness-125 transition-all">
+                Think Lab
+              </span>
+            </a>
+          </div>
+
+          {/* Copyright y Ciudades */}
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-3 text-[11px] text-neutral-400 text-center sm:text-left">
             <p>© {new Date().getFullYear()} Aquí Estamos. Todos los derechos reservados.</p>
-            <span className="hidden sm:inline text-neutral-700">•</span>
             <div className="flex flex-wrap gap-1.5 justify-center text-neutral-500 text-[10px]">
               <span>Asunción</span> • <span>Luque</span> • <span>San Lorenzo</span> • <span>Lambaré</span> • <span>Villa Morra</span>
             </div>
           </div>
 
-          {/* Badge Creativo Think Lab */}
-          <a
-            href="https://www.thinklabpy.online/"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="group inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white/[0.04] hover:bg-white/[0.08] border border-white/10 hover:border-electric-500/50 transition-all duration-300 shadow-sm"
-          >
-            <span className="text-[10px] text-neutral-400 font-medium group-hover:text-neutral-300 transition-colors">
-              Creado con excelencia por
-            </span>
-            <span className="inline-flex items-center gap-1 font-black text-[11px] text-transparent bg-clip-text bg-gradient-to-r from-electric-400 via-sky-300 to-purple-400 tracking-wide group-hover:brightness-125 transition-all">
-              <span>Think Lab</span>
-              <span className="text-[10px] transform group-hover:translate-x-0.5 transition-transform">⚡</span>
-            </span>
-          </a>
         </div>
 
       </div>
