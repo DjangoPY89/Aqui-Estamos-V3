@@ -393,24 +393,41 @@ export default function CustomerPortalPage() {
 
     setReviewSubmitting(true);
     try {
+      const cleanerName = (selectedBookingForReview as any).assignedCleaner || (selectedBookingForReview as any).employeeName || "Profesional de Cuadrilla";
+      const hours = (selectedBookingForReview as any).hours || selectedBookingForReview.serviceHours || 4;
+
       const res = await fetch("/api/reviews", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           bookingId: selectedBookingForReview.id,
           rating,
-          comment,
-          serviceType: `${(selectedBookingForReview as any).hours || selectedBookingForReview.serviceHours || 4} Horas (${selectedBookingForReview.frequency === "once" ? "Única" : "Recurrente"})`,
+          comment: comment.trim() || `¡Excelente trabajo de ${cleanerName}!`,
+          serviceType: `Limpieza ${hours}hs (${selectedBookingForReview.frequency === "once" ? "Única" : "Recurrente"}) - ${cleanerName}`,
         }),
       });
 
       if (res.ok) {
+        // Actualizar el estado local para que la tarjeta muestre las estrellas inmediatamente
+        setBookings((prev) =>
+          prev.map((b) => {
+            if (b.id === selectedBookingForReview.id) {
+              return {
+                ...b,
+                rating,
+                reviewComment: comment.trim(),
+              } as any;
+            }
+            return b;
+          })
+        );
+
         setReviewSuccess(true);
         setTimeout(() => {
           setReviewSuccess(false);
           setReviewModalOpen(false);
           loadPortalData();
-        }, 2000);
+        }, 2200);
       } else {
         alert("Error al enviar calificación.");
       }
