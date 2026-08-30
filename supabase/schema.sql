@@ -134,9 +134,9 @@ VALUES (
 -- Empleadas Iniciales con IPS Verificado
 INSERT INTO public.employees (id, name, ci, phone, email, zone, ips_verified, rating, status)
 VALUES 
-    ('emp_carmen', 'Carmen Benítez', '3.456.789', '0981 234 567', 'carmen.benitez@aquiestamos.com', 'Asunción (Villa Morra / Ykua Satî)', TRUE, 4.95, 'ACTIVE'),
-    ('emp_rosa', 'Rosa María González', '4.123.456', '0982 987 654', 'rosa.gonzalez@aquiestamos.com', 'Asunción (Centro / Barrio Jara)', TRUE, 4.88, 'ACTIVE'),
-    ('emp_mirna', 'Mirna Rolón', '3.789.012', '0985 345 678', 'mirna.rolon@aquiestamos.com', 'Gran Asunción (Lambaré / Fdo. de la Mora)', TRUE, 4.92, 'ACTIVE')
+    ('emp_carmen', 'Carmen Benítez', '3.456.789', '0981 234 567', 'carmen.benitez@aquiestamos.com', 'Asunción (Villa Morra / Ykua Satî)', TRUE, NULL, 'ACTIVE'),
+    ('emp_rosa', 'Rosa María González', '4.123.456', '0982 987 654', 'rosa.gonzalez@aquiestamos.com', 'Asunción (Centro / Barrio Jara)', TRUE, NULL, 'ACTIVE'),
+    ('emp_mirna', 'Mirna Rolón', '3.789.012', '0985 345 678', 'mirna.rolon@aquiestamos.com', 'Gran Asunción (Lambaré / Fdo. de la Mora)', TRUE, NULL, 'ACTIVE')
 ON CONFLICT (id) DO NOTHING;
 
 -- Reseñas Destacadas
