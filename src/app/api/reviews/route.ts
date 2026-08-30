@@ -39,7 +39,9 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Calificación y comentario son obligatorios." }, { status: 400 });
     }
 
-    // Validar que el servicio no haya sido calificado previamente
+    let assignedCleanerName = cleanerName && !cleanerName.includes("Profesional de Cuadrilla") && !cleanerName.includes("Cuadrilla Oficial") ? cleanerName : null;
+
+    // Validar que el servicio no haya sido calificado previamente y obtener el empleado asignado
     if (bookingId) {
       let existingBooking: any = null;
       try {
@@ -51,17 +53,28 @@ export async function POST(req: Request) {
         } catch (e) {}
       }
 
-      if (existingBooking && existingBooking.rating && Number(existingBooking.rating) > 0) {
-        return NextResponse.json(
-          { error: "Este servicio ya ha sido calificado previamente. Solo se permite una calificación por servicio.", alreadyReviewed: true },
-          { status: 400 }
-        );
+      if (existingBooking) {
+        if (existingBooking.rating && Number(existingBooking.rating) > 0) {
+          return NextResponse.json(
+            { error: "Este servicio ya ha sido calificado previamente. Solo se permite una calificación por servicio.", alreadyReviewed: true },
+            { status: 400 }
+          );
+        }
+        if (!assignedCleanerName && existingBooking.assignedCleaner) {
+          assignedCleanerName = existingBooking.assignedCleaner;
+        }
       }
     }
 
     const name = session?.user?.name || userName || "Cliente Satisfecho";
     const image = session?.user?.image || null;
     const userId = (session?.user as any)?.id || "guest";
+
+    const effectiveServiceType = assignedCleanerName
+      ? (serviceType && !serviceType.includes("Profesional de Cuadrilla") && !serviceType.includes("Cuadrilla Oficial")
+          ? serviceType
+          : `Servicio de Limpieza - ${assignedCleanerName}`)
+      : (serviceType || "Servicio Residencial");
 
     // 1. Guardar la reseña pública / testimonial
     let review: any = null;
@@ -72,7 +85,7 @@ export async function POST(req: Request) {
         userImage: image || undefined,
         rating: numRating,
         comment,
-        serviceType: serviceType || "Servicio Residencial",
+        serviceType: effectiveServiceType,
       });
       try {
         createReview({
@@ -81,7 +94,7 @@ export async function POST(req: Request) {
           userImage: image,
           rating: numRating,
           comment,
-          serviceType: serviceType || "Servicio Residencial",
+          serviceType: effectiveServiceType,
         });
       } catch (e) {}
     } catch (e) {
@@ -91,14 +104,13 @@ export async function POST(req: Request) {
         userImage: image,
         rating: numRating,
         comment,
-        serviceType: serviceType || "Servicio Residencial",
+        serviceType: effectiveServiceType,
       });
     }
 
     // 2. Conectar y persistir la calificación en la reserva específica y al empleado asignado en Supabase
     if (bookingId) {
       const now = new Date().toISOString();
-      let assignedCleanerName = cleanerName || null;
 
       try {
         const localBk = updateBooking(bookingId, {

@@ -402,6 +402,7 @@ export default function CustomerPortalPage() {
         body: JSON.stringify({
           bookingId: selectedBookingForReview.id,
           rating,
+          cleanerName: cleanerName !== "Profesional de Cuadrilla" ? cleanerName : undefined,
           comment: comment.trim() || `¡Excelente trabajo de ${cleanerName}!`,
           serviceType: `Limpieza ${hours}hs (${selectedBookingForReview.frequency === "once" ? "Única" : "Recurrente"}) - ${cleanerName}`,
         }),
