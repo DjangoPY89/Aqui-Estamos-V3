@@ -447,11 +447,11 @@ export default function CustomerPortalPage() {
 
   if (status === "loading" || isLoading) {
     return (
-      <div className="min-h-screen bg-[#F8FAFC] flex flex-col items-center justify-center p-6 space-y-4">
-        <div className="w-12 h-12 rounded-2xl bg-white shadow-md flex items-center justify-center border border-slate-200">
-          <RefreshCw className="w-6 h-6 animate-spin text-electric-600" />
+      <div className="min-h-screen bg-[#F5F5F7] flex flex-col items-center justify-center p-6 space-y-4">
+        <div className="w-12 h-12 rounded-full bg-white shadow-xs flex items-center justify-center border border-slate-200/60">
+          <RefreshCw className="w-5 h-5 animate-spin text-[#0071E3]" />
         </div>
-        <p className="text-xs font-bold text-slate-500">Cargando tu portal de cliente seguro...</p>
+        <p className="text-xs font-semibold text-slate-500">Cargando tu cuenta...</p>
       </div>
     );
   }
@@ -467,12 +467,9 @@ export default function CustomerPortalPage() {
   const invoicesCount = bookings.filter((b) => b.status === "COMPLETED").length;
 
   return (
-    <main className="min-h-screen bg-[#F8FAFC] pb-16">
+    <main className="min-h-screen bg-[#F5F5F7] pb-20">
       
-      {/* Fondo superior decorativo con degradado suave */}
-      <div className="w-full h-32 bg-gradient-to-b from-slate-900 to-transparent opacity-5 absolute top-0 left-0 pointer-events-none" />
-
-      <div className="max-w-6xl mx-auto px-3.5 sm:px-6 lg:px-8 py-6 sm:py-10 space-y-6 sm:space-y-8 relative z-10">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12 space-y-7 relative z-10">
         
         {/* 1. Header Protagonista con Identidad de Marca */}
         <PortalHeader

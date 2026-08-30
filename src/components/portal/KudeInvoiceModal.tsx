@@ -1,14 +1,9 @@
 "use client";
 
-import React from "react";
+import React, { useEffect } from "react";
 import { 
-  FileText, 
   Printer, 
-  Download, 
-  CheckCircle2, 
   QrCode, 
-  Building, 
-  ShieldCheck,
   X
 } from "lucide-react";
 import { Booking, User } from "@/types";
@@ -25,6 +20,14 @@ export default function KudeInvoiceModal({
   userProfile,
   onClose,
 }: KudeInvoiceModalProps) {
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [onClose]);
+
   if (!booking) return null;
 
   const hours = (booking as any).hours || booking.serviceHours || 4;
@@ -45,73 +48,80 @@ export default function KudeInvoiceModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 overflow-y-auto animate-in fade-in">
-      <div className="bg-white rounded-3xl max-w-2xl w-full p-6 sm:p-8 shadow-2xl border border-slate-200 relative my-6 space-y-6">
+    <div 
+      onClick={onClose}
+      className="fixed inset-0 z-50 bg-black/40 backdrop-blur-xl flex items-center justify-center p-3 sm:p-4 overflow-y-auto animate-in fade-in"
+    >
+      <div 
+        onClick={(e) => e.stopPropagation()}
+        className="bg-white/95 backdrop-blur-2xl rounded-[32px] max-w-2xl w-full p-6 sm:p-8 shadow-[0_20px_60px_rgba(0,0,0,0.15)] border border-white/60 relative my-6 space-y-6"
+      >
         
         {/* Botón Cerrar */}
         <button
           type="button"
           onClick={onClose}
-          className="absolute top-5 right-5 p-2 text-slate-400 hover:text-slate-700 rounded-full hover:bg-slate-100 transition-colors"
+          className="absolute top-5 right-5 p-2 text-slate-400 hover:text-slate-700 rounded-full hover:bg-slate-100 transition-colors cursor-pointer"
+          title="Cerrar"
         >
           <X className="w-5 h-5" />
         </button>
 
         {/* Cabecera KUDE Oficial */}
-        <div className="border-2 border-slate-900 rounded-2xl p-4 sm:p-5 space-y-4">
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-slate-200 pb-4">
+        <div className="border border-slate-200/80 rounded-2xl p-4 sm:p-5 space-y-4 bg-white shadow-2xs">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-slate-100 pb-4">
             <div>
-              <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 bg-purple-100 text-purple-900 rounded-md text-[10px] font-black uppercase tracking-wider mb-1">
+              <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 bg-purple-50 text-purple-900 border border-purple-200/50 rounded-full text-[10px] font-bold uppercase tracking-wider mb-1">
                 KUDE - Documento Tributario Electrónico
               </div>
-              <h2 className="text-lg sm:text-xl font-black text-slate-900 tracking-tight">
+              <h2 className="text-lg sm:text-xl font-black text-slate-950 tracking-tight">
                 AQUÍ ESTAMOS S.A.
               </h2>
-              <p className="text-xs text-slate-600 font-medium">
+              <p className="text-xs text-slate-500 font-medium">
                 Servicios Integrales de Limpieza y Mantenimiento
               </p>
-              <p className="text-[11px] text-slate-500">
+              <p className="text-[11px] text-slate-400">
                 Avda. Santa Teresa 1827 c/ Aviadores del Chaco • Asunción, Paraguay
               </p>
             </div>
 
-            <div className="text-right sm:text-right border-l-0 sm:border-l sm:pl-4 border-slate-200 text-xs space-y-0.5">
+            <div className="text-right sm:text-right border-l-0 sm:border-l sm:pl-4 border-slate-100 text-xs space-y-0.5">
               <p className="font-mono font-black text-slate-900 text-sm">RUC: 80123456-7</p>
               <p className="font-bold text-purple-700 font-mono">TIMBRADO N°: 16543210</p>
-              <p className="text-[11px] text-slate-500">Vigencia: 2025 - 2027</p>
+              <p className="text-[11px] text-slate-400">Vigencia: 2025 - 2027</p>
               <p className="font-mono font-black text-slate-900 text-xs pt-1">
                 FACTURA ELECTRÓNICA
               </p>
-              <p className="font-mono font-bold text-electric-600 text-xs">
+              <p className="font-mono font-bold text-[#0071E3] text-xs">
                 N° {invoiceNumber}
               </p>
             </div>
           </div>
 
           {/* Datos del Receptor */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs bg-slate-50 p-3 rounded-xl">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs bg-slate-50/80 p-3 rounded-xl border border-slate-100">
             <div>
-              <span className="text-[10px] font-bold text-slate-400 uppercase">Nombre / Razón Social:</span>
-              <p className="font-black text-slate-900 truncate">{customerTaxName}</p>
+              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Nombre / Razón Social:</span>
+              <p className="font-bold text-slate-900 truncate">{customerTaxName}</p>
             </div>
             <div>
-              <span className="text-[10px] font-bold text-slate-400 uppercase">RUC / C.I.:</span>
-              <p className="font-mono font-black text-slate-900">{customerRuc}</p>
+              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">RUC / C.I.:</span>
+              <p className="font-mono font-bold text-slate-900">{customerRuc}</p>
             </div>
             <div>
-              <span className="text-[10px] font-bold text-slate-400 uppercase">Fecha de Emisión:</span>
-              <p className="font-bold text-slate-800">{new Date(booking.createdAt).toLocaleDateString("es-PY")}</p>
+              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Fecha de Emisión:</span>
+              <p className="font-semibold text-slate-800">{new Date(booking.createdAt).toLocaleDateString("es-PY")}</p>
             </div>
             <div>
-              <span className="text-[10px] font-bold text-slate-400 uppercase">Condición de Venta:</span>
-              <p className="font-bold text-slate-800">Contado (Al Servicio)</p>
+              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Condición de Venta:</span>
+              <p className="font-semibold text-slate-800">Contado (Al Servicio)</p>
             </div>
           </div>
 
           {/* Detalle de Ítems */}
           <div className="overflow-x-auto">
             <table className="w-full text-left text-xs">
-              <thead className="bg-slate-100 text-slate-700 font-extrabold uppercase text-[10px] border-y border-slate-300">
+              <thead className="bg-slate-50 text-slate-400 font-bold uppercase text-[10px] tracking-wider border-y border-slate-100">
                 <tr>
                   <th className="py-2 px-2">Cant.</th>
                   <th className="py-2 px-2">Descripción</th>
@@ -119,11 +129,11 @@ export default function KudeInvoiceModal({
                   <th className="py-2 px-2 text-right">Gravadas 10%</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-200 font-medium text-slate-800">
+              <tbody className="divide-y divide-slate-100 font-medium text-slate-800">
                 <tr>
                   <td className="py-2.5 px-2 font-mono">1</td>
                   <td className="py-2.5 px-2">
-                    Servicio de Limpieza Profesional ({hours} horas) - Personal IPS
+                    Servicio de Limpieza ({hours} horas) - Personal IPS
                   </td>
                   <td className="py-2.5 px-2 text-right font-mono">{formatGs(price)}</td>
                   <td className="py-2.5 px-2 text-right font-mono font-bold">{formatGs(price)}</td>
@@ -133,33 +143,33 @@ export default function KudeInvoiceModal({
           </div>
 
           {/* Liquidación de IVA */}
-          <div className="p-3 bg-slate-50 rounded-xl space-y-1.5 text-xs border border-slate-200">
-            <div className="flex justify-between font-bold text-slate-700">
+          <div className="p-3 bg-slate-50/80 rounded-xl space-y-1.5 text-xs border border-slate-100">
+            <div className="flex justify-between font-medium text-slate-600">
               <span>Liquidación IVA (10%):</span>
-              <span className="font-mono">{formatGs(iva10)}</span>
+              <span className="font-mono font-semibold">{formatGs(iva10)}</span>
             </div>
-            <div className="flex justify-between font-bold text-slate-700">
+            <div className="flex justify-between font-medium text-slate-600">
               <span>Total Gravadas:</span>
-              <span className="font-mono">{formatGs(gravada10)}</span>
+              <span className="font-mono font-semibold">{formatGs(gravada10)}</span>
             </div>
-            <div className="pt-1.5 border-t border-slate-200 flex justify-between text-sm font-black text-slate-900">
-              <span>TOTAL GENERAL EN GUARANÍES:</span>
-              <span className="text-purple-700 font-mono">{formatGs(price)}</span>
+            <div className="pt-1.5 border-t border-slate-200 flex justify-between text-sm font-black text-slate-950">
+              <span>TOTAL GENERAL:</span>
+              <span className="text-[#0071E3] font-mono">{formatGs(price)}</span>
             </div>
           </div>
 
           {/* CDC y Código QR */}
-          <div className="flex flex-col sm:flex-row items-center gap-4 pt-2 border-t border-slate-200">
-            <div className="w-20 h-20 bg-slate-900 text-white rounded-xl p-2 flex items-center justify-center shrink-0">
-              <QrCode className="w-16 h-16 text-white" />
+          <div className="flex flex-col sm:flex-row items-center gap-4 pt-2 border-t border-slate-100">
+            <div className="w-16 h-16 bg-slate-900 text-white rounded-2xl p-2 flex items-center justify-center shrink-0">
+              <QrCode className="w-12 h-12 text-white" />
             </div>
             <div className="space-y-1 text-center sm:text-left flex-1 min-w-0">
-              <span className="text-[10px] font-bold text-slate-400 uppercase">Código CDC SIFEN Oficial:</span>
-              <p className="font-mono text-[10px] text-slate-800 font-bold break-all bg-slate-100 p-1.5 rounded-lg">
+              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Código CDC SIFEN Oficial:</span>
+              <p className="font-mono text-[10px] text-slate-800 font-semibold break-all bg-slate-50 p-2 rounded-xl border border-slate-100">
                 {cdcCode}
               </p>
-              <p className="text-[10px] text-slate-500">
-                Consulte la validez de este Documento Tributario Electrónico en el portal de la SET / DNIT.
+              <p className="text-[10px] text-slate-400 font-medium">
+                Validez verificable en el portal oficial de la DNIT Paraguay.
               </p>
             </div>
           </div>
@@ -171,16 +181,16 @@ export default function KudeInvoiceModal({
           <button
             type="button"
             onClick={handlePrint}
-            className="flex-1 py-3.5 bg-purple-700 hover:bg-purple-800 text-white rounded-2xl text-xs font-extrabold flex items-center justify-center gap-2 transition-all shadow-md active:scale-98"
+            className="flex-1 py-2.5 bg-[#0071E3] hover:bg-[#0077ED] text-white rounded-full text-xs font-semibold flex items-center justify-center gap-2 transition-all shadow-xs active:scale-98 cursor-pointer"
           >
             <Printer className="w-4 h-4" />
-            <span>Imprimir Factura Oficial (KUDE)</span>
+            <span>Imprimir Factura (KUDE)</span>
           </button>
 
           <button
             type="button"
             onClick={onClose}
-            className="py-3.5 px-6 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-2xl text-xs font-bold transition-all active:scale-98"
+            className="py-2.5 px-6 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-full text-xs font-semibold transition-all active:scale-98 cursor-pointer"
           >
             Cerrar
           </button>

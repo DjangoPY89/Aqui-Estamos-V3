@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { Clock, CheckCircle2, MapPin, ShieldCheck, Sparkles, Star } from "lucide-react";
+import { Clock, CheckCircle2, MapPin, ShieldCheck } from "lucide-react";
 import { Booking } from "@/types";
 
 interface PortalStatsProps {
@@ -24,67 +24,75 @@ export default function PortalStats({ bookings, savedAddressesCount }: PortalSta
   return (
     <div className="grid grid-cols-2 lg:grid-cols-4 gap-3.5 sm:gap-4">
       {/* 1. Servicios Activos */}
-      <div className="bg-white rounded-2xl sm:rounded-3xl p-4 sm:p-5 border border-slate-200/80 shadow-xs hover:border-electric-300 transition-all space-y-2">
-        <div className="flex items-center justify-between">
-          <span className="text-[11px] sm:text-xs font-bold text-slate-500 uppercase tracking-wider">Activos</span>
-          <div className="w-8 h-8 rounded-xl bg-electric-50 text-electric-600 flex items-center justify-center font-bold">
-            <Clock className="w-4 h-4" />
-          </div>
+      <div className="bg-white/90 backdrop-blur-xl rounded-[24px] p-5 border border-slate-200/70 shadow-[0_4px_20px_rgba(0,0,0,0.02)] flex flex-col items-center justify-between text-center space-y-2.5 transition-all hover:shadow-sm">
+        <div className="w-10 h-10 rounded-2xl bg-blue-50 text-[#0071E3] flex items-center justify-center font-bold">
+          <Clock className="w-5 h-5" />
         </div>
-        <p className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
-          {activeBookings.length}
-        </p>
-        <p className="text-[11px] text-slate-500 font-medium">
-          {activeBookings.length === 1 ? "Servicio programado" : "Servicios programados"}
-        </p>
+        <div className="space-y-0.5">
+          <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500">
+            En Curso
+          </span>
+          <p className="text-3xl font-black text-slate-950 tracking-tight">
+            {activeBookings.length}
+          </p>
+        </div>
+        <span className="inline-block px-2.5 py-0.5 rounded-full bg-blue-50 text-[#0071E3] text-[10px] font-semibold">
+          {activeBookings.length === 1 ? "1 programado" : `${activeBookings.length} programados`}
+        </span>
       </div>
 
       {/* 2. Limpiezas Completadas */}
-      <div className="bg-white rounded-2xl sm:rounded-3xl p-4 sm:p-5 border border-slate-200/80 shadow-xs hover:border-emerald-300 transition-all space-y-2">
-        <div className="flex items-center justify-between">
-          <span className="text-[11px] sm:text-xs font-bold text-slate-500 uppercase tracking-wider">Historial</span>
-          <div className="w-8 h-8 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center font-bold">
-            <CheckCircle2 className="w-4 h-4" />
-          </div>
+      <div className="bg-white/90 backdrop-blur-xl rounded-[24px] p-5 border border-slate-200/70 shadow-[0_4px_20px_rgba(0,0,0,0.02)] flex flex-col items-center justify-between text-center space-y-2.5 transition-all hover:shadow-sm">
+        <div className="w-10 h-10 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center font-bold">
+          <CheckCircle2 className="w-5 h-5" />
         </div>
-        <p className="text-2xl sm:text-3xl font-black text-emerald-600 tracking-tight">
-          {completedBookings.length}
-        </p>
-        <p className="text-[11px] text-slate-500 font-medium">
-          {totalHours} hs acumuladas
-        </p>
+        <div className="space-y-0.5">
+          <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500">
+            Historial
+          </span>
+          <p className="text-3xl font-black text-slate-950 tracking-tight">
+            {completedBookings.length}
+          </p>
+        </div>
+        <span className="inline-block px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-700 text-[10px] font-semibold">
+          {totalHours} hs de servicio
+        </span>
       </div>
 
       {/* 3. Direcciones Registradas */}
-      <div className="bg-white rounded-2xl sm:rounded-3xl p-4 sm:p-5 border border-slate-200/80 shadow-xs hover:border-purple-300 transition-all space-y-2">
-        <div className="flex items-center justify-between">
-          <span className="text-[11px] sm:text-xs font-bold text-slate-500 uppercase tracking-wider">Ubicaciones</span>
-          <div className="w-8 h-8 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center font-bold">
-            <MapPin className="w-4 h-4" />
-          </div>
+      <div className="bg-white/90 backdrop-blur-xl rounded-[24px] p-5 border border-slate-200/70 shadow-[0_4px_20px_rgba(0,0,0,0.02)] flex flex-col items-center justify-between text-center space-y-2.5 transition-all hover:shadow-sm">
+        <div className="w-10 h-10 rounded-2xl bg-purple-50 text-purple-600 flex items-center justify-center font-bold">
+          <MapPin className="w-5 h-5" />
         </div>
-        <p className="text-2xl sm:text-3xl font-black text-purple-600 tracking-tight">
-          {savedAddressesCount}
-        </p>
-        <p className="text-[11px] text-slate-500 font-medium">
-          Direcciones fijadas en mapa
-        </p>
+        <div className="space-y-0.5">
+          <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500">
+            Ubicaciones
+          </span>
+          <p className="text-3xl font-black text-slate-950 tracking-tight">
+            {savedAddressesCount}
+          </p>
+        </div>
+        <span className="inline-block px-2.5 py-0.5 rounded-full bg-purple-50 text-purple-700 text-[10px] font-semibold">
+          Puntos GPS guardados
+        </span>
       </div>
 
       {/* 4. Garantía 100% Protegida */}
-      <div className="bg-white rounded-2xl sm:rounded-3xl p-4 sm:p-5 border border-slate-200/80 shadow-xs hover:border-amber-300 transition-all space-y-2">
-        <div className="flex items-center justify-between">
-          <span className="text-[11px] sm:text-xs font-bold text-slate-500 uppercase tracking-wider">Garantía</span>
-          <div className="w-8 h-8 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center font-bold">
-            <ShieldCheck className="w-4 h-4" />
-          </div>
+      <div className="bg-white/90 backdrop-blur-xl rounded-[24px] p-5 border border-slate-200/70 shadow-[0_4px_20px_rgba(0,0,0,0.02)] flex flex-col items-center justify-between text-center space-y-2.5 transition-all hover:shadow-sm">
+        <div className="w-10 h-10 rounded-2xl bg-amber-50 text-amber-600 flex items-center justify-center font-bold">
+          <ShieldCheck className="w-5 h-5" />
         </div>
-        <p className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight flex items-center gap-1.5">
-          <span className="text-emerald-600">100%</span> Calidad
-        </p>
-        <p className="text-[11px] text-slate-500 font-medium">
-          Seguro IPS y re-limpieza gratuita
-        </p>
+        <div className="space-y-0.5">
+          <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500">
+            Garantía
+          </span>
+          <p className="text-3xl font-black text-slate-950 tracking-tight">
+            100%
+          </p>
+        </div>
+        <span className="inline-block px-2.5 py-0.5 rounded-full bg-amber-50 text-amber-800 text-[10px] font-semibold">
+          Cobertura IPS & Calidad
+        </span>
       </div>
     </div>
   );
