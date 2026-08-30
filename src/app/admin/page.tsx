@@ -246,6 +246,7 @@ export default function AdminDashboardPage() {
   const [newEmpCi, setNewEmpCi] = useState("");
   const [newEmpPhone, setNewEmpPhone] = useState("");
   const [newEmpEmail, setNewEmpEmail] = useState("");
+  const [newEmpImage, setNewEmpImage] = useState("");
   const [newEmpZone, setNewEmpZone] = useState("Asunción (Villa Morra / Ykua Satî)");
   const [newEmpIps, setNewEmpIps] = useState(true);
   const [isSubmittingEmp, setIsSubmittingEmp] = useState(false);
@@ -256,6 +257,7 @@ export default function AdminDashboardPage() {
   const [empEditCi, setEmpEditCi] = useState("");
   const [empEditPhone, setEmpEditPhone] = useState("");
   const [empEditEmail, setEmpEditEmail] = useState("");
+  const [empEditImage, setEmpEditImage] = useState("");
   const [empEditZone, setEmpEditZone] = useState("");
   const [empEditStatus, setEmpEditStatus] = useState<Employee["status"]>("ACTIVE");
   const [empEditIps, setEmpEditIps] = useState(true);
@@ -267,6 +269,7 @@ export default function AdminDashboardPage() {
     setEmpEditCi(emp.ci || "");
     setEmpEditPhone(emp.phone || "");
     setEmpEditEmail(emp.email || "");
+    setEmpEditImage(emp.image || "");
     setEmpEditZone(emp.zone || "Asunción (Villa Morra / Ykua Satî)");
     setEmpEditStatus(emp.status || "ACTIVE");
     setEmpEditIps(Boolean(emp.ipsVerified));
@@ -290,6 +293,7 @@ export default function AdminDashboardPage() {
           ci: empEditCi.trim(),
           phone: empEditPhone.trim(),
           email: empEditEmail.trim(),
+          image: empEditImage.trim() || null,
           zone: empEditZone.trim(),
           status: empEditStatus,
           ipsVerified: empEditIps,
@@ -562,6 +566,7 @@ export default function AdminDashboardPage() {
           ci: newEmpCi.trim(),
           phone: newEmpPhone.trim(),
           email: newEmpEmail.trim() || undefined,
+          image: newEmpImage.trim() || undefined,
           zone: newEmpZone.trim(),
           ipsVerified: newEmpIps,
         }),
@@ -574,6 +579,7 @@ export default function AdminDashboardPage() {
         setNewEmpCi("");
         setNewEmpPhone("");
         setNewEmpEmail("");
+        setNewEmpImage("");
         loadData();
       } else {
         const data = await res.json();
@@ -2553,79 +2559,121 @@ export default function AdminDashboardPage() {
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {employees.map((emp) => (
-                    <div key={emp.id} className="bg-white p-5 rounded-3xl border border-slate-200/80 shadow-xs space-y-4">
-                      <div className="flex items-start justify-between">
-                        <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-electric-600 to-cyan-500 text-white font-bold text-sm flex items-center justify-center shadow-xs">
-                            {emp.name.slice(0, 2).toUpperCase()}
+                  {employees.map((emp) => {
+                    const empBookings = bookings.filter(
+                      (b) =>
+                        b.assignedCleaner?.toLowerCase().includes(emp.name.toLowerCase()) ||
+                        (b as any).employeeName?.toLowerCase().includes(emp.name.toLowerCase())
+                    );
+                    const ratedBookings = empBookings.filter((b) => (b as any).rating && (b as any).rating > 0);
+                    const sumRating = ratedBookings.reduce((sum, b) => sum + (b as any).rating, 0);
+                    const displayRating =
+                      ratedBookings.length > 0
+                        ? (sumRating / ratedBookings.length).toFixed(1)
+                        : (emp.rating ? Number(emp.rating).toFixed(1) : "5.0");
+                    const reviewsCount = ratedBookings.length;
+                    const completedCount = emp.completedBookingsCount || empBookings.filter((b) => b.status === "COMPLETED").length;
+
+                    return (
+                      <div key={emp.id} className="bg-white p-5 rounded-3xl border border-slate-200/80 shadow-xs space-y-4 flex flex-col justify-between">
+                        <div className="space-y-3">
+                          <div className="flex items-start justify-between">
+                            <div className="flex items-center gap-3">
+                              {emp.image ? (
+                                <img
+                                  src={emp.image}
+                                  alt={emp.name}
+                                  className="w-12 h-12 rounded-2xl object-cover border border-slate-200 shadow-xs shrink-0"
+                                />
+                              ) : (
+                                <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-electric-600 to-cyan-500 text-white font-black text-sm flex items-center justify-center shadow-xs shrink-0">
+                                  {emp.name.slice(0, 2).toUpperCase()}
+                                </div>
+                              )}
+                              <div>
+                                <h3 className="text-xs font-bold text-slate-900 leading-tight">{emp.name}</h3>
+                                <p className="text-[11px] text-slate-500 font-mono mt-0.5">CI: {emp.ci || "Sin CI"}</p>
+                              </div>
+                            </div>
+                            <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase ${
+                              emp.status === "ACTIVE" ? "bg-emerald-50 text-emerald-800 border border-emerald-200" : "bg-slate-100 text-slate-600"
+                            }`}>
+                              {emp.status === "ACTIVE" ? "Activo" : "Inactivo"}
+                            </span>
                           </div>
-                          <div>
-                            <h3 className="text-xs font-bold text-slate-900">{emp.name}</h3>
-                            <p className="text-[11px] text-slate-500 font-mono">CI: {emp.ci || "Sin CI"}</p>
+
+                          {/* Calificación de Servicio Obtenida */}
+                          <div className="flex items-center justify-between p-2.5 bg-amber-50/80 border border-amber-200/70 rounded-2xl">
+                            <div className="flex items-center gap-1.5">
+                              <Star className="w-4 h-4 fill-amber-400 text-amber-400 shrink-0" />
+                              <span className="font-black text-xs text-amber-950">{displayRating} / 5.0</span>
+                            </div>
+                            <span className="text-[10px] font-bold text-amber-800 bg-amber-100/80 px-2 py-0.5 rounded-md">
+                              {reviewsCount} {reviewsCount === 1 ? "calificación" : "calificaciones"}
+                            </span>
+                          </div>
+
+                          {/* Datos de Contacto y Zona */}
+                          <div className="space-y-1.5 text-xs text-slate-600">
+                            <p className="flex items-center gap-2">
+                              <Phone className="w-3.5 h-3.5 text-slate-400" />
+                              <span>{emp.phone}</span>
+                            </p>
+                            {emp.email && (
+                              <p className="flex items-center gap-2">
+                                <Mail className="w-3.5 h-3.5 text-slate-400" />
+                                <span>{emp.email}</span>
+                              </p>
+                            )}
+                            <p className="flex items-center gap-2">
+                              <MapPin className="w-3.5 h-3.5 text-slate-400" />
+                              <span>{emp.zone}</span>
+                            </p>
+                            <p className="flex items-center gap-2 text-slate-500 text-[11px]">
+                              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                              <span>{completedCount} servicios concluidos</span>
+                            </p>
                           </div>
                         </div>
-                        <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase ${
-                          emp.status === "ACTIVE" ? "bg-emerald-50 text-emerald-800 border border-emerald-200" : "bg-slate-100 text-slate-600"
-                        }`}>
-                          {emp.status === "ACTIVE" ? "Activo" : "Inactivo"}
-                        </span>
-                      </div>
 
-                      <div className="space-y-1.5 text-xs text-slate-600">
-                        <p className="flex items-center gap-2">
-                          <Phone className="w-3.5 h-3.5 text-slate-400" />
-                          <span>{emp.phone}</span>
-                        </p>
-                        {emp.email && (
-                          <p className="flex items-center gap-2">
-                            <Mail className="w-3.5 h-3.5 text-slate-400" />
-                            <span>{emp.email}</span>
-                          </p>
-                        )}
-                        <p className="flex items-center gap-2">
-                          <MapPin className="w-3.5 h-3.5 text-slate-400" />
-                          <span>{emp.zone}</span>
-                        </p>
-                      </div>
-
-                      <div className="pt-3 border-t border-slate-100 flex items-center justify-between gap-2">
-                        <button
-                          type="button"
-                          onClick={() => handleToggleIps(emp.id, Boolean(emp.ipsVerified))}
-                          className={`px-2.5 py-1 rounded-xl text-[10px] font-bold border transition-all flex items-center gap-1 cursor-pointer ${
-                            emp.ipsVerified 
-                              ? "bg-emerald-50 text-emerald-800 border-emerald-200" 
-                              : "bg-amber-50 text-amber-800 border-amber-200"
-                          }`}
-                        >
-                          <ShieldCheck className="w-3 h-3" />
-                          <span>{emp.ipsVerified ? "IPS Verificado" : "IPS en Trámite"}</span>
-                        </button>
-
-                        <div className="flex items-center gap-1.5">
+                        <div className="pt-3 border-t border-slate-100 flex items-center justify-between gap-2">
                           <button
                             type="button"
-                            onClick={() => handleOpenEditEmployee(emp)}
-                            className="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl font-bold border border-slate-200 transition-all flex items-center gap-1 text-[11px] cursor-pointer"
-                            title="Editar empleado"
+                            onClick={() => handleToggleIps(emp.id, Boolean(emp.ipsVerified))}
+                            className={`px-2.5 py-1 rounded-xl text-[10px] font-bold border transition-all flex items-center gap-1 cursor-pointer ${
+                              emp.ipsVerified 
+                                ? "bg-emerald-50 text-emerald-800 border-emerald-200" 
+                                : "bg-amber-50 text-amber-800 border-amber-200"
+                            }`}
                           >
-                            <Edit3 className="w-3 h-3 text-slate-600" />
-                            <span>Editar</span>
+                            <ShieldCheck className="w-3 h-3" />
+                            <span>{emp.ipsVerified ? "IPS Verificado" : "IPS en Trámite"}</span>
                           </button>
 
-                          <button
-                            type="button"
-                            onClick={() => handleDeleteEmployee(emp.id, emp.name)}
-                            className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-xl border border-transparent hover:border-rose-200 transition-all cursor-pointer"
-                            title="Eliminar empleado"
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </button>
+                          <div className="flex items-center gap-1.5">
+                            <button
+                              type="button"
+                              onClick={() => handleOpenEditEmployee(emp)}
+                              className="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl font-bold border border-slate-200 transition-all flex items-center gap-1 text-[11px] cursor-pointer"
+                              title="Editar empleado y foto"
+                            >
+                              <Edit3 className="w-3 h-3 text-slate-600" />
+                              <span>Editar</span>
+                            </button>
+
+                            <button
+                              type="button"
+                              onClick={() => handleDeleteEmployee(emp.id, emp.name)}
+                              className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-xl border border-transparent hover:border-rose-200 transition-all cursor-pointer"
+                              title="Eliminar empleado"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </div>
             )}
@@ -3925,6 +3973,31 @@ export default function AdminDashboardPage() {
             </div>
 
             <form onSubmit={handleCreateEmployee} className="space-y-3.5">
+              {/* Foto de Perfil */}
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1.5">Foto de Perfil del Empleado (URL)</label>
+                <div className="flex items-center gap-3">
+                  {newEmpImage ? (
+                    <img
+                      src={newEmpImage}
+                      alt="Preview"
+                      className="w-11 h-11 rounded-2xl object-cover border border-slate-200 shadow-xs shrink-0"
+                    />
+                  ) : (
+                    <div className="w-11 h-11 rounded-2xl bg-slate-100 text-slate-400 font-bold text-[10px] flex items-center justify-center border border-slate-200 shrink-0">
+                      📷 Sin foto
+                    </div>
+                  )}
+                  <input
+                    type="url"
+                    value={newEmpImage}
+                    onChange={(e) => setNewEmpImage(e.target.value)}
+                    placeholder="https://... o URL de foto del colaborador"
+                    className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs focus:ring-2 focus:ring-electric-600 focus:outline-none"
+                  />
+                </div>
+              </div>
+
               <div>
                 <label className="block text-xs font-bold text-slate-700 mb-1">Nombre Completo *</label>
                 <input
@@ -4042,6 +4115,31 @@ export default function AdminDashboardPage() {
             </div>
 
             <form onSubmit={handleSaveEmployee} className="space-y-3.5">
+              {/* Foto de Perfil */}
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1.5">Foto de Perfil (URL)</label>
+                <div className="flex items-center gap-3">
+                  {empEditImage ? (
+                    <img
+                      src={empEditImage}
+                      alt="Preview"
+                      className="w-11 h-11 rounded-2xl object-cover border border-slate-200 shadow-xs shrink-0"
+                    />
+                  ) : (
+                    <div className="w-11 h-11 rounded-2xl bg-slate-100 text-slate-400 font-bold text-[10px] flex items-center justify-center border border-slate-200 shrink-0">
+                      📷 Sin foto
+                    </div>
+                  )}
+                  <input
+                    type="url"
+                    value={empEditImage}
+                    onChange={(e) => setEmpEditImage(e.target.value)}
+                    placeholder="https://... o URL de foto del colaborador"
+                    className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs focus:ring-2 focus:ring-electric-600 focus:outline-none"
+                  />
+                </div>
+              </div>
+
               <div>
                 <label className="block text-xs font-bold text-slate-700 mb-1">Nombre Completo *</label>
                 <input

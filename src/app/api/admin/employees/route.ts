@@ -40,7 +40,7 @@ export async function POST(req: Request) {
     }
 
     const body = await req.json();
-    const { name, ci, phone, email, zone, ipsVerified } = body;
+    const { name, ci, phone, email, zone, ipsVerified, image, rating } = body;
 
     if (!name || !phone) {
       return NextResponse.json({ error: "Nombre y teléfono son campos obligatorios." }, { status: 400 });
@@ -53,12 +53,13 @@ export async function POST(req: Request) {
         ci,
         phone,
         email,
+        image: image || undefined,
         zone,
         ipsVerified: ipsVerified !== false,
       });
       // Sincronizar local
       try {
-        createEmployee({ name, ci, phone, email, zone, ipsVerified: ipsVerified !== false });
+        createEmployee({ name, ci, phone, email, image, zone, ipsVerified: ipsVerified !== false });
       } catch (e) {}
     } catch (e) {
       employee = createEmployee({
@@ -66,6 +67,7 @@ export async function POST(req: Request) {
         ci,
         phone,
         email,
+        image,
         zone,
         ipsVerified: ipsVerified !== false,
       });
