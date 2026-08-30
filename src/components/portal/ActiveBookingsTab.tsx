@@ -7,8 +7,6 @@ import {
   Clock, 
   MapPin, 
   UserCheck, 
-  Phone, 
-  MessageSquare, 
   FileText, 
   Receipt, 
   ArrowRight, 
@@ -94,7 +92,6 @@ export default function ActiveBookingsTab({
           const isPending = booking.status === "PENDING";
 
           const assignedName = (booking as any).employeeName || (booking as any).assignedTo || booking.assignedCleaner;
-          const assignedPhone = (booking as any).employeePhone;
           const assignedImage = (booking as any).employeeImage || (booking as any).cleanerImage;
           const assignedRating = (booking as any).employeeRating || 5.0;
           const hours = (booking as any).hours || booking.serviceHours || 4;
@@ -154,7 +151,7 @@ export default function ActiveBookingsTab({
 
               {/* 2. Tarjeta Destacada de la Profesional IPS Asignada */}
               {assignedName ? (
-                <div className="p-4 sm:p-5 rounded-2xl bg-slate-50/80 border border-slate-200/60 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <div className="p-4 sm:p-5 rounded-2xl bg-slate-50/80 border border-slate-200/60 flex items-center justify-between gap-4">
                   <div className="flex items-center gap-3.5">
                     <div className="relative shrink-0">
                       {assignedImage ? (
@@ -193,28 +190,6 @@ export default function ActiveBookingsTab({
                       </p>
                     </div>
                   </div>
-
-                  {assignedPhone && (
-                    <div className="flex items-center gap-2 shrink-0">
-                      <a
-                        href={`https://wa.me/${assignedPhone.replace(/[^0-9]/g, "")}?text=Hola%20${encodeURIComponent(assignedName)},%20te%20escribo%20por%20mi%20servicio%20de%20limpieza%20agendado%20en%20Aqu%C3%AD%20Estamos%20(%23${bookingNum}).`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="inline-flex items-center justify-center gap-1.5 px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-full text-xs font-semibold shadow-xs transition-all active:scale-98"
-                      >
-                        <MessageSquare className="w-3.5 h-3.5" />
-                        <span>WhatsApp Cuadrilla</span>
-                      </a>
-
-                      <a
-                        href={`tel:${assignedPhone}`}
-                        className="p-2 bg-white hover:bg-slate-100 text-slate-700 rounded-full border border-slate-200 transition-colors shadow-2xs"
-                        title="Llamar a la profesional"
-                      >
-                        <Phone className="w-3.5 h-3.5 text-slate-600" />
-                      </a>
-                    </div>
-                  )}
                 </div>
               ) : (
                 <div className="p-4 rounded-2xl bg-amber-50/40 border border-amber-200/50 flex items-center gap-3">
