@@ -416,6 +416,7 @@ export default function CustomerPortalPage() {
                 ...b,
                 rating,
                 reviewComment: comment.trim(),
+                reviewedAt: new Date().toISOString(),
               } as any;
             }
             return b;
@@ -430,7 +431,11 @@ export default function CustomerPortalPage() {
           loadPortalData();
         }, 1500);
       } else {
-        alert("Error al enviar calificación.");
+        const data = await res.json();
+        alert(data.error || "Error al enviar calificación.");
+        setReviewModalOpen(false);
+        setSelectedBookingForReview(null);
+        loadPortalData();
       }
     } catch (err) {
       alert("Error de conexión.");

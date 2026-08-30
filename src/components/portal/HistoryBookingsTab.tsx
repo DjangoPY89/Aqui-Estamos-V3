@@ -66,7 +66,11 @@ export default function HistoryBookingsTab({
         {completedList.map((booking) => {
           const isCancelled = booking.status === "CANCELLED";
           const assignedName = (booking as any).employeeName || (booking as any).assignedTo || booking.assignedCleaner;
-          const hasReview = Boolean((booking as any).rating || (booking as any).reviewComment);
+          const hasReview = Boolean(
+            ((booking as any).rating && Number((booking as any).rating) > 0) ||
+            (booking as any).reviewComment ||
+            (booking as any).reviewedAt
+          );
           const hours = (booking as any).hours || booking.serviceHours || 4;
           const price = (booking as any).totalPriceGs || booking.totalPrice || 0;
           const bookingNum = (booking as any).bookingNumber || booking.id.slice(-4);
@@ -154,7 +158,7 @@ export default function HistoryBookingsTab({
                     <button
                       type="button"
                       onClick={() => onOpenReview(booking)}
-                      className="px-3.5 py-1.5 bg-amber-50 hover:bg-amber-100 text-amber-800 rounded-xl text-xs font-extrabold transition-colors flex items-center gap-1.5 border border-amber-200"
+                      className="px-3.5 py-1.5 bg-amber-50 hover:bg-amber-100 text-amber-800 rounded-xl text-xs font-extrabold transition-colors flex items-center gap-1.5 border border-amber-200 shadow-2xs cursor-pointer"
                     >
                       <Star className="w-3.5 h-3.5 text-amber-500 fill-amber-500" />
                       <span>Calificar Servicio</span>
@@ -162,9 +166,9 @@ export default function HistoryBookingsTab({
                   )}
 
                   {!isCancelled && hasReview && (
-                    <div className="px-3 py-1 bg-amber-50 text-amber-900 rounded-xl text-xs font-bold flex items-center gap-1 border border-amber-200">
+                    <div className="px-3.5 py-1.5 bg-amber-50 text-amber-900 rounded-xl text-xs font-black flex items-center gap-1.5 border border-amber-200 shadow-2xs">
                       <Star className="w-3.5 h-3.5 text-amber-500 fill-amber-500" />
-                      <span>Calificado {(booking as any).rating || 5}/5 ⭐</span>
+                      <span>Calificado: {(booking as any).rating || 5}/5 ⭐</span>
                     </div>
                   )}
                 </div>

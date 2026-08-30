@@ -6,6 +6,7 @@ import {
   supabaseCreateReview,
   supabaseGetAllReviews,
   supabaseUpdateBooking,
+  supabaseGetBookingById,
   supabaseGetAllEmployees,
   supabaseGetAllBookings,
   supabaseUpdateEmployee,
@@ -36,6 +37,26 @@ export async function POST(req: Request) {
     const numRating = Number(rating);
     if (!numRating || !comment) {
       return NextResponse.json({ error: "Calificación y comentario son obligatorios." }, { status: 400 });
+    }
+
+    // Validar que el servicio no haya sido calificado previamente
+    if (bookingId) {
+      let existingBooking: any = null;
+      try {
+        existingBooking = await supabaseGetBookingById(bookingId);
+      } catch (e) {}
+      if (!existingBooking) {
+        try {
+          existingBooking = getBookingById(bookingId);
+        } catch (e) {}
+      }
+
+      if (existingBooking && existingBooking.rating && Number(existingBooking.rating) > 0) {
+        return NextResponse.json(
+          { error: "Este servicio ya ha sido calificado previamente. Solo se permite una calificación por servicio.", alreadyReviewed: true },
+          { status: 400 }
+        );
+      }
     }
 
     const name = session?.user?.name || userName || "Cliente Satisfecho";
