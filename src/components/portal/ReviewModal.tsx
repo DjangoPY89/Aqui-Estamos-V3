@@ -1,10 +1,11 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Star, X, CheckCircle2, Sparkles, RefreshCw, UserCheck, ShieldCheck, ThumbsUp, Heart } from "lucide-react";
 import { Booking } from "@/types";
 
 interface ReviewModalProps {
+  isOpen: boolean;
   booking: Booking | null;
   rating: number;
   setRating: (r: number) => void;
@@ -17,6 +18,7 @@ interface ReviewModalProps {
 }
 
 export default function ReviewModal({
+  isOpen,
   booking,
   rating,
   setRating,
@@ -29,7 +31,18 @@ export default function ReviewModal({
 }: ReviewModalProps) {
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
 
-  if (!booking) return null;
+  // Cerrar al presionar la tecla Escape
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape" && isOpen && !isSubmitting) {
+        onClose();
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [isOpen, isSubmitting, onClose]);
+
+  if (!isOpen || !booking) return null;
 
   const assignedCleaner = (booking as any).employeeName || (booking as any).assignedTo || booking.assignedCleaner || "Profesional de Cuadrilla Aquí Estamos";
   const hours = (booking as any).hours || booking.serviceHours || 4;
@@ -61,7 +74,6 @@ export default function ReviewModal({
     }
     setSelectedTags(updated);
 
-    // Si el usuario selecciona tags, podemos sugerir o complementar el comentario
     const baseText = comment.replace(/\n\nDestacado: .*/, "").trim();
     if (updated.length > 0) {
       setComment(baseText ? `${baseText}\n\nDestacado: ${updated.join(", ")}` : `Destacado: ${updated.join(", ")}`);
@@ -71,14 +83,21 @@ export default function ReviewModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 overflow-y-auto animate-in fade-in">
-      <div className="bg-white rounded-3xl max-w-lg w-full p-6 sm:p-8 shadow-2xl border border-slate-200 relative my-8 space-y-5">
+    <div
+      onClick={onClose}
+      className="fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 overflow-y-auto animate-in fade-in"
+    >
+      <div
+        onClick={(e) => e.stopPropagation()}
+        className="bg-white rounded-3xl max-w-lg w-full p-6 sm:p-8 shadow-2xl border border-slate-200 relative my-8 space-y-5"
+      >
         
         {/* Botón Cerrar */}
         <button
           type="button"
           onClick={onClose}
-          className="absolute top-5 right-5 p-2 text-slate-400 hover:text-slate-700 rounded-full hover:bg-slate-100 transition-colors"
+          className="absolute top-5 right-5 p-2 text-slate-400 hover:text-slate-700 rounded-full hover:bg-slate-100 transition-colors cursor-pointer"
+          title="Cerrar ventana"
         >
           <X className="w-5 h-5" />
         </button>

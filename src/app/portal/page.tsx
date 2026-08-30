@@ -426,8 +426,9 @@ export default function CustomerPortalPage() {
         setTimeout(() => {
           setReviewSuccess(false);
           setReviewModalOpen(false);
+          setSelectedBookingForReview(null);
           loadPortalData();
-        }, 2200);
+        }, 1500);
       } else {
         alert("Error al enviar calificación.");
       }
@@ -576,13 +577,18 @@ export default function CustomerPortalPage() {
 
       {/* 3. Modal de Calificación con Estrellas */}
       <ReviewModal
+        isOpen={reviewModalOpen}
         booking={selectedBookingForReview}
         rating={rating}
         setRating={setRating}
         comment={comment}
         setComment={setComment}
         onSubmit={handleSubmitReview}
-        onClose={() => setReviewModalOpen(false)}
+        onClose={() => {
+          setReviewModalOpen(false);
+          setSelectedBookingForReview(null);
+          setReviewSuccess(false);
+        }}
         isSubmitting={reviewSubmitting}
         isSuccess={reviewSuccess}
       />
