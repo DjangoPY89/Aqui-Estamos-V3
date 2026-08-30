@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createUser, getUserByEmail } from "@/lib/db";
 import { supabaseCreateUser, supabaseGetUserByEmail } from "@/lib/supabase-db";
+import { sendWelcomeEmail } from "@/lib/email";
 
 export const dynamic = "force-dynamic";
 
@@ -71,6 +72,15 @@ export async function POST(req: Request) {
         address: address ? address.trim() : undefined,
         role: "CUSTOMER",
       });
+    }
+
+    // Enviar correo de bienvenida al cliente registrado
+    try {
+      sendWelcomeEmail({ email: cleanEmail, name: name.trim() }).catch((err) =>
+        console.error("Error enviando email de bienvenida en registro:", err)
+      );
+    } catch (errWelcome) {
+      console.error("Error al despachar email de bienvenida:", errWelcome);
     }
 
     return NextResponse.json(

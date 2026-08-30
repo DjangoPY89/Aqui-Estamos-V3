@@ -12,7 +12,7 @@ import {
 } from "@/lib/supabase-db";
 import { calculatePricing } from "@/lib/pricing";
 import { generateBookingNumber } from "@/lib/utils";
-import { sendNewBookingAdminNotification, sendBookingConfirmationToCustomer } from "@/lib/email";
+import { sendNewBookingAdminNotification, sendBookingConfirmationToCustomer, sendWelcomeEmail } from "@/lib/email";
 import { checkDateAvailability } from "@/lib/availability";
 
 export const dynamic = "force-dynamic";
@@ -163,6 +163,8 @@ export async function POST(req: Request) {
     let userId = (session?.user as any)?.id;
     const targetEmail = (session?.user?.email || customerEmail).trim().toLowerCase();
 
+    // Detectar si el usuario es nuevo para enviarle también el email de bienvenida
+    let isNewCustomer = false;
     if (targetEmail) {
       let existingUser: any = null;
       try {
@@ -172,6 +174,7 @@ export async function POST(req: Request) {
       }
 
       if (!existingUser) {
+        isNewCustomer = true;
         try {
           existingUser = await supabaseCreateUser({
             name: customerName,
@@ -295,12 +298,16 @@ export async function POST(req: Request) {
       });
     }
 
-    // Enviar notificación por correo al Administrador (juanas89@gmail.com) y al Cliente
+    // Enviar notificación por correo al Administrador y al Cliente (+ Bienvenida si es nuevo cliente)
     try {
-      await Promise.allSettled([
+      const emailPromises: Promise<any>[] = [
         sendNewBookingAdminNotification(booking),
         sendBookingConfirmationToCustomer(booking),
-      ]);
+      ];
+      if (isNewCustomer && targetEmail) {
+        emailPromises.push(sendWelcomeEmail({ email: targetEmail, name: customerName }));
+      }
+      await Promise.allSettled(emailPromises);
     } catch (mailErr) {
       console.error("Error al despachar emails de notificación:", mailErr);
     }
