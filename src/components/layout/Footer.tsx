@@ -139,10 +139,10 @@ export default function Footer() {
               </span>
 
               <span className="text-[10px] text-neutral-400 font-medium group-hover:text-neutral-300 transition-colors">
-                Creado con excelencia por
+                Creado por
               </span>
               <span className="font-black text-[11px] text-transparent bg-clip-text bg-gradient-to-r from-electric-400 via-sky-300 to-purple-400 tracking-wide group-hover:brightness-125 transition-all">
-                Think Lab
+                Think Lab.
               </span>
             </a>
           </div>

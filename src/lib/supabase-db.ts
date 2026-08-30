@@ -644,7 +644,7 @@ export async function supabaseCreateBooking(data: {
       discount: data.discount || 0,
       payment_method: data.paymentMethod,
       payment_status: "PENDING",
-      status: "CONFIRMED",
+      status: "PENDING",
       assigned_cleaner: null,
       notes: data.notes?.trim() || null,
     })
