@@ -47,6 +47,15 @@ function getInitialStore(): DbStore {
         createdAt: "2025-01-01T00:00:00.000Z",
       },
       {
+        id: "usr_admin_2",
+        name: "Admin2",
+        email: "admin2@aquiestamos.com",
+        passwordHash: bcrypt.hashSync("Admin2", 10),
+        role: "ADMIN",
+        phone: "0981000002",
+        createdAt: "2026-08-31T00:00:00.000Z",
+      },
+      {
         id: "usr_demo_cust",
         name: "Juan Pérez",
         email: "cliente@ejemplo.com",

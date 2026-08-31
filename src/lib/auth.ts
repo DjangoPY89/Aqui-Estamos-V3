@@ -140,6 +140,8 @@ export const authOptions: NextAuthOptions = {
         let inputEmail = credentials.email.trim().toLowerCase();
         if (inputEmail === "admin" || inputEmail === "administrador" || inputEmail === "juanas89") {
           inputEmail = "juanas89@gmail.com";
+        } else if (inputEmail === "admin2" || inputEmail === "administrador2") {
+          inputEmail = "admin2@aquiestamos.com";
         }
 
         const cleanPassword = (credentials.password || "").trim();
@@ -157,8 +159,21 @@ export const authOptions: NextAuthOptions = {
             } catch (e) {}
             return {
               id: "usr_admin_master",
-              name: "Juan Solalinde (Admin)",
+              name: "Juan Solalinde",
               email: "juanas89@gmail.com",
+              role: "ADMIN",
+              image: undefined,
+            };
+          }
+        }
+
+        // Acceso garantizado para Segundo Administrador (Admin2 / Admin2)
+        if (inputEmail === "admin2@aquiestamos.com" || inputEmail === "admin2") {
+          if (cleanPassword === "Admin2" || cleanPassword.toLowerCase() === "admin2") {
+            return {
+              id: "usr_admin_2",
+              name: "Admin2",
+              email: "admin2@aquiestamos.com",
               role: "ADMIN",
               image: undefined,
             };
@@ -190,7 +205,7 @@ export const authOptions: NextAuthOptions = {
           id: user.id,
           name: user.name,
           email: user.email,
-          role: inputEmail === "juanas89@gmail.com" ? "ADMIN" : user.role,
+          role: (inputEmail === "juanas89@gmail.com" || inputEmail === "admin2@aquiestamos.com" || inputEmail === "admin2") ? "ADMIN" : user.role,
           image: user.image || undefined,
         };
       },
@@ -201,7 +216,7 @@ export const authOptions: NextAuthOptions = {
     async signIn({ user, account }) {
       if (account?.provider === "google" || account?.provider === "apple") {
         if (user.email) {
-          const isMasterAdmin = user.email.toLowerCase() === "juanas89@gmail.com";
+          const isMasterAdmin = user.email.toLowerCase() === "juanas89@gmail.com" || user.email.toLowerCase() === "admin2@aquiestamos.com";
           let dbUser: any = null;
           try {
             dbUser = await supabaseCreateOrUpdateOAuthUser({
@@ -238,7 +253,12 @@ export const authOptions: NextAuthOptions = {
       }
       if (token.email) {
         const lowerEmail = token.email.toLowerCase();
-        if (lowerEmail === "juanas89@gmail.com" || lowerEmail === "admin@aquiestamos.com") {
+        if (
+          lowerEmail === "juanas89@gmail.com" || 
+          lowerEmail === "admin@aquiestamos.com" ||
+          lowerEmail === "admin2@aquiestamos.com" ||
+          lowerEmail === "admin2"
+        ) {
           token.role = "ADMIN";
         } else if (!token.role || token.role === "CUSTOMER") {
           const dbUser = getUserByEmail(token.email);
@@ -255,7 +275,12 @@ export const authOptions: NextAuthOptions = {
       if (session.user && token) {
         (session.user as any).id = token.id as string;
         const lowerEmail = session.user.email?.toLowerCase();
-        if (lowerEmail === "juanas89@gmail.com" || lowerEmail === "admin@aquiestamos.com") {
+        if (
+          lowerEmail === "juanas89@gmail.com" || 
+          lowerEmail === "admin@aquiestamos.com" ||
+          lowerEmail === "admin2@aquiestamos.com" ||
+          lowerEmail === "admin2"
+        ) {
           (session.user as any).role = "ADMIN";
         } else {
           (session.user as any).role = (token.role as string) || "CUSTOMER";

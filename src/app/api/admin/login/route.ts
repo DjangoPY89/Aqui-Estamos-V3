@@ -32,8 +32,14 @@ export async function POST(req: Request) {
 
       const response = NextResponse.json({
         ok: true,
-        message: "Acceso de administrador concedido.",
+        message: "Acceso de administrador concedido (Juan Solalinde).",
         role: "ADMIN",
+        user: {
+          id: "usr_admin_master",
+          name: "Juan Solalinde",
+          email: ADMIN_EMAIL,
+          role: "ADMIN",
+        },
       });
 
       // Cookie simple de sesión admin (8 horas)
@@ -46,6 +52,42 @@ export async function POST(req: Request) {
         path: "/",
       });
       response.cookies.set("admin_email", ADMIN_EMAIL, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "lax",
+        expires: expiry,
+        path: "/",
+      });
+
+      return response;
+    }
+
+    // Verificar credenciales del segundo administrador (Admin2 / Admin2)
+    const isAdmin2Email = inputEmail === "admin2@aquiestamos.com" || inputEmail === "admin2";
+    const isAdmin2Password = cleanPassword === "Admin2" || cleanPassword.toLowerCase() === "admin2";
+
+    if (isAdmin2Email && isAdmin2Password) {
+      const response = NextResponse.json({
+        ok: true,
+        message: "Acceso de co-administrador concedido (Admin2).",
+        role: "ADMIN",
+        user: {
+          id: "usr_admin_2",
+          name: "Admin2",
+          email: "admin2@aquiestamos.com",
+          role: "ADMIN",
+        },
+      });
+
+      const expiry = new Date(Date.now() + 8 * 60 * 60 * 1000);
+      response.cookies.set("admin_verified", "true", {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "lax",
+        expires: expiry,
+        path: "/",
+      });
+      response.cookies.set("admin_email", "admin2@aquiestamos.com", {
         httpOnly: true,
         secure: process.env.NODE_ENV === "production",
         sameSite: "lax",
