@@ -41,9 +41,9 @@ export async function POST(req: Request) {
 
     let assignedCleanerName = cleanerName && !cleanerName.includes("Profesional de Cuadrilla") && !cleanerName.includes("Cuadrilla Oficial") ? cleanerName : null;
 
+    let existingBooking: any = null;
     // Validar que el servicio no haya sido calificado previamente y obtener el empleado asignado
     if (bookingId) {
-      let existingBooking: any = null;
       try {
         existingBooking = await supabaseGetBookingById(bookingId);
       } catch (e) {}
@@ -70,10 +70,11 @@ export async function POST(req: Request) {
     const image = session?.user?.image || null;
     const userId = (session?.user as any)?.id || "guest";
 
+    const bookingTag = existingBooking?.bookingNumber ? ` • ${existingBooking.bookingNumber}` : "";
     const effectiveServiceType = assignedCleanerName
       ? (serviceType && !serviceType.includes("Profesional de Cuadrilla") && !serviceType.includes("Cuadrilla Oficial")
           ? serviceType
-          : `Servicio de Limpieza - ${assignedCleanerName}`)
+          : `Limpieza ${existingBooking?.serviceHours || 4}hs (${existingBooking?.frequency === "once" ? "Única" : "Recurrente"})${bookingTag} - ${assignedCleanerName}`)
       : (serviceType || "Servicio Residencial");
 
     // 1. Guardar la reseña pública / testimonial

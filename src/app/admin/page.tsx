@@ -1231,6 +1231,7 @@ export default function AdminDashboardPage() {
   };
 
   // Consolidación de todas las calificaciones y opiniones de clientes (Apple Style Feed)
+  // Consolidación y Unificación de todas las calificaciones (1 sola reseña enriquecida por evaluación)
   const consolidatedReviews = useMemo(() => {
     const list: Array<{
       id: string;
@@ -1242,74 +1243,146 @@ export default function AdminDashboardPage() {
       bookingNumber?: string | null;
       cleanerName: string;
       cleanerImage?: string | null;
+      cleanerIpsVerified?: boolean;
       createdAt: string;
       source: string;
     }> = [];
 
-    // 1. Reseñas de la tabla reviews
+    const matchedBookingIds = new Set<string>();
+    const matchedBookingNumbers = new Set<string>();
+
+    // 1. Reseñas de la tabla reviews: se cruzan con bookings y employees para consolidar toda la información
     (customerReviews || []).forEach((r) => {
       let cleaner = "Personal de Cuadrilla";
       let cleanerImg: string | null = null;
+      let cleanerIps = true;
+
+      // Identificar empleado
       for (const emp of employees) {
         if (
-          (r.serviceType && r.serviceType.toLowerCase().includes(emp.name.toLowerCase())) ||
+          (r.serviceType && (r.serviceType.toLowerCase().includes(emp.name.toLowerCase()) || emp.name.toLowerCase().includes(r.serviceType.toLowerCase()))) ||
           (r.comment && r.comment.toLowerCase().includes(emp.name.toLowerCase()))
         ) {
           cleaner = emp.name;
           cleanerImg = emp.image || null;
+          cleanerIps = Boolean(emp.ipsVerified);
           break;
         }
       }
+
+      // Buscar si corresponde a una reserva de la base de datos
+      const foundBooking = (bookings || []).find((b) => {
+        if (r.serviceType && b.bookingNumber && r.serviceType.includes(b.bookingNumber)) return true;
+        if (r.comment && b.bookingNumber && r.comment.includes(b.bookingNumber)) return true;
+        if (
+          b.customerName &&
+          r.userName &&
+          b.customerName.toLowerCase().trim() === r.userName.toLowerCase().trim() &&
+          b.assignedCleaner &&
+          (cleaner.toLowerCase().includes(b.assignedCleaner.toLowerCase()) || b.assignedCleaner.toLowerCase().includes(cleaner.toLowerCase()))
+        ) {
+          return true;
+        }
+        return false;
+      });
+
+      let bookingNumber: string | null = null;
+      let serviceType = r.serviceType || "Servicio Residencial";
+
+      if (foundBooking) {
+        matchedBookingIds.add(foundBooking.id);
+        if (foundBooking.bookingNumber) matchedBookingNumbers.add(foundBooking.bookingNumber);
+        bookingNumber = foundBooking.bookingNumber;
+        if (foundBooking.assignedCleaner) cleaner = foundBooking.assignedCleaner;
+        const empMatch = employees.find((e) => cleaner.toLowerCase().includes(e.name.toLowerCase()) || e.name.toLowerCase().includes(cleaner.toLowerCase()));
+        if (empMatch) {
+          cleanerImg = empMatch.image || null;
+          cleanerIps = Boolean(empMatch.ipsVerified);
+        }
+        serviceType = `Limpieza ${foundBooking.serviceHours || 4} Horas (${foundBooking.frequency === "once" ? "Única" : "Recurrente"})`;
+      } else {
+        const orderMatch = r.serviceType?.match(/(AE-\d+-\d+|AE-[A-Z0-9-]+)/i);
+        if (orderMatch) {
+          bookingNumber = orderMatch[1];
+          matchedBookingNumbers.add(orderMatch[1]);
+        }
+      }
+
       list.push({
         id: r.id,
-        customerName: r.userName || "Cliente Satisfecho",
+        customerName: r.userName || (foundBooking?.customerName) || "Cliente Satisfecho",
         customerImage: r.userImage || null,
         rating: Number(r.rating) || 5,
-        comment: r.comment || "",
-        serviceType: r.serviceType || "Servicio Residencial",
-        bookingNumber: null,
+        comment: r.comment || "Servicio calificado con éxito.",
+        serviceType,
+        bookingNumber,
         cleanerName: cleaner,
         cleanerImage: cleanerImg,
+        cleanerIpsVerified: cleanerIps,
         createdAt: r.createdAt || new Date().toISOString(),
-        source: "Portal / Reseña Web",
+        source: "Calificación Verificada",
       });
     });
 
-    // 2. Reservas calificadas
+    // 2. Reservas calificadas (solo si NO fueron ya incluidas desde reviews)
     (bookings || []).forEach((b) => {
-      if (b.rating && Number(b.rating) > 0) {
-        const alreadyExists = list.some(
-          (item) => item.id === b.id || (item.bookingNumber === b.bookingNumber && item.comment === b.reviewComment)
-        );
-        if (!alreadyExists) {
+      const hasRating = (b.rating && Number(b.rating) > 0) || (b.notes && b.notes.includes("[RATED:"));
+      if (hasRating) {
+        const isAlreadyProcessed =
+          matchedBookingIds.has(b.id) ||
+          (b.bookingNumber && matchedBookingNumbers.has(b.bookingNumber)) ||
+          list.some((item) =>
+            (b.bookingNumber && item.bookingNumber === b.bookingNumber) ||
+            (item.customerName.toLowerCase() === (b.customerName || "").toLowerCase() &&
+              item.cleanerName.toLowerCase().includes((b.assignedCleaner || "").toLowerCase()))
+          );
+
+        if (!isAlreadyProcessed) {
           let cleanerImg: string | null = null;
+          let cleanerIps = true;
           if (b.assignedCleaner) {
-            const foundEmp = employees.find((e) => b.assignedCleaner!.toLowerCase().includes(e.name.toLowerCase()));
-            if (foundEmp?.image) cleanerImg = foundEmp.image;
+            const foundEmp = employees.find(
+              (e) => b.assignedCleaner!.toLowerCase().includes(e.name.toLowerCase()) || e.name.toLowerCase().includes(b.assignedCleaner!.toLowerCase())
+            );
+            if (foundEmp) {
+              cleanerImg = foundEmp.image || null;
+              cleanerIps = Boolean(foundEmp.ipsVerified);
+            }
           }
+
+          const match = b.notes ? b.notes.match(/\[RATED:(\d+)\]/) : null;
+          const ratingNum = b.rating
+            ? Number(b.rating)
+            : match && match[1]
+            ? Number(match[1])
+            : 5;
+
           list.push({
             id: b.id,
             customerName: b.customerName || "Cliente Verificado",
             customerImage: null,
-            rating: Number(b.rating),
+            rating: ratingNum,
             comment: b.reviewComment || "Servicio completado y calificado con éxito.",
-            serviceType: `Limpieza ${b.serviceHours} Horas (${b.frequency === "once" ? "Única" : "Recurrente"})`,
+            serviceType: `Limpieza ${b.serviceHours || 4} Horas (${b.frequency === "once" ? "Única" : "Recurrente"})`,
             bookingNumber: b.bookingNumber,
             cleanerName: b.assignedCleaner || "Personal de Cuadrilla",
             cleanerImage: cleanerImg,
+            cleanerIpsVerified: cleanerIps,
             createdAt: b.reviewedAt || b.updatedAt || b.createdAt,
-            source: "Reserva Calificada",
+            source: "Calificación Verificada",
           });
         }
       }
     });
 
-    // 3. Historial de evaluaciones del personal
+    // 3. Historial directo del personal (evitando duplicados)
     employees.forEach((emp) => {
       if (emp.ratingsHistory && Array.isArray(emp.ratingsHistory)) {
         emp.ratingsHistory.forEach((h, idx) => {
           const alreadyExists = list.some(
-            (item) => item.cleanerName === emp.name && item.comment === h.comment && item.createdAt === h.createdAt
+            (item) =>
+              (item.cleanerName.toLowerCase().includes(emp.name.toLowerCase()) || emp.name.toLowerCase().includes(item.cleanerName.toLowerCase())) &&
+              item.comment === h.comment
           );
           if (!alreadyExists && h.rating) {
             list.push({
@@ -1322,15 +1395,16 @@ export default function AdminDashboardPage() {
               bookingNumber: null,
               cleanerName: emp.name,
               cleanerImage: emp.image || null,
+              cleanerIpsVerified: Boolean(emp.ipsVerified),
               createdAt: h.createdAt || new Date().toISOString(),
-              source: "Evaluación Registrada",
+              source: "Calificación Verificada",
             });
           }
         });
       }
     });
 
-    // Ordenar por fecha cronológica descendente (más recientes primero)
+    // Ordenar cronológicamente descendente (más recientes primero)
     return list.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
   }, [customerReviews, bookings, employees]);
 
