@@ -50,11 +50,11 @@ export default function KudeInvoiceModal({
   return (
     <div 
       onClick={onClose}
-      className="fixed inset-0 z-50 bg-black/40 backdrop-blur-xl flex items-center justify-center p-3 sm:p-4 overflow-y-auto animate-in fade-in"
+      className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm overflow-y-auto flex items-start justify-center p-2.5 sm:p-4 animate-in fade-in duration-150"
     >
       <div 
         onClick={(e) => e.stopPropagation()}
-        className="bg-white/95 backdrop-blur-2xl rounded-[32px] max-w-2xl w-full p-6 sm:p-8 shadow-[0_20px_60px_rgba(0,0,0,0.15)] border border-white/60 relative my-6 space-y-6"
+        className="my-auto bg-white rounded-2xl sm:rounded-3xl max-w-2xl w-full max-h-[calc(100dvh-20px)] sm:max-h-[calc(100dvh-40px)] overflow-y-auto p-5 sm:p-7 shadow-2xl border border-slate-200/80 relative space-y-4"
       >
         
         {/* Botón Cerrar */}

@@ -195,7 +195,7 @@ export default function GoogleMapPicker({
         mapTimer = setTimeout(() => {
           if (isMounted && mapInstanceRef.current) {
             try {
-              mapInstanceRef.current.invalidateSize();
+              mapInstanceRef.current.invalidateSize({ pan: false });
             } catch (e) {}
           }
         }, 250);
@@ -351,23 +351,23 @@ export default function GoogleMapPicker({
   const googleMapsUrl = `https://www.google.com/maps?q=${latitude},${longitude}`;
 
   return (
-    <div className="space-y-3.5 bg-neutral-50 p-4 sm:p-5 rounded-2xl border border-neutral-200 shadow-xs">
+    <div className="space-y-2.5 sm:space-y-3.5 bg-neutral-50 p-3 sm:p-5 rounded-2xl border border-neutral-200 shadow-xs">
       
       {/* Cabecera del Mapa con Selector de Estilos */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 sm:gap-3">
         <div className="flex items-center gap-2">
-          <div className="w-7 h-7 rounded-xl bg-electric-600 text-white flex items-center justify-center shadow-electric-sm">
-            <MapPin className="w-4 h-4" />
+          <div className="w-6 h-6 sm:w-7 sm:h-7 rounded-xl bg-electric-600 text-white flex items-center justify-center shadow-electric-sm shrink-0">
+            <MapPin className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
           </div>
           <div>
-            <h4 className="text-xs font-bold text-neutral-900 flex items-center gap-1.5">
+            <h4 className="text-xs font-bold text-neutral-900 flex items-center gap-1.5 flex-wrap">
               <span>Google Maps Interactivo</span>
-              <span className="text-[10px] font-bold bg-electric-100 text-electric-800 px-2 py-0.5 rounded-full border border-electric-200">
+              <span className="text-[9px] sm:text-[10px] font-bold bg-electric-100 text-electric-800 px-1.5 py-0.5 rounded-full border border-electric-200">
                 Punto Arrastrable
               </span>
             </h4>
-            <p className="text-[11px] text-neutral-500">
-              Arrastra el pin o haz clic en el mapa para ubicar el inmueble
+            <p className="text-[10px] sm:text-[11px] text-neutral-500">
+              Arrastra el pin o toca el mapa para ubicar el inmueble
             </p>
           </div>
         </div>
@@ -377,55 +377,55 @@ export default function GoogleMapPicker({
           type="button"
           onClick={handleDetectGPS}
           disabled={isLocating}
-          className="flex items-center gap-2 bg-white hover:bg-electric-50 text-electric-700 hover:text-electric-800 px-3.5 py-2 rounded-xl border border-electric-200 shadow-xs font-bold text-xs transition-all active:scale-95 disabled:opacity-50 self-start sm:self-auto cursor-pointer"
+          className="flex items-center justify-center gap-1.5 bg-white hover:bg-electric-50 text-electric-700 hover:text-electric-800 px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-xl border border-electric-200 shadow-xs font-bold text-xs transition-all active:scale-95 disabled:opacity-50 self-start sm:self-auto cursor-pointer"
         >
           <Navigation className={`w-3.5 h-3.5 ${isLocating ? "animate-spin text-electric-600" : "text-electric-600"}`} />
-          <span>{isLocating ? "Detectando GPS..." : "📍 Detectar mi ubicación GPS"}</span>
+          <span>{isLocating ? "Detectando GPS..." : "📍 Mi ubicación GPS"}</span>
         </button>
       </div>
 
       {geoStatus && (
-        <div className={`p-2.5 rounded-xl text-xs flex items-center gap-2 animate-in fade-in duration-150 ${
+        <div className={`p-2 sm:p-2.5 rounded-xl text-[11px] sm:text-xs flex items-center gap-2 animate-in fade-in duration-150 ${
           geoStatus.startsWith("✓") 
             ? "bg-emerald-50 text-emerald-800 border border-emerald-200" 
             : "bg-amber-50 text-amber-800 border border-amber-200"
         }`}>
-          {geoStatus.startsWith("✓") ? <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" /> : <AlertCircle className="w-4 h-4 text-amber-600 shrink-0" />}
+          {geoStatus.startsWith("✓") ? <CheckCircle2 className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-emerald-600 shrink-0" /> : <AlertCircle className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-amber-600 shrink-0" />}
           <span className="font-medium">{geoStatus}</span>
         </div>
       )}
 
       {/* Contenedor del Mapa Google Maps */}
-      <div className="relative w-full h-72 sm:h-80 rounded-2xl overflow-hidden border border-neutral-300 shadow-md bg-neutral-100">
+      <div className="relative w-full h-48 sm:h-72 rounded-2xl overflow-hidden border border-neutral-300 shadow-md bg-neutral-100">
         <div ref={mapContainerRef} className="w-full h-full z-0" />
 
         {/* Badge Flotante Superior: Coordenadas y Estado */}
-        <div className="absolute top-3 left-3 z-[400] bg-white/95 backdrop-blur-md px-3 py-1.5 rounded-xl border border-neutral-200 shadow-sm flex items-center gap-2 text-xs">
-          <span className="w-2.5 h-2.5 rounded-full bg-red-500 animate-pulse"></span>
+        <div className="absolute top-2.5 left-2.5 z-[400] bg-white/95 backdrop-blur-md px-2.5 py-1 rounded-xl border border-neutral-200 shadow-sm flex items-center gap-1.5 text-[10px] sm:text-xs">
+          <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse"></span>
           <span className="font-mono font-bold text-neutral-900">
             {latitude.toFixed(5)}, {longitude.toFixed(5)}
           </span>
         </div>
 
         {/* Botones de Control Flotantes (Zoom & GPS) */}
-        <div className="absolute top-3 right-3 z-[400] flex flex-col gap-1.5">
+        <div className="absolute top-2.5 right-2.5 z-[400] flex flex-col gap-1">
           <button
             type="button"
             onClick={handleDetectGPS}
             disabled={isLocating}
             title="Detectar mi ubicación satelital"
-            className="w-9 h-9 bg-white hover:bg-electric-50 text-neutral-800 hover:text-electric-700 rounded-xl shadow-md border border-neutral-200 flex items-center justify-center transition-all disabled:opacity-50 active:scale-95"
+            className="w-8 h-8 sm:w-9 sm:h-9 bg-white hover:bg-electric-50 text-neutral-800 hover:text-electric-700 rounded-xl shadow-md border border-neutral-200 flex items-center justify-center transition-all disabled:opacity-50 active:scale-95 cursor-pointer"
           >
-            <Navigation className={`w-4 h-4 ${isLocating ? "animate-spin text-electric-600" : "text-electric-600"}`} />
+            <Navigation className={`w-3.5 h-3.5 ${isLocating ? "animate-spin text-electric-600" : "text-electric-600"}`} />
           </button>
 
           <button
             type="button"
             onClick={handleRecenter}
             title="Centrar en el pin"
-            className="w-9 h-9 bg-white hover:bg-neutral-50 text-neutral-700 rounded-xl shadow-md border border-neutral-200 flex items-center justify-center transition-all active:scale-95 text-xs font-bold"
+            className="w-8 h-8 sm:w-9 sm:h-9 bg-white hover:bg-neutral-50 text-neutral-700 rounded-xl shadow-md border border-neutral-200 flex items-center justify-center transition-all active:scale-95 text-xs font-bold cursor-pointer"
           >
-            <Crosshair className="w-4 h-4 text-neutral-600" />
+            <Crosshair className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-neutral-600" />
           </button>
 
           <div className="flex flex-col bg-white rounded-xl shadow-md border border-neutral-200 overflow-hidden">
@@ -433,7 +433,7 @@ export default function GoogleMapPicker({
               type="button"
               onClick={handleZoomIn}
               title="Acercar"
-              className="w-9 h-8 hover:bg-neutral-100 text-neutral-800 font-black text-sm flex items-center justify-center border-b border-neutral-100 transition-colors"
+              className="w-8 h-7 sm:w-9 sm:h-8 hover:bg-neutral-100 text-neutral-800 font-black text-xs sm:text-sm flex items-center justify-center border-b border-neutral-100 transition-colors cursor-pointer"
             >
               +
             </button>
@@ -441,7 +441,7 @@ export default function GoogleMapPicker({
               type="button"
               onClick={handleZoomOut}
               title="Alejar"
-              className="w-9 h-8 hover:bg-neutral-100 text-neutral-800 font-black text-sm flex items-center justify-center transition-colors"
+              className="w-8 h-7 sm:w-9 sm:h-8 hover:bg-neutral-100 text-neutral-800 font-black text-xs sm:text-sm flex items-center justify-center transition-colors cursor-pointer"
             >
               −
             </button>
@@ -449,17 +449,17 @@ export default function GoogleMapPicker({
         </div>
 
         {/* Indicador Flotante Inferior de Instrucciones */}
-        <div className="absolute bottom-3 left-3 right-3 z-[400] flex items-center justify-between pointer-events-none">
-          <div className="bg-neutral-900/85 backdrop-blur-md text-white px-3 py-1.5 rounded-xl text-[11px] font-medium shadow-lg flex items-center gap-1.5">
+        <div className="absolute bottom-2.5 left-2.5 right-2.5 z-[400] flex items-center justify-between pointer-events-none gap-1.5">
+          <div className="bg-neutral-900/85 backdrop-blur-md text-white px-2.5 py-1 rounded-xl text-[10px] sm:text-[11px] font-medium shadow-lg flex items-center gap-1">
             <span>👆</span>
-            <span>Arrastra el pin rojo o haz clic sobre la calle</span>
+            <span className="truncate">Arrastra el pin o toca la calle</span>
           </div>
 
           <a
             href={googleMapsUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="pointer-events-auto bg-white/95 backdrop-blur-md text-neutral-800 hover:text-electric-700 px-3 py-1.5 rounded-xl text-[11px] font-bold shadow-lg border border-neutral-200 flex items-center gap-1 transition-colors"
+            className="pointer-events-auto bg-white/95 backdrop-blur-md text-neutral-800 hover:text-electric-700 px-2.5 py-1 rounded-xl text-[10px] sm:text-[11px] font-bold shadow-lg border border-neutral-200 flex items-center gap-1 transition-colors shrink-0"
           >
             <span>Google Maps</span>
             <ExternalLink className="w-3 h-3 text-neutral-500" />
@@ -469,10 +469,10 @@ export default function GoogleMapPicker({
 
       {/* Accesos Rápidos de Zonas Populares en Asunción */}
       <div>
-        <label className="block text-[11px] font-bold text-neutral-600 uppercase tracking-wider mb-1.5">
-          Atajos directos por barrio o ciudad:
+        <label className="block text-[10px] sm:text-[11px] font-bold text-neutral-600 uppercase tracking-wider mb-1">
+          Atajos por zona:
         </label>
-        <div className="flex flex-wrap gap-1.5">
+        <div className="flex overflow-x-auto pb-1 gap-1.5 sm:flex-wrap scrollbar-none -mx-1 px-1">
           {PRESET_ZONES.map((zone) => {
             const isCurrent = Math.abs(zone.lat - latitude) < 0.005 && Math.abs(zone.lng - longitude) < 0.005;
             return (
@@ -480,7 +480,7 @@ export default function GoogleMapPicker({
                 key={zone.name}
                 type="button"
                 onClick={() => handleSelectZone(zone)}
-                className={`px-2.5 py-1.5 rounded-lg text-xs font-semibold border transition-all active:scale-95 ${
+                className={`px-2.5 py-1 rounded-lg text-[11px] sm:text-xs font-semibold border transition-all active:scale-95 shrink-0 cursor-pointer ${
                   isCurrent
                     ? "bg-electric-600 text-white border-electric-600 shadow-electric-xs font-bold"
                     : "bg-white text-neutral-700 border-neutral-200 hover:bg-neutral-100 hover:border-neutral-300"

@@ -1,8 +1,8 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, Suspense } from "react";
 import { useSession } from "next-auth/react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { RefreshCw } from "lucide-react";
 import { Booking, User } from "@/types";
 
@@ -24,14 +24,31 @@ import ReviewModal from "@/components/portal/ReviewModal";
 import AddressModal from "@/components/portal/AddressModal";
 import { SavedPortalAddress, PortalTabType, PORTAL_ZONES } from "@/components/portal/types";
 
-export default function CustomerPortalPage() {
+function CustomerPortalContent() {
   const { data: session, status } = useSession();
   const router = useRouter();
+  const searchParams = useSearchParams();
 
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [userProfile, setUserProfile] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<PortalTabType>("ACTIVE");
+
+  // Leer query param de tab al cargar
+  useEffect(() => {
+    const tabParam = searchParams.get("tab")?.toUpperCase();
+    if (tabParam === "ADDRESSES" || tabParam === "DIRECCIONES") {
+      setActiveTab("ADDRESSES");
+    } else if (tabParam === "HISTORY" || tabParam === "HISTORIAL") {
+      setActiveTab("HISTORY");
+    } else if (tabParam === "INVOICES" || tabParam === "FACTURAS") {
+      setActiveTab("INVOICES");
+    } else if (tabParam === "PROFILE" || tabParam === "PERFIL" || tabParam === "CUENTA") {
+      setActiveTab("PROFILE");
+    } else if (tabParam === "GUARANTEE" || tabParam === "GARANTIA") {
+      setActiveTab("GUARANTEE");
+    }
+  }, [searchParams]);
 
   // Formulario de perfil y datos fiscales
   const [profileName, setProfileName] = useState("");
@@ -623,3 +640,19 @@ export default function CustomerPortalPage() {
     </main>
   );
 }
+
+export default function CustomerPortalPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-[#F5F5F7] flex flex-col items-center justify-center p-6 space-y-4">
+        <div className="w-12 h-12 rounded-full bg-white shadow-xs flex items-center justify-center border border-slate-200/60">
+          <RefreshCw className="w-5 h-5 animate-spin text-[#0071E3]" />
+        </div>
+        <p className="text-xs font-semibold text-slate-500">Cargando tu portal...</p>
+      </div>
+    }>
+      <CustomerPortalContent />
+    </Suspense>
+  );
+}
+

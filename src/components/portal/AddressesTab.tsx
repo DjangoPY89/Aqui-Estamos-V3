@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import Link from "next/link";
 import { 
   MapPin, 
   Plus, 
@@ -14,8 +15,8 @@ import { SavedPortalAddress } from "./types";
 
 interface AddressesTabProps {
   addresses: SavedPortalAddress[];
-  onOpenAddModal: () => void;
-  onOpenEditModal: (addr: SavedPortalAddress) => void;
+  onOpenAddModal?: () => void;
+  onOpenEditModal?: (addr: SavedPortalAddress) => void;
   onSetDefault: (addr: SavedPortalAddress) => void;
   onDelete: (id: string, label: string) => void;
   noticeMessage: string | null;
@@ -43,14 +44,13 @@ export default function AddressesTab({
           </p>
         </div>
 
-        <button
-          type="button"
-          onClick={onOpenAddModal}
+        <Link
+          href="/portal/direcciones/nueva"
           className="inline-flex items-center gap-2 px-5 py-2.5 bg-[#0071E3] hover:bg-[#0077ED] text-white text-xs font-semibold rounded-full shadow-xs transition-all active:scale-98 shrink-0 cursor-pointer"
         >
           <Plus className="w-4 h-4" />
           <span>Registrar Nueva Ubicación</span>
-        </button>
+        </Link>
       </div>
 
       {/* Aviso de feedback */}
@@ -73,14 +73,13 @@ export default function AddressesTab({
               Registra tu casa, oficina o departamento con el mapa GPS para acelerar tus próximas reservas.
             </p>
           </div>
-          <button
-            type="button"
-            onClick={onOpenAddModal}
+          <Link
+            href="/portal/direcciones/nueva"
             className="inline-flex items-center gap-2 px-6 py-2.5 bg-[#0071E3] hover:bg-[#0077ED] text-white text-xs font-semibold rounded-full shadow-xs transition-all cursor-pointer"
           >
             <Plus className="w-4 h-4" />
             <span>Agregar mi primera dirección</span>
-          </button>
+          </Link>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -177,14 +176,13 @@ export default function AddressesTab({
                 )}
 
                 <div className="flex items-center gap-1">
-                  <button
-                    type="button"
-                    onClick={() => onOpenEditModal(addr)}
-                    className="p-1.5 text-slate-400 hover:text-slate-900 transition-colors rounded-full hover:bg-slate-100 cursor-pointer"
+                  <Link
+                    href={`/portal/direcciones/nueva?edit=${encodeURIComponent(addr.id)}`}
+                    className="p-1.5 text-slate-400 hover:text-slate-900 transition-colors rounded-full hover:bg-slate-100 cursor-pointer inline-flex items-center justify-center"
                     title="Editar detalles o mover pin"
                   >
                     <Edit3 className="w-4 h-4" />
-                  </button>
+                  </Link>
 
                   <button
                     type="button"

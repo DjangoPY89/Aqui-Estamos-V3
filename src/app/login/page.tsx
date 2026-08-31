@@ -71,13 +71,7 @@ function LoginContent() {
         setIsLoading(false);
       } else {
         // Redirigir a panel de administración si es admin, o al portal del cliente
-        if (
-          targetEmail === "juanas89@gmail.com" || 
-          targetEmail === "admin@aquiestamos.com" ||
-          targetEmail === "admin2@aquiestamos.com" ||
-          targetEmail === "admin2" ||
-          targetEmail === "admin"
-        ) {
+        if (targetEmail === "juanas89@gmail.com" || targetEmail === "admin@aquiestamos.com") {
           window.location.href = "/admin";
         } else {
           window.location.href = callbackUrl;
@@ -115,31 +109,14 @@ function LoginContent() {
           <h1 className="mt-3 text-2xl sm:text-3xl font-extrabold text-neutral-900 tracking-tight">
             Iniciar Sesión
           </h1>
-          <p className="mt-1 text-xs text-neutral-500">
-            Ingresa a tu cuenta para gestionar tus reservas y servicios
+          <p className="mt-1 text-xs text-neutral-500 max-w-sm mx-auto">
+            Ingresa a tu cuenta para gestionar tus reservas y ver a tu personal asignado.
           </p>
         </div>
 
-        {/* Card Principal */}
-        <div className="bg-white py-8 px-6 shadow-xl rounded-3xl sm:px-10 border border-neutral-200/80">
+        {/* Tarjeta Principal */}
+        <div className="bg-white/95 backdrop-blur-xl p-6 sm:p-8 rounded-3xl border border-neutral-200/90 shadow-xl shadow-neutral-200/50 space-y-5">
           
-          {/* Selector Login / Registro */}
-          <div className="flex bg-neutral-100 p-1 rounded-2xl mb-6">
-            <button
-              type="button"
-              className="flex-1 py-2 rounded-xl text-xs font-bold bg-white text-neutral-900 shadow-xs transition-all cursor-default"
-            >
-              Iniciar Sesión
-            </button>
-            <Link
-              href="/register"
-              className="flex-1 py-2 rounded-xl text-xs font-bold text-neutral-500 hover:text-neutral-900 text-center transition-all flex items-center justify-center gap-1"
-            >
-              <UserPlus className="w-3.5 h-3.5" />
-              <span>Registrarme</span>
-            </Link>
-          </div>
-
           {/* Mensaje de Éxito */}
           {successMsg && (
             <div className="p-3.5 bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs rounded-2xl flex items-center gap-2.5 animate-in fade-in">
@@ -157,6 +134,22 @@ function LoginContent() {
               </div>
             </div>
           )}
+
+          {/* Selector de Pestaña: Iniciar Sesión vs Regístrate (Enlace directo a /register) */}
+          <div className="flex bg-neutral-100 p-1 rounded-2xl border border-neutral-200">
+            <div className="flex-1 py-2.5 text-xs font-bold rounded-xl flex items-center justify-center gap-1.5 bg-white text-neutral-900 shadow-xs cursor-default">
+              <LogIn className="w-3.5 h-3.5 text-electric-600" />
+              <span>Iniciar Sesión</span>
+            </div>
+
+            <Link
+              href={`/register?callbackUrl=${encodeURIComponent(callbackUrl)}`}
+              className="flex-1 py-2.5 text-xs font-bold rounded-xl transition-all flex items-center justify-center gap-1.5 text-neutral-500 hover:text-neutral-900 hover:bg-white/60"
+            >
+              <UserPlus className="w-3.5 h-3.5 text-neutral-400" />
+              <span>Registrarme</span>
+            </Link>
+          </div>
 
           {/* Botón de Google en 1 Clic */}
           <div className="space-y-3">
@@ -181,12 +174,12 @@ function LoginContent() {
           <form onSubmit={handleLoginSubmit} className="space-y-4 animate-in fade-in">
             <div>
               <label className="block text-xs font-bold text-neutral-700 mb-1.5">
-                Correo Electrónico o Usuario
+                Correo Electrónico
               </label>
               <div className="relative">
                 <Mail className="w-4 h-4 text-neutral-400 absolute left-3.5 top-3.5" />
                 <input
-                  type="text"
+                  type="email"
                   required
                   autoCapitalize="none"
                   autoCorrect="off"
@@ -194,7 +187,7 @@ function LoginContent() {
                   autoComplete="username"
                   value={loginEmail}
                   onChange={(e) => setLoginEmail(e.target.value)}
-                  placeholder="tu@correo.com o Admin2"
+                  placeholder="tu@correo.com"
                   className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-neutral-300 text-xs text-neutral-900 placeholder:text-neutral-400 focus:ring-2 focus:ring-electric-600 focus:border-electric-600 focus:outline-none transition-all"
                 />
               </div>
