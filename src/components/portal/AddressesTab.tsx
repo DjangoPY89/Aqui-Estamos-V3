@@ -46,10 +46,10 @@ export default function AddressesTab({
 
         <Link
           href="/portal/direcciones/nueva"
-          className="inline-flex items-center gap-2 px-5 py-2.5 bg-[#0071E3] hover:bg-[#0077ED] text-white text-xs font-semibold rounded-full shadow-xs transition-all active:scale-98 shrink-0 cursor-pointer"
+          className="inline-flex items-center gap-2 px-5 py-2.5 bg-[#0071E3] hover:bg-[#0077ED] text-white text-xs font-bold rounded-full shadow-sm hover:shadow transition-all active:scale-98 shrink-0 cursor-pointer"
         >
           <Plus className="w-4 h-4" />
-          <span>Registrar Nueva Ubicación</span>
+          <span>+ Registrar nueva dirección</span>
         </Link>
       </div>
 
@@ -75,10 +75,10 @@ export default function AddressesTab({
           </div>
           <Link
             href="/portal/direcciones/nueva"
-            className="inline-flex items-center gap-2 px-6 py-2.5 bg-[#0071E3] hover:bg-[#0077ED] text-white text-xs font-semibold rounded-full shadow-xs transition-all cursor-pointer"
+            className="inline-flex items-center gap-2 px-6 py-2.5 bg-[#0071E3] hover:bg-[#0077ED] text-white text-xs font-bold rounded-full shadow-sm hover:shadow transition-all cursor-pointer"
           >
             <Plus className="w-4 h-4" />
-            <span>Agregar mi primera dirección</span>
+            <span>+ Registrar nueva dirección</span>
           </Link>
         </div>
       ) : (

@@ -51,10 +51,31 @@ function NuevaDireccionContent() {
   const [isDefault, setIsDefault] = useState(false);
 
   // Estados de interfaz
+  const [isLocatingGPS, setIsLocatingGPS] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
   const [isLoadingExisting, setIsLoadingExisting] = useState(false);
+
+  const handleDetectGPS = () => {
+    if (typeof window === "undefined" || !navigator.geolocation) {
+      setErrorMsg("Tu navegador o dispositivo no soporta geolocalización GPS.");
+      return;
+    }
+    setIsLocatingGPS(true);
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        setLat(pos.coords.latitude);
+        setLng(pos.coords.longitude);
+        setIsLocatingGPS(false);
+      },
+      (err) => {
+        setIsLocatingGPS(false);
+        setErrorMsg("No se pudo obtener la señal GPS precisa. Por favor, toca tu ubicación en el mapa interactivo.");
+      },
+      { enableHighAccuracy: true, timeout: 10000 }
+    );
+  };
 
   // Redirigir a login si no está autenticado
   useEffect(() => {
@@ -458,7 +479,17 @@ function NuevaDireccionContent() {
                 </div>
               </div>
 
-              <div className="flex items-center gap-2">
+              <div className="flex flex-wrap items-center gap-2">
+                <button
+                  type="button"
+                  onClick={handleDetectGPS}
+                  disabled={isLocatingGPS}
+                  className="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-blue-50 hover:bg-blue-100 text-[#0071E3] font-bold text-xs rounded-full border border-blue-200 shadow-2xs transition-all cursor-pointer disabled:opacity-50 active:scale-95"
+                  title="Detectar coordenadas exactas de mi dispositivo por GPS"
+                >
+                  <Navigation className={`w-3.5 h-3.5 ${isLocatingGPS ? "animate-spin text-[#0071E3]" : ""}`} />
+                  <span>{isLocatingGPS ? "Obteniendo GPS..." : "Mi GPS Actual"}</span>
+                </button>
                 <span className="text-xs font-mono font-bold text-slate-700 bg-slate-100 px-3 py-1.5 rounded-full border border-slate-200">
                   📍 {lat ? Number(lat).toFixed(4) : "-"}, {lng ? Number(lng).toFixed(4) : "-"}
                 </span>
