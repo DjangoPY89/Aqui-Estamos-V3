@@ -32,14 +32,9 @@ export async function POST(req: Request) {
 
       const response = NextResponse.json({
         ok: true,
-        message: "Acceso de administrador concedido (Juan Solalinde).",
+        message: "Acceso de administrador maestro concedido.",
         role: "ADMIN",
-        user: {
-          id: "usr_admin_master",
-          name: "Juan Solalinde",
-          email: ADMIN_EMAIL,
-          role: "ADMIN",
-        },
+        email: ADMIN_EMAIL,
       });
 
       // Cookie simple de sesión admin (8 horas)
@@ -62,21 +57,16 @@ export async function POST(req: Request) {
       return response;
     }
 
-    // Verificar credenciales del segundo administrador (Admin2 / Admin2)
+    // Verificar credenciales de Admin2 directamente
     const isAdmin2Email = inputEmail === "admin2@aquiestamos.com" || inputEmail === "admin2";
-    const isAdmin2Password = cleanPassword === "Admin2" || cleanPassword.toLowerCase() === "admin2";
+    const isAdmin2Password = cleanPassword === "Admin2" || cleanPassword === "admin2";
 
     if (isAdmin2Email && isAdmin2Password) {
       const response = NextResponse.json({
         ok: true,
-        message: "Acceso de co-administrador concedido (Admin2).",
+        message: "Acceso de administrador secundario concedido.",
         role: "ADMIN",
-        user: {
-          id: "usr_admin_2",
-          name: "Admin2",
-          email: "admin2@aquiestamos.com",
-          role: "ADMIN",
-        },
+        email: "admin2@aquiestamos.com",
       });
 
       const expiry = new Date(Date.now() + 8 * 60 * 60 * 1000);

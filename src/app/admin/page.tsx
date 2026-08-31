@@ -132,6 +132,18 @@ export default function AdminDashboardPage() {
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<"BOOKINGS" | "EMPLOYEES" | "CUSTOMERS" | "INVOICES" | "LEADS" | "ANALYTICS" | "CALENDAR" | "AVAILABILITY">("BOOKINGS");
+
+  // Control de Roles y Permisos: Admin Maestro vs Admin2
+  const currentAdminEmail = (session?.user?.email || "").toLowerCase().trim();
+  const isSuperAdmin = currentAdminEmail === "juanas89@gmail.com" || currentAdminEmail === "admin@aquiestamos.com";
+  const canAccessInvoices = isSuperAdmin;
+
+  useEffect(() => {
+    if (!canAccessInvoices && activeTab === "INVOICES") {
+      setActiveTab("BOOKINGS");
+    }
+  }, [canAccessInvoices, activeTab]);
+
   const [quickViewFilter, setQuickViewFilter] = useState<"ALL" | "TODAY" | "THIS_WEEK" | "UNASSIGNED" | "PENDING" | "CONFIRMED" | "COMPLETED">("ALL");
   const [statusFilter, setStatusFilter] = useState("ALL");
   const [searchTerm, setSearchTerm] = useState("");
@@ -201,21 +213,36 @@ export default function AdminDashboardPage() {
   const [modalNotes, setModalNotes] = useState("");
   const [isSaving, setIsSaving] = useState(false);
 
-  // Estado de Selector de Columnas Visibles
+  // Clave de almacenamiento aislada para cada administrador (Juan vs Admin2)
+  const getAdminStorageKey = (email?: string | null) => {
+    const cleanEmail = (email || session?.user?.email || "default_admin").toLowerCase().trim();
+    return `admin_bookings_visible_cols_${cleanEmail}`;
+  };
+
+  // Estado de Selector de Columnas Visibles (independiente para cada administrador)
   const [visibleColumns, setVisibleColumns] = useState<Record<BookingColumnId, boolean>>(() => {
     const initial: Record<string, boolean> = {};
     ALL_BOOKING_COLUMNS.forEach((c) => { initial[c.id] = c.defaultVisible; });
-    if (typeof window !== "undefined") {
+    return initial as Record<BookingColumnId, boolean>;
+  });
+
+  // Cargar preferencias individuales de columnas al detectar la sesión activa
+  useEffect(() => {
+    if (typeof window !== "undefined" && session?.user?.email) {
       try {
-        const saved = localStorage.getItem("admin_bookings_visible_cols");
+        const key = getAdminStorageKey(session.user.email);
+        const saved = localStorage.getItem(key);
+        const initial: Record<string, boolean> = {};
+        ALL_BOOKING_COLUMNS.forEach((c) => { initial[c.id] = c.defaultVisible; });
         if (saved) {
           const parsed = JSON.parse(saved);
-          return { ...initial, ...parsed };
+          setVisibleColumns({ ...initial, ...parsed } as Record<BookingColumnId, boolean>);
+        } else {
+          setVisibleColumns(initial as Record<BookingColumnId, boolean>);
         }
       } catch (e) {}
     }
-    return initial as Record<BookingColumnId, boolean>;
-  });
+  }, [session?.user?.email]);
 
   const [showColumnMenu, setShowColumnMenu] = useState(false);
 
@@ -223,7 +250,8 @@ export default function AdminDashboardPage() {
     setVisibleColumns((prev) => {
       const updated = { ...prev, [colId]: !prev[colId] };
       try {
-        localStorage.setItem("admin_bookings_visible_cols", JSON.stringify(updated));
+        const key = getAdminStorageKey();
+        localStorage.setItem(key, JSON.stringify(updated));
       } catch (e) {}
       return updated;
     });
@@ -234,7 +262,8 @@ export default function AdminDashboardPage() {
     ALL_BOOKING_COLUMNS.forEach((c) => { updated[c.id] = true; });
     setVisibleColumns(updated as Record<BookingColumnId, boolean>);
     try {
-      localStorage.setItem("admin_bookings_visible_cols", JSON.stringify(updated));
+      const key = getAdminStorageKey();
+      localStorage.setItem(key, JSON.stringify(updated));
     } catch (e) {}
   };
 
@@ -243,7 +272,8 @@ export default function AdminDashboardPage() {
     ALL_BOOKING_COLUMNS.forEach((c) => { updated[c.id] = c.defaultVisible; });
     setVisibleColumns(updated as Record<BookingColumnId, boolean>);
     try {
-      localStorage.setItem("admin_bookings_visible_cols", JSON.stringify(updated));
+      const key = getAdminStorageKey();
+      localStorage.setItem(key, JSON.stringify(updated));
     } catch (e) {}
   };
 
@@ -435,42 +465,15 @@ export default function AdminDashboardPage() {
     }
   };
 
-  // Estados de Sincronización en Tiempo Real
-  const [isSyncing, setIsSyncing] = useState(false);
-  const [lastSyncTime, setLastSyncTime] = useState<Date | null>(null);
-
-  // Cargar datos solo si es ADMIN con sincronización en tiempo real y re-enfoque
+  // Cargar datos solo si es ADMIN
   useEffect(() => {
     if (status === "authenticated" && (session?.user as any)?.role === "ADMIN") {
-      loadData(false);
-
-      // Polling cada 10 segundos en segundo plano
-      const interval = setInterval(() => {
-        loadData(true);
-      }, 10000);
-
-      // Sincronizar inmediatamente al volver a enfocar la pestaña
-      const handleSyncOnFocus = () => {
-        if (document.visibilityState === "visible") {
-          loadData(true);
-        }
-      };
-
-      window.addEventListener("focus", handleSyncOnFocus);
-      document.addEventListener("visibilitychange", handleSyncOnFocus);
-
-      return () => {
-        clearInterval(interval);
-        window.removeEventListener("focus", handleSyncOnFocus);
-        document.removeEventListener("visibilitychange", handleSyncOnFocus);
-      };
+      loadData();
     }
   }, [status, session]);
 
-  const loadData = async (silent = false) => {
-    if (!silent) setIsLoading(true);
-    else setIsSyncing(true);
-
+  const loadData = async () => {
+    setIsLoading(true);
     try {
       const [bRes, lRes, uRes, eRes, sRes, rRes] = await Promise.all([
         fetch("/api/bookings?limit=200", { cache: "no-store" }),
@@ -505,12 +508,10 @@ export default function AdminDashboardPage() {
         const data = await rRes.json();
         setCustomerReviews(data.reviews || []);
       }
-      setLastSyncTime(new Date());
     } catch (err) {
-      console.error("Error al sincronizar datos del panel:", err);
+      console.error("Error al cargar datos del panel:", err);
     } finally {
-      if (!silent) setIsLoading(false);
-      setIsSyncing(false);
+      setIsLoading(false);
     }
   };
 
@@ -1628,7 +1629,7 @@ export default function AdminDashboardPage() {
               Ingreso al Panel Operativo
             </h1>
             <p className="mt-1 text-xs text-slate-500">
-              Acceso exclusivo para el administrador maestro de Aquí Estamos.
+              Panel de control administrativo de Aquí Estamos.
             </p>
           </div>
 
@@ -1638,7 +1639,7 @@ export default function AdminDashboardPage() {
                 <AlertCircle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
                 <div className="flex-1">
                   <p className="font-semibold">Sesión activa como: {session.user.email}</p>
-                  <p className="text-[11px] text-amber-700 mt-0.5">Esta cuenta no tiene permisos de Administrador Maestro.</p>
+                  <p className="text-[11px] text-amber-700 mt-0.5">Esta cuenta no tiene permisos de Administrador.</p>
                   <button
                     type="button"
                     onClick={() => signOut({ callbackUrl: "/admin" })}
@@ -1661,7 +1662,7 @@ export default function AdminDashboardPage() {
             <form onSubmit={handleAdminLogin} className="space-y-4">
               <div>
                 <label className="block text-xs font-bold text-slate-700 mb-1.5">
-                  Correo Electrónico o Usuario
+                  Usuario o Correo Administrador
                 </label>
                 <div className="relative">
                   <Mail className="w-4 h-4 text-slate-400 absolute left-3.5 top-3.5" />
@@ -1689,19 +1690,17 @@ export default function AdminDashboardPage() {
                         setAdminPassword("DjangoPY89");
                       }}
                       className="text-[10px] font-bold text-electric-600 hover:text-electric-700 underline"
-                      title="Ingresar como Admin Maestro"
                     >
                       Admin 1
                     </button>
-                    <span className="text-slate-300 text-xs">•</span>
+                    <span className="text-slate-300 text-[10px]">•</span>
                     <button
                       type="button"
                       onClick={() => {
                         setAdminEmail("Admin2");
                         setAdminPassword("Admin2");
                       }}
-                      className="text-[10px] font-bold text-emerald-600 hover:text-emerald-700 underline"
-                      title="Ingresar como Segundo Administrador"
+                      className="text-[10px] font-bold text-purple-600 hover:text-purple-700 underline"
                     >
                       Admin 2
                     </button>
@@ -1871,24 +1870,26 @@ export default function AdminDashboardPage() {
                 </span>
               </button>
 
-              <button
-                onClick={() => setActiveTab("INVOICES")}
-                className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all ${
-                  activeTab === "INVOICES"
-                    ? "bg-purple-50 text-purple-700 shadow-xs"
-                    : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
-                }`}
-              >
-                <div className="flex items-center gap-2.5">
-                  <Receipt className={`w-4 h-4 ${activeTab === "INVOICES" ? "text-purple-600" : "text-slate-400"}`} />
-                  <span>Facturas Emitidas</span>
-                </div>
-                <span className={`text-[10px] font-black px-2 py-0.5 rounded-full ${
-                  activeTab === "INVOICES" ? "bg-purple-600 text-white" : "bg-slate-100 text-slate-600"
-                }`}>
-                  {completedInvoices.length}
-                </span>
-              </button>
+              {canAccessInvoices && (
+                <button
+                  onClick={() => setActiveTab("INVOICES")}
+                  className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all ${
+                    activeTab === "INVOICES"
+                      ? "bg-purple-50 text-purple-700 shadow-xs"
+                      : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
+                  }`}
+                >
+                  <div className="flex items-center gap-2.5">
+                    <Receipt className={`w-4 h-4 ${activeTab === "INVOICES" ? "text-purple-600" : "text-slate-400"}`} />
+                    <span>Facturas Emitidas</span>
+                  </div>
+                  <span className={`text-[10px] font-black px-2 py-0.5 rounded-full ${
+                    activeTab === "INVOICES" ? "bg-purple-600 text-white" : "bg-slate-100 text-slate-600"
+                  }`}>
+                    {completedInvoices.length}
+                  </span>
+                </button>
+              )}
 
               <button
                 onClick={() => setActiveTab("LEADS")}
@@ -1987,18 +1988,16 @@ export default function AdminDashboardPage() {
             <div className="flex items-center justify-between px-2 pt-1">
               <div className="flex items-center gap-2 min-w-0">
                 <div className={`w-8 h-8 rounded-full font-black text-xs flex items-center justify-center shrink-0 ${
-                  (session?.user?.email?.toLowerCase().includes("admin2") || session?.user?.name === "Admin2")
-                    ? "bg-emerald-100 text-emerald-800 border border-emerald-200"
-                    : "bg-electric-100 text-electric-700 border border-electric-200"
+                  isSuperAdmin ? "bg-electric-100 text-electric-700" : "bg-purple-100 text-purple-700"
                 }`}>
-                  {(session?.user?.email?.toLowerCase().includes("admin2") || session?.user?.name === "Admin2") ? "A2" : "JS"}
+                  {session?.user?.name ? session.user.name.slice(0, 2).toUpperCase() : (isSuperAdmin ? "JS" : "A2")}
                 </div>
                 <div className="min-w-0">
                   <p className="text-xs font-bold text-slate-900 truncate">
-                    {(session?.user?.email?.toLowerCase().includes("admin2") || session?.user?.name === "Admin2") ? "Admin2" : "Juan Solalinde"}
+                    {session?.user?.name || (isSuperAdmin ? "Juan Solalinde" : "Admin 2")}
                   </p>
                   <p className="text-[10px] text-slate-500">
-                    {(session?.user?.email?.toLowerCase().includes("admin2") || session?.user?.name === "Admin2") ? "Co-Administrador" : "Admin Maestro"}
+                    {isSuperAdmin ? "Admin Maestro" : "Administrador"}
                   </p>
                 </div>
               </div>
@@ -2032,13 +2031,12 @@ export default function AdminDashboardPage() {
                   {activeTab === "CALENDAR" && "Google Calendar en Vivo"}
                   {activeTab === "AVAILABILITY" && "Disponibilidad & Capacidad de Turnos"}
                 </h1>
-                <div className="flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-800 text-[11px] font-bold">
-                  <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shrink-0" />
-                  <span>En vivo</span>
-                </div>
+                <span className="px-2.5 py-0.5 rounded-full bg-slate-100 text-slate-600 text-[11px] font-bold">
+                  En Vivo
+                </span>
               </div>
               <p className="text-xs text-slate-500 mt-0.5">
-                Sesión: <span className="font-semibold text-slate-700">{(session?.user?.email?.toLowerCase().includes("admin2") || session?.user?.name === "Admin2") ? "Admin2" : "Juan Solalinde"}</span> • Datos actualizados automáticamente en tiempo real.
+                Control de operaciones, asignación de personal y seguimiento en tiempo real.
               </p>
             </div>
 
@@ -2091,16 +2089,14 @@ export default function AdminDashboardPage() {
                 <span>Nueva Cita</span>
               </button>
 
-              {/* Actualizar Datos en Vivo */}
+              {/* Actualizar Datos */}
               <button
                 type="button"
-                onClick={() => loadData(false)}
-                disabled={isLoading || isSyncing}
-                className="flex items-center gap-1.5 px-3 py-2 bg-white hover:bg-slate-50 text-slate-700 font-bold text-xs rounded-xl border border-slate-200 shadow-xs transition-all active:scale-95 disabled:opacity-50"
-                title="Sincronizar datos inmediatamente"
+                onClick={loadData}
+                className="p-2 bg-white hover:bg-slate-50 text-slate-600 rounded-xl border border-slate-200 shadow-xs transition-all"
+                title="Actualizar datos"
               >
-                <RefreshCw className={`w-3.5 h-3.5 text-slate-500 ${isSyncing || isLoading ? "animate-spin text-electric-600" : ""}`} />
-                <span className="hidden sm:inline">Actualizar</span>
+                <RefreshCw className={`w-3.5 h-3.5 ${isLoading ? "animate-spin" : ""}`} />
               </button>
             </div>
           </header>
@@ -3576,9 +3572,9 @@ export default function AdminDashboardPage() {
             )}
 
             {/* ======================================================== */}
-            {/* TAB: FACTURAS EMITIDAS (SIFEN & KUDE) */}
+            {/* TAB: FACTURAS EMITIDAS (SIFEN & KUDE) - SOLO DISPONIBLE PARA ADMIN MAESTRO */}
             {/* ======================================================== */}
-            {activeTab === "INVOICES" && (
+            {activeTab === "INVOICES" && canAccessInvoices && (
               <div className="space-y-6">
                 
                 {/* 1. KPIs y Métricas de Facturación Legal */}
@@ -3813,6 +3809,18 @@ export default function AdminDashboardPage() {
 
                 </div>
 
+              </div>
+            )}
+
+            {activeTab === "INVOICES" && !canAccessInvoices && (
+              <div className="bg-white p-12 rounded-3xl border border-slate-200 shadow-xs text-center space-y-3">
+                <div className="w-14 h-14 bg-rose-50 text-rose-600 rounded-2xl flex items-center justify-center mx-auto">
+                  <ShieldAlert className="w-7 h-7" />
+                </div>
+                <h3 className="text-base font-bold text-slate-900">Acceso Restringido</h3>
+                <p className="text-xs text-slate-500 max-w-md mx-auto">
+                  La sección de Facturas Emitidas está reservada exclusivamente para el Administrador Maestro (juanas89@gmail.com).
+                </p>
               </div>
             )}
 
