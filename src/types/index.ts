@@ -1,5 +1,5 @@
 export type ServiceHour = 4 | 6 | 8;
-export type FrequencyType = 'once' | 'multi_weekly' | 'weekly' | 'biweekly' | 'monthly' | 'weekly_2_4';
+export type FrequencyType = 'once' | 'multi_weekly' | 'weekly' | 'biweekly' | 'monthly' | 'custom' | 'weekly_2_4';
 export type PaymentMethod = 'sipap' | 'card' | 'cash';
 export type BookingStatus = 'PENDING' | 'CONFIRMED' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED';
 export type PaymentStatus = 'PENDING' | 'PAID' | 'REFUNDED';

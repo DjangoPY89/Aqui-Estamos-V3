@@ -2574,6 +2574,8 @@ export default function AdminDashboardPage() {
 
                         const formatFrequency = () => {
                           switch (b.frequency as string) {
+                            case "custom":
+                              return <span className="px-2 py-0.5 rounded-full bg-amber-50 text-amber-800 font-bold text-[10px] border border-amber-200">Personalizado</span>;
                             case "multi_weekly":
                             case "weekly_2_4":
                               return <span className="px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-800 font-bold text-[10px] border border-emerald-200">+1 vez/sem</span>;

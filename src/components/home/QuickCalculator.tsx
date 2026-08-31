@@ -193,6 +193,28 @@ export default function QuickCalculator() {
                     {frequency === "monthly" && <Check className="w-4 h-4 text-electric-600 shrink-0" />}
                   </button>
 
+                  {/* 6. Personalizado */}
+                  <button
+                    type="button"
+                    onClick={() => setFrequency("custom")}
+                    className={`p-3 rounded-xl border text-left flex items-center justify-between transition-all ${
+                      frequency === "custom"
+                        ? "bg-electric-50 border-electric-400 text-electric-900 font-semibold shadow-xs"
+                        : "bg-white border-neutral-200 text-neutral-700 hover:bg-neutral-50"
+                    }`}
+                  >
+                    <div>
+                      <div className="flex items-center gap-1.5">
+                        <p className="text-xs font-bold">Personalizado</p>
+                        <span className="text-[9px] uppercase font-black bg-amber-100 text-amber-900 px-1.5 py-0.5 rounded-full">
+                          20% OFF
+                        </span>
+                      </div>
+                      <p className="text-[11px] text-neutral-500">Elige 5+ fechas en 30 días</p>
+                    </div>
+                    {frequency === "custom" && <Check className="w-4 h-4 text-electric-600 shrink-0" />}
+                  </button>
+
                 </div>
               </div>
 

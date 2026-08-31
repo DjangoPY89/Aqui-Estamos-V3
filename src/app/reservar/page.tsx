@@ -161,7 +161,7 @@ function BookingContent() {
       setServiceHours(Number(hoursParam) as ServiceHour);
     }
     const freqParam = searchParams.get("freq");
-    if (freqParam && ["once", "multi_weekly", "weekly", "biweekly", "monthly", "weekly_2_4"].includes(freqParam)) {
+    if (freqParam && ["once", "multi_weekly", "weekly", "biweekly", "monthly", "custom", "weekly_2_4"].includes(freqParam)) {
       setFrequency(freqParam as FrequencyType);
     }
     const extrasParam = searchParams.get("extras");
@@ -424,9 +424,8 @@ function BookingContent() {
     loadSavedAddresses();
   }, [session]);
 
-  const datesCount = (frequency === "multi_weekly" || frequency === "weekly_2_4") 
-    ? Math.max(selectedDates.length, 1) 
-    : 1;
+  const isMulti = frequency === "custom" || frequency === "multi_weekly" || frequency === "weekly_2_4";
+  const datesCount = isMulti ? Math.max(selectedDates.length, 1) : 1;
   const pricing = calculatePricing(serviceHours, frequency, selectedExtras, datesCount);
 
   const toggleExtra = (id: string) => {
@@ -511,6 +510,11 @@ function BookingContent() {
       return;
     }
 
+    if (frequency === "custom" && selectedDates.length < 5) {
+      setErrorMsg("Para la frecuencia Personalizada, por favor selecciona al menos 5 fechas en los próximos 30 días en el calendario.");
+      return;
+    }
+
     if ((frequency === "multi_weekly" || frequency === "weekly_2_4") && selectedDates.length < 2) {
       setErrorMsg("Para la frecuencia de más de 1 vez por semana, por favor selecciona al menos 2 días en el calendario.");
       return;
@@ -572,7 +576,7 @@ function BookingContent() {
           frequency,
           extras: selectedExtras,
           serviceDate,
-          selectedDates: (frequency === "multi_weekly" || frequency === "weekly_2_4") ? selectedDates : [serviceDate],
+          selectedDates: (frequency === "custom" || frequency === "multi_weekly" || frequency === "weekly_2_4") ? selectedDates : [serviceDate],
           serviceTime,
           paymentMethod,
           preferredCleanerId: preferredEmp?.id || null,
@@ -982,6 +986,28 @@ function BookingContent() {
                         <p className="text-[11px] text-neutral-500">Agendamiento mensual automático</p>
                       </div>
                       {frequency === "monthly" && <Check className="w-4 h-4 text-electric-600 shrink-0" />}
+                    </button>
+
+                    {/* 6. Personalizado */}
+                    <button
+                      type="button"
+                      onClick={() => setFrequency("custom")}
+                      className={`p-3 rounded-xl border text-left flex items-center justify-between transition-all ${
+                        frequency === "custom"
+                          ? "bg-electric-50 border-electric-400 text-electric-900 font-semibold shadow-xs"
+                          : "bg-white border-neutral-200 text-neutral-700 hover:bg-neutral-50"
+                      }`}
+                    >
+                      <div>
+                        <div className="flex items-center gap-1.5">
+                          <p className="text-xs font-bold">Personalizado</p>
+                          <span className="text-[9px] uppercase font-black bg-amber-100 text-amber-900 px-1.5 py-0.5 rounded-full">
+                            20% OFF
+                          </span>
+                        </div>
+                        <p className="text-[11px] text-neutral-500">Elige 5+ fechas en los próximos 30 días</p>
+                      </div>
+                      {frequency === "custom" && <Check className="w-4 h-4 text-electric-600 shrink-0" />}
                     </button>
                   </div>
                 </div>
@@ -1585,7 +1611,9 @@ function BookingContent() {
                 <div className="space-y-2">
                   <label className="block text-xs font-bold text-neutral-800 flex items-center justify-between">
                     <span>
-                      {(frequency === "multi_weekly" || frequency === "weekly_2_4") 
+                      {frequency === "custom"
+                        ? "1. Selecciona al menos 5 fechas en los próximos 30 días *"
+                        : (frequency === "multi_weekly" || frequency === "weekly_2_4") 
                         ? "1. Selecciona los Días en la Misma Semana (Mínimo 2) *" 
                         : "1. Selecciona la Fecha del Servicio *"}
                     </span>
@@ -1612,8 +1640,15 @@ function BookingContent() {
                       setSelectedDates(newDates);
                       if (newDates.length > 0) setServiceDate(newDates[0]);
                     }}
-                    isMultiSelect={frequency === "multi_weekly" || frequency === "weekly_2_4"}
-                    minSelectedCount={2}
+                    isMultiSelect={frequency === "custom" || frequency === "multi_weekly" || frequency === "weekly_2_4"}
+                    minSelectedCount={frequency === "custom" ? 5 : 2}
+                    restrictToSameWeek={frequency !== "custom"}
+                    multiSelectLabel={
+                      frequency === "custom"
+                        ? "Selecciona al menos 5 fechas en los próximos 30 días (20% OFF)"
+                        : "Selecciona 2 o más días en la misma semana (15% OFF)"
+                    }
+                    multiSelectBadge={frequency === "custom" ? "20% Descuento" : "15% Descuento"}
                     availabilitySettings={availabilitySettings}
                   />
 
@@ -1838,7 +1873,7 @@ function BookingContent() {
                   <div className="flex justify-between text-neutral-500 text-[11px] pt-1">
                     <span>Fecha:</span>
                     <span>
-                      {(frequency === "multi_weekly" || frequency === "weekly_2_4") && selectedDates.length > 1
+                      {isMulti && selectedDates.length > 1
                         ? `${selectedDates.length} fechas (${selectedDates.map(d => d.slice(8, 10)).join(", ")})`
                         : `${serviceDate || "Por seleccionar"} (${serviceTime} hs)`}
                     </span>

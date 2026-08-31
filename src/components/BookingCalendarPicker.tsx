@@ -19,6 +19,9 @@ interface BookingCalendarPickerProps {
   onSelectDates?: (dates: string[]) => void;
   isMultiSelect?: boolean;
   minSelectedCount?: number;
+  restrictToSameWeek?: boolean;
+  multiSelectLabel?: string;
+  multiSelectBadge?: string;
   availabilitySettings?: AvailabilitySettings | null;
   disabled?: boolean;
 }
@@ -46,6 +49,9 @@ export default function BookingCalendarPicker({
   onSelectDates,
   isMultiSelect = false,
   minSelectedCount = 2,
+  restrictToSameWeek = true,
+  multiSelectLabel,
+  multiSelectBadge,
   availabilitySettings,
   disabled = false,
 }: BookingCalendarPickerProps) {
@@ -271,7 +277,7 @@ export default function BookingCalendarPicker({
       return;
     }
 
-    // Modo selección múltiple (Más de una vez por semana)
+    // Modo selección múltiple
     let newDates = [...selectedDates];
     if (newDates.includes(dateStr)) {
       newDates = newDates.filter((d) => d !== dateStr);
@@ -279,21 +285,27 @@ export default function BookingCalendarPicker({
         newDates = [dateStr]; // Mantener al menos una
       }
     } else {
-      // Verificar si la fecha pertenece a la misma semana
-      if (newDates.length > 0) {
-        const firstWeek = getWeekIdentifier(newDates[0]);
-        const thisWeek = getWeekIdentifier(dateStr);
-        if (firstWeek !== thisWeek) {
-          // Cambiar a la nueva semana
-          newDates = [dateStr];
-          setMultiNotice("Has seleccionado un día de otra semana. Se ha reiniciado la selección para esa nueva semana.");
-          setTimeout(() => setMultiNotice(null), 4000);
+      if (restrictToSameWeek) {
+        // Verificar si la fecha pertenece a la misma semana
+        if (newDates.length > 0) {
+          const firstWeek = getWeekIdentifier(newDates[0]);
+          const thisWeek = getWeekIdentifier(dateStr);
+          if (firstWeek !== thisWeek) {
+            // Cambiar a la nueva semana
+            newDates = [dateStr];
+            setMultiNotice("Has seleccionado un día de otra semana. Se ha reiniciado la selección para esa nueva semana.");
+            setTimeout(() => setMultiNotice(null), 4000);
+          } else {
+            newDates.push(dateStr);
+            newDates.sort();
+          }
         } else {
-          newDates.push(dateStr);
-          newDates.sort();
+          newDates = [dateStr];
         }
       } else {
-        newDates = [dateStr];
+        // Modo sin restricción de semana (ej: Personalizado 5+ fechas en 30 días)
+        newDates.push(dateStr);
+        newDates.sort();
       }
     }
 
@@ -320,7 +332,7 @@ export default function BookingCalendarPicker({
             </h4>
             <p className="text-[10px] text-slate-500 font-medium">
               {isMultiSelect 
-                ? "Selecciona 2 o más días en la misma semana (15% OFF)" 
+                ? (multiSelectLabel || `Selecciona al menos ${minSelectedCount} días`) 
                 : "Selecciona un día disponible"}
             </p>
           </div>
@@ -357,12 +369,12 @@ export default function BookingCalendarPicker({
             <Sparkles className="w-4 h-4 shrink-0 text-electric-600" />
             <span>
               {selectedDates.length >= minSelectedCount
-                ? `✓ ${selectedDates.length} días seleccionados en la semana (${selectedDates.map(d => d.slice(8, 10)).join(", ")})`
-                : `Selecciona al menos ${minSelectedCount} días en la misma semana (llevas ${selectedDates.length}).`}
+                ? `✓ ${selectedDates.length} fechas seleccionadas (${selectedDates.map(d => d.slice(8, 10)).join(", ")})`
+                : `Selecciona al menos ${minSelectedCount} fechas (llevas ${selectedDates.length}).`}
             </span>
           </div>
           <span className="text-[10px] font-black px-2 py-0.5 rounded-full bg-electric-600 text-white shrink-0">
-            15% Descuento
+            {multiSelectBadge || "Descuento Aplicado"}
           </span>
         </div>
       )}
