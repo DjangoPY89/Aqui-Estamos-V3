@@ -2574,7 +2574,9 @@ export default function AdminDashboardPage() {
 
                         const formatFrequency = () => {
                           switch (b.frequency as string) {
+                            case "multi_weekly":
                             case "weekly_2_4":
+                              return <span className="px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-800 font-bold text-[10px] border border-emerald-200">+1 vez/sem</span>;
                             case "weekly":
                             case "semanal":
                               return <span className="px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 font-bold text-[10px] border border-blue-200">Semanal</span>;
@@ -2585,7 +2587,7 @@ export default function AdminDashboardPage() {
                             case "mensual":
                               return <span className="px-2 py-0.5 rounded-full bg-cyan-50 text-cyan-700 font-bold text-[10px] border border-cyan-200">Mensual</span>;
                             default:
-                              return <span className="px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 font-medium text-[10px]">Una vez</span>;
+                              return <span className="px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 font-medium text-[10px]">Única vez</span>;
                           }
                         };
 

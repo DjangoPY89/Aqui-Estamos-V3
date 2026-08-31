@@ -627,6 +627,7 @@ export async function supabaseCreateBooking(data: {
   totalPrice: number;
   discount?: number;
   paymentMethod: string;
+  assignedCleaner?: string | null;
   notes?: string;
 }): Promise<Booking> {
   const supabase = getSupabase();
@@ -657,7 +658,7 @@ export async function supabaseCreateBooking(data: {
       payment_method: data.paymentMethod,
       payment_status: "PENDING",
       status: "PENDING",
-      assigned_cleaner: null,
+      assigned_cleaner: data.assignedCleaner || null,
       notes: data.notes?.trim() || null,
     })
     .select()

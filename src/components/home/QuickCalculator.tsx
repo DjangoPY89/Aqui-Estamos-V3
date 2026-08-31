@@ -84,15 +84,17 @@ export default function QuickCalculator() {
               {/* Frecuencia */}
               <div>
                 <label className="block text-xs font-semibold uppercase tracking-wider text-neutral-500 mb-2.5">
-                  2. Frecuencia
+                  2. Frecuencia y Descuentos
                 </label>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5">
+                  
+                  {/* 1. Servicio Único */}
                   <button
                     type="button"
                     onClick={() => setFrequency("once")}
                     className={`p-3 rounded-xl border text-left flex items-center justify-between transition-all ${
                       frequency === "once"
-                        ? "bg-electric-50 border-electric-400 text-electric-900 font-semibold"
+                        ? "bg-electric-50 border-electric-400 text-electric-900 font-semibold shadow-xs"
                         : "bg-white border-neutral-200 text-neutral-700 hover:bg-neutral-50"
                     }`}
                   >
@@ -100,29 +102,97 @@ export default function QuickCalculator() {
                       <p className="text-xs font-bold">Servicio Único</p>
                       <p className="text-[11px] text-neutral-500">Tarifa regular estándar</p>
                     </div>
-                    {frequency === "once" && <Check className="w-4 h-4 text-electric-600" />}
+                    {frequency === "once" && <Check className="w-4 h-4 text-electric-600 shrink-0" />}
                   </button>
 
+                  {/* 2. Más de 1 vez x semana */}
                   <button
                     type="button"
-                    onClick={() => setFrequency("weekly_2_4")}
+                    onClick={() => setFrequency("multi_weekly")}
                     className={`p-3 rounded-xl border text-left flex items-center justify-between transition-all ${
-                      frequency === "weekly_2_4"
-                        ? "bg-electric-50 border-electric-400 text-electric-900 font-semibold"
+                      frequency === "multi_weekly" || frequency === "weekly_2_4"
+                        ? "bg-electric-50 border-electric-400 text-electric-900 font-semibold shadow-xs"
                         : "bg-white border-neutral-200 text-neutral-700 hover:bg-neutral-50"
                     }`}
                   >
                     <div>
                       <div className="flex items-center gap-1.5">
-                        <p className="text-xs font-bold">Semanal (2-4 veces)</p>
-                        <span className="text-[9px] uppercase font-bold bg-emerald-100 text-emerald-800 px-1 py-0.2 rounded">
+                        <p className="text-xs font-bold">+1 vez por semana</p>
+                        <span className="text-[9px] uppercase font-black bg-emerald-100 text-emerald-800 px-1.5 py-0.5 rounded-full">
                           15% OFF
                         </span>
                       </div>
-                      <p className="text-[11px] text-neutral-500">Ahorro mensual</p>
+                      <p className="text-[11px] text-neutral-500">2 o más días semanales</p>
                     </div>
-                    {frequency === "weekly_2_4" && <Check className="w-4 h-4 text-electric-600" />}
+                    {(frequency === "multi_weekly" || frequency === "weekly_2_4") && <Check className="w-4 h-4 text-electric-600 shrink-0" />}
                   </button>
+
+                  {/* 3. Semanal */}
+                  <button
+                    type="button"
+                    onClick={() => setFrequency("weekly")}
+                    className={`p-3 rounded-xl border text-left flex items-center justify-between transition-all ${
+                      frequency === "weekly"
+                        ? "bg-electric-50 border-electric-400 text-electric-900 font-semibold shadow-xs"
+                        : "bg-white border-neutral-200 text-neutral-700 hover:bg-neutral-50"
+                    }`}
+                  >
+                    <div>
+                      <div className="flex items-center gap-1.5">
+                        <p className="text-xs font-bold">Semanal</p>
+                        <span className="text-[9px] uppercase font-black bg-emerald-100 text-emerald-800 px-1.5 py-0.5 rounded-full">
+                          15% OFF
+                        </span>
+                      </div>
+                      <p className="text-[11px] text-neutral-500">1 día fijo cada semana</p>
+                    </div>
+                    {frequency === "weekly" && <Check className="w-4 h-4 text-electric-600 shrink-0" />}
+                  </button>
+
+                  {/* 4. Quincenal */}
+                  <button
+                    type="button"
+                    onClick={() => setFrequency("biweekly")}
+                    className={`p-3 rounded-xl border text-left flex items-center justify-between transition-all ${
+                      frequency === "biweekly"
+                        ? "bg-electric-50 border-electric-400 text-electric-900 font-semibold shadow-xs"
+                        : "bg-white border-neutral-200 text-neutral-700 hover:bg-neutral-50"
+                    }`}
+                  >
+                    <div>
+                      <div className="flex items-center gap-1.5">
+                        <p className="text-xs font-bold">Quincenal</p>
+                        <span className="text-[9px] uppercase font-black bg-blue-100 text-blue-800 px-1.5 py-0.5 rounded-full">
+                          10% OFF
+                        </span>
+                      </div>
+                      <p className="text-[11px] text-neutral-500">Cada 15 días</p>
+                    </div>
+                    {frequency === "biweekly" && <Check className="w-4 h-4 text-electric-600 shrink-0" />}
+                  </button>
+
+                  {/* 5. Mensual */}
+                  <button
+                    type="button"
+                    onClick={() => setFrequency("monthly")}
+                    className={`p-3 rounded-xl border text-left flex items-center justify-between transition-all ${
+                      frequency === "monthly"
+                        ? "bg-electric-50 border-electric-400 text-electric-900 font-semibold shadow-xs"
+                        : "bg-white border-neutral-200 text-neutral-700 hover:bg-neutral-50"
+                    }`}
+                  >
+                    <div>
+                      <div className="flex items-center gap-1.5">
+                        <p className="text-xs font-bold">Mensual</p>
+                        <span className="text-[9px] uppercase font-black bg-purple-100 text-purple-800 px-1.5 py-0.5 rounded-full">
+                          5% OFF
+                        </span>
+                      </div>
+                      <p className="text-[11px] text-neutral-500">1 servicio al mes</p>
+                    </div>
+                    {frequency === "monthly" && <Check className="w-4 h-4 text-electric-600 shrink-0" />}
+                  </button>
+
                 </div>
               </div>
 

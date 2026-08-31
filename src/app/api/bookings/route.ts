@@ -170,9 +170,12 @@ export async function POST(req: Request) {
       frequency,
       extras = [],
       serviceDate,
+      selectedDates = [],
       serviceTime,
-      paymentMethod = "cash",
+      paymentMethod = "sipap",
       notes,
+      preferredCleanerId,
+      preferredCleanerName,
     } = body;
 
     if (!customerName || !customerPhone || !customerEmail || !address || !serviceHours || !serviceDate || !serviceTime) {
@@ -205,7 +208,8 @@ export async function POST(req: Request) {
     }
 
     // Recalcular precio en backend para total seguridad
-    const pricing = calculatePricing(Number(serviceHours) as any, frequency || "once", extras);
+    const datesCount = Array.isArray(selectedDates) && selectedDates.length > 0 ? selectedDates.length : 1;
+    const pricing = calculatePricing(Number(serviceHours) as any, frequency || "once", extras, datesCount);
     const bookingNumber = generateBookingNumber();
 
     // Asociar a usuario autenticado o crear cuenta de cliente automática
@@ -276,6 +280,17 @@ export async function POST(req: Request) {
       }
     }
 
+    // Formatear notas con metadatos de fechas múltiples y colaborador preferido
+    let finalNotes = notes || "";
+    if (selectedDates && Array.isArray(selectedDates) && selectedDates.length > 1) {
+      finalNotes = `[FECHAS: ${selectedDates.join(", ")}] ${finalNotes}`.trim();
+    }
+    if (preferredCleanerName) {
+      finalNotes = `[PREFERIDO: ${preferredCleanerName}] ${finalNotes}`.trim();
+    }
+
+    const initialCleaner = preferredCleanerName || preferredCleanerId || null;
+
     let booking: any = null;
     try {
       booking = await supabaseCreateBooking({
@@ -294,7 +309,8 @@ export async function POST(req: Request) {
         totalPrice: pricing.finalPrice,
         discount: pricing.discountAmount,
         paymentMethod,
-        notes: notes || undefined,
+        assignedCleaner: initialCleaner,
+        notes: finalNotes || undefined,
       });
 
       // Sincronizar en local por respaldo
@@ -318,8 +334,8 @@ export async function POST(req: Request) {
           paymentMethod,
           paymentStatus: "PENDING",
           status: "PENDING",
-          assignedCleaner: null,
-          notes: notes || null,
+          assignedCleaner: initialCleaner,
+          notes: finalNotes || null,
         });
       } catch (e) {}
     } catch (e) {
@@ -342,8 +358,8 @@ export async function POST(req: Request) {
         paymentMethod,
         paymentStatus: "PENDING",
         status: "PENDING",
-        assignedCleaner: null,
-        notes: notes || null,
+        assignedCleaner: initialCleaner,
+        notes: finalNotes || null,
       });
     }
 

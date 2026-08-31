@@ -25,7 +25,12 @@ import {
   Building,
   Plus,
   BookmarkCheck,
-  Compass
+  Compass,
+  Star,
+  Award,
+  UserCheck,
+  CreditCard,
+  QrCode
 } from "lucide-react";
 import { AVAILABLE_EXTRAS, calculatePricing, formatGs, SERVICE_PACKAGES } from "@/lib/pricing";
 import { FrequencyType, PaymentMethod, ServiceHour, TimeSlotConfig, DateAvailabilityCheck, AvailabilitySettings } from "@/types";
@@ -42,6 +47,18 @@ interface SavedAddress {
   isDefault?: boolean;
 }
 
+interface AvailableCleaner {
+  id: string;
+  name: string;
+  image?: string | null;
+  rating: number;
+  reviewCount: number;
+  completedBookingsCount: number;
+  zone: string;
+  ipsVerified: boolean;
+  isAvailable: boolean;
+}
+
 function BookingContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -56,6 +73,8 @@ function BookingContent() {
   const [customerName, setCustomerName] = useState("");
   const [customerPhone, setCustomerPhone] = useState("");
   const [customerEmail, setCustomerEmail] = useState("");
+  const [isEditingContact, setIsEditingContact] = useState(false);
+
   const [address, setAddress] = useState("");
   const [addressStreet, setAddressStreet] = useState("");
   const [addressApt, setAddressApt] = useState("");
@@ -73,9 +92,15 @@ function BookingContent() {
 
   // Fecha y Horario
   const [serviceDate, setServiceDate] = useState("");
+  const [selectedDates, setSelectedDates] = useState<string[]>([]);
   const [serviceTime, setServiceTime] = useState("08:00");
   const [notes, setNotes] = useState("");
-  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("cash");
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("sipap");
+
+  // Colaborador Seleccionado
+  const [availableEmployees, setAvailableEmployees] = useState<AvailableCleaner[]>([]);
+  const [isLoadingEmployees, setIsLoadingEmployees] = useState(false);
+  const [selectedCleanerId, setSelectedCleanerId] = useState<string | null>(null);
   
   // Estados de Disponibilidad en Vivo
   const [availabilitySettings, setAvailabilitySettings] = useState<AvailabilitySettings | null>(null);
@@ -136,16 +161,46 @@ function BookingContent() {
       setServiceHours(Number(hoursParam) as ServiceHour);
     }
     const freqParam = searchParams.get("freq");
-    if (freqParam && ["once", "weekly_2_4", "biweekly", "monthly"].includes(freqParam)) {
+    if (freqParam && ["once", "multi_weekly", "weekly", "biweekly", "monthly", "weekly_2_4"].includes(freqParam)) {
       setFrequency(freqParam as FrequencyType);
     }
     const extrasParam = searchParams.get("extras");
     if (extrasParam) {
       setSelectedExtras(extrasParam.split(",").filter(Boolean));
     }
-
-    // No preseleccionar fecha para exigir que el cliente elija activamente
   }, [searchParams]);
+
+  // Cargar colaboradores en tiempo real con disponibilidad
+  useEffect(() => {
+    let isMounted = true;
+    const fetchEmployees = async () => {
+      setIsLoadingEmployees(true);
+      try {
+        const query = new URLSearchParams();
+        if (serviceDate) query.append("date", serviceDate);
+        if (serviceTime) query.append("time", serviceTime);
+        if (serviceHours) query.append("hours", serviceHours.toString());
+        if (selectedZone) query.append("zone", selectedZone);
+
+        const res = await fetch(`/api/employees?${query.toString()}`);
+        if (res.ok) {
+          const data = await res.json();
+          if (isMounted && data.employees) {
+            setAvailableEmployees(data.employees);
+          }
+        }
+      } catch (err) {
+        console.error("Error cargando colaboradores:", err);
+      } finally {
+        if (isMounted) setIsLoadingEmployees(false);
+      }
+    };
+
+    fetchEmployees();
+    return () => {
+      isMounted = false;
+    };
+  }, [serviceDate, serviceTime, serviceHours, selectedZone]);
 
   // Cargar configuraciones de turnos y reglas de disponibilidad generales (con inicio instantáneo desde localStorage)
   useEffect(() => {
@@ -369,7 +424,10 @@ function BookingContent() {
     loadSavedAddresses();
   }, [session]);
 
-  const pricing = calculatePricing(serviceHours, frequency, selectedExtras);
+  const datesCount = (frequency === "multi_weekly" || frequency === "weekly_2_4") 
+    ? Math.max(selectedDates.length, 1) 
+    : 1;
+  const pricing = calculatePricing(serviceHours, frequency, selectedExtras, datesCount);
 
   const toggleExtra = (id: string) => {
     setSelectedExtras((prev) =>
@@ -449,9 +507,15 @@ function BookingContent() {
       return;
     }
     if (!serviceDate) {
-      setErrorMsg("Por favor selecciona una fecha para el servicio.");
+      setErrorMsg("Por favor selecciona una fecha para el servicio en el calendario.");
       return;
     }
+
+    if ((frequency === "multi_weekly" || frequency === "weekly_2_4") && selectedDates.length < 2) {
+      setErrorMsg("Para la frecuencia de más de 1 vez por semana, por favor selecciona al menos 2 días en el calendario.");
+      return;
+    }
+
     if (availabilityCheck && !availabilityCheck.isOpen) {
       setErrorMsg(availabilityCheck.closedReason || "La fecha seleccionada no se encuentra disponible para reservas.");
       return;
@@ -491,6 +555,8 @@ function BookingContent() {
       } catch (err) {}
     }
 
+    const preferredEmp = availableEmployees.find((e) => e.id === selectedCleanerId);
+
     try {
       const res = await fetch("/api/bookings", {
         method: "POST",
@@ -506,8 +572,11 @@ function BookingContent() {
           frequency,
           extras: selectedExtras,
           serviceDate,
+          selectedDates: (frequency === "multi_weekly" || frequency === "weekly_2_4") ? selectedDates : [serviceDate],
           serviceTime,
           paymentMethod,
+          preferredCleanerId: preferredEmp?.id || null,
+          preferredCleanerName: preferredEmp?.name || null,
           notes,
         }),
       });
@@ -520,7 +589,7 @@ function BookingContent() {
       setCompletedBooking(data.booking);
       window.scrollTo({ top: 0, behavior: "smooth" });
     } catch (err: any) {
-      setErrorMsg(err.message || "Ocurrió un error. Por favor intenta de nuevo.");
+      setErrorMsg(err.message || "Error al procesar tu solicitud. Por favor intenta de nuevo.");
     } finally {
       setIsSubmitting(false);
     }
@@ -807,44 +876,112 @@ function BookingContent() {
 
                 <div>
                   <label className="block text-xs font-semibold text-neutral-600 mb-2.5">
-                    Frecuencia del servicio:
+                    Frecuencia del servicio y Descuentos:
                   </label>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5">
+                    {/* 1. Servicio Único */}
                     <button
                       type="button"
                       onClick={() => setFrequency("once")}
                       className={`p-3 rounded-xl border text-left flex items-center justify-between transition-all ${
                         frequency === "once"
-                          ? "bg-electric-50 border-electric-400 text-electric-900 font-semibold"
+                          ? "bg-electric-50 border-electric-400 text-electric-900 font-semibold shadow-xs"
                           : "bg-white border-neutral-200 text-neutral-700 hover:bg-neutral-50"
                       }`}
                     >
                       <div>
                         <p className="text-xs font-bold">Servicio Único</p>
-                        <p className="text-[11px] text-neutral-500">Tarifa plana estándar</p>
+                        <p className="text-[11px] text-neutral-500">Tarifa regular estándar (1 fecha)</p>
                       </div>
-                      {frequency === "once" && <Check className="w-4 h-4 text-electric-600" />}
+                      {frequency === "once" && <Check className="w-4 h-4 text-electric-600 shrink-0" />}
                     </button>
 
+                    {/* 2. Más de una vez por semana */}
                     <button
                       type="button"
-                      onClick={() => setFrequency("weekly_2_4")}
+                      onClick={() => setFrequency("multi_weekly")}
                       className={`p-3 rounded-xl border text-left flex items-center justify-between transition-all ${
-                        frequency === "weekly_2_4"
-                          ? "bg-electric-50 border-electric-400 text-electric-900 font-semibold"
+                        frequency === "multi_weekly" || frequency === "weekly_2_4"
+                          ? "bg-electric-50 border-electric-400 text-electric-900 font-semibold shadow-xs"
                           : "bg-white border-neutral-200 text-neutral-700 hover:bg-neutral-50"
                       }`}
                     >
                       <div>
                         <div className="flex items-center gap-1.5">
-                          <p className="text-xs font-bold">Semanal (2-4 veces)</p>
-                          <span className="text-[9px] uppercase font-bold bg-emerald-100 text-emerald-800 px-1 py-0.2 rounded">
+                          <p className="text-xs font-bold">+1 vez por semana</p>
+                          <span className="text-[9px] uppercase font-black bg-emerald-100 text-emerald-800 px-1.5 py-0.5 rounded-full">
                             15% OFF
                           </span>
                         </div>
-                        <p className="text-[11px] text-neutral-500">Ahorro mensual programado</p>
+                        <p className="text-[11px] text-neutral-500">Selecciona 2 o más días en la misma semana</p>
                       </div>
-                      {frequency === "weekly_2_4" && <Check className="w-4 h-4 text-electric-600" />}
+                      {(frequency === "multi_weekly" || frequency === "weekly_2_4") && <Check className="w-4 h-4 text-electric-600 shrink-0" />}
+                    </button>
+
+                    {/* 3. Semanal */}
+                    <button
+                      type="button"
+                      onClick={() => setFrequency("weekly")}
+                      className={`p-3 rounded-xl border text-left flex items-center justify-between transition-all ${
+                        frequency === "weekly"
+                          ? "bg-electric-50 border-electric-400 text-electric-900 font-semibold shadow-xs"
+                          : "bg-white border-neutral-200 text-neutral-700 hover:bg-neutral-50"
+                      }`}
+                    >
+                      <div>
+                        <div className="flex items-center gap-1.5">
+                          <p className="text-xs font-bold">Semanal</p>
+                          <span className="text-[9px] uppercase font-black bg-emerald-100 text-emerald-800 px-1.5 py-0.5 rounded-full">
+                            15% OFF
+                          </span>
+                        </div>
+                        <p className="text-[11px] text-neutral-500">Agendamiento recurrente semanal</p>
+                      </div>
+                      {frequency === "weekly" && <Check className="w-4 h-4 text-electric-600 shrink-0" />}
+                    </button>
+
+                    {/* 4. Quincenal */}
+                    <button
+                      type="button"
+                      onClick={() => setFrequency("biweekly")}
+                      className={`p-3 rounded-xl border text-left flex items-center justify-between transition-all ${
+                        frequency === "biweekly"
+                          ? "bg-electric-50 border-electric-400 text-electric-900 font-semibold shadow-xs"
+                          : "bg-white border-neutral-200 text-neutral-700 hover:bg-neutral-50"
+                      }`}
+                    >
+                      <div>
+                        <div className="flex items-center gap-1.5">
+                          <p className="text-xs font-bold">Quincenal</p>
+                          <span className="text-[9px] uppercase font-black bg-blue-100 text-blue-800 px-1.5 py-0.5 rounded-full">
+                            10% OFF
+                          </span>
+                        </div>
+                        <p className="text-[11px] text-neutral-500">Agendamiento cada 15 días</p>
+                      </div>
+                      {frequency === "biweekly" && <Check className="w-4 h-4 text-electric-600 shrink-0" />}
+                    </button>
+
+                    {/* 5. Mensual */}
+                    <button
+                      type="button"
+                      onClick={() => setFrequency("monthly")}
+                      className={`p-3 rounded-xl border text-left flex items-center justify-between transition-all ${
+                        frequency === "monthly"
+                          ? "bg-electric-50 border-electric-400 text-electric-900 font-semibold shadow-xs"
+                          : "bg-white border-neutral-200 text-neutral-700 hover:bg-neutral-50"
+                      }`}
+                    >
+                      <div>
+                        <div className="flex items-center gap-1.5">
+                          <p className="text-xs font-bold">Mensual</p>
+                          <span className="text-[9px] uppercase font-black bg-purple-100 text-purple-800 px-1.5 py-0.5 rounded-full">
+                            5% OFF
+                          </span>
+                        </div>
+                        <p className="text-[11px] text-neutral-500">Agendamiento mensual automático</p>
+                      </div>
+                      {frequency === "monthly" && <Check className="w-4 h-4 text-electric-600 shrink-0" />}
                     </button>
                   </div>
                 </div>
@@ -896,64 +1033,108 @@ function BookingContent() {
 
                 {/* Datos de Contacto */}
                 <div className="space-y-4">
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
-                    <div>
-                      <label className="block text-xs font-medium text-neutral-700 mb-1">
-                        Nombre Completo *
-                      </label>
-                      <input
-                        type="text"
-                        required
-                        value={customerName}
-                        onChange={(e) => setCustomerName(e.target.value)}
-                        placeholder="Ej: María Benítez"
-                        className="w-full px-3 py-2 rounded-lg border border-neutral-300 text-xs focus:ring-1 focus:ring-electric-600 focus:outline-none"
-                      />
+                  {Boolean(session?.user && customerName.trim() && customerPhone.trim() && customerEmail.trim()) && !isEditingContact ? (
+                    /* Tarjeta Compacta de Perfil Verificado */
+                    <div className="p-4 bg-slate-50 border border-slate-200/90 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-2xs">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-xl bg-electric-100 text-electric-700 font-extrabold flex items-center justify-center text-xs shrink-0 shadow-2xs">
+                          {customerName ? customerName.slice(0, 2).toUpperCase() : "US"}
+                        </div>
+                        <div className="space-y-0.5 min-w-0">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <p className="text-xs font-bold text-slate-900">{customerName}</p>
+                            <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200 flex items-center gap-1">
+                              <span>✓</span> Datos verificados de tu cuenta
+                            </span>
+                          </div>
+                          <p className="text-[11px] text-slate-600 truncate">
+                            📱 {customerPhone} • ✉️ {customerEmail}
+                          </p>
+                        </div>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setIsEditingContact(true)}
+                        className="text-xs font-bold text-electric-600 hover:text-electric-700 hover:underline shrink-0 text-left sm:text-right"
+                      >
+                        Modificar datos
+                      </button>
                     </div>
+                  ) : (
+                    /* Inputs Editables de Contacto */
+                    <div className="space-y-3">
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
+                        <div>
+                          <label className="block text-xs font-medium text-neutral-700 mb-1">
+                            Nombre Completo *
+                          </label>
+                          <input
+                            type="text"
+                            required
+                            value={customerName}
+                            onChange={(e) => setCustomerName(e.target.value)}
+                            placeholder="Ej: María Benítez"
+                            className="w-full px-3 py-2 rounded-lg border border-neutral-300 text-xs focus:ring-1 focus:ring-electric-600 focus:outline-none"
+                          />
+                        </div>
 
-                    <div>
-                      <label className="block text-xs font-medium text-neutral-700 mb-1">
-                        Teléfono / WhatsApp *
-                      </label>
-                      <input
-                        type="tel"
-                        required
-                        value={customerPhone}
-                        onChange={(e) => setCustomerPhone(e.target.value)}
-                        placeholder="Ej: 0981 123 456"
-                        className="w-full px-3 py-2 rounded-lg border border-neutral-300 text-xs focus:ring-1 focus:ring-electric-600 focus:outline-none"
-                      />
-                      {customerPhone ? (
-                        hasSavedPhone ? (
-                          <p className="text-[10px] text-emerald-600 font-medium mt-1 flex items-center gap-1">
-                            <span>✓</span> Teléfono guardado en tu perfil
-                          </p>
-                        ) : (
-                          <p className="text-[10px] text-electric-600 font-medium mt-1 flex items-center gap-1">
-                            <span>💾</span> Se guardará en tu perfil para tus próximas reservas
-                          </p>
-                        )
-                      ) : (
-                        <p className="text-[10px] text-neutral-400 font-normal mt-1">
-                          Se guardará en tu perfil para futuras reservas.
-                        </p>
+                        <div>
+                          <label className="block text-xs font-medium text-neutral-700 mb-1">
+                            Teléfono / WhatsApp *
+                          </label>
+                          <input
+                            type="tel"
+                            required
+                            value={customerPhone}
+                            onChange={(e) => setCustomerPhone(e.target.value)}
+                            placeholder="Ej: 0981 123 456"
+                            className="w-full px-3 py-2 rounded-lg border border-neutral-300 text-xs focus:ring-1 focus:ring-electric-600 focus:outline-none"
+                          />
+                          {customerPhone ? (
+                            hasSavedPhone ? (
+                              <p className="text-[10px] text-emerald-600 font-medium mt-1 flex items-center gap-1">
+                                <span>✓</span> Teléfono guardado en tu perfil
+                              </p>
+                            ) : (
+                              <p className="text-[10px] text-electric-600 font-medium mt-1 flex items-center gap-1">
+                                <span>💾</span> Se guardará en tu perfil para tus próximas reservas
+                              </p>
+                            )
+                          ) : (
+                            <p className="text-[10px] text-neutral-400 font-normal mt-1">
+                              Se guardará en tu perfil para futuras reservas.
+                            </p>
+                          )}
+                        </div>
+
+                        <div>
+                          <label className="block text-xs font-medium text-neutral-700 mb-1">
+                            Correo Electrónico *
+                          </label>
+                          <input
+                            type="email"
+                            required
+                            value={customerEmail}
+                            onChange={(e) => setCustomerEmail(e.target.value)}
+                            placeholder="tu@correo.com"
+                            className="w-full px-3 py-2 rounded-lg border border-neutral-300 text-xs focus:ring-1 focus:ring-electric-600 focus:outline-none"
+                          />
+                        </div>
+                      </div>
+
+                      {Boolean(session?.user && customerName.trim() && customerPhone.trim() && customerEmail.trim()) && (
+                        <div className="flex justify-end">
+                          <button
+                            type="button"
+                            onClick={() => setIsEditingContact(false)}
+                            className="text-xs font-bold text-slate-600 hover:text-slate-900 bg-slate-100 hover:bg-slate-200 px-3 py-1 rounded-lg transition-colors"
+                          >
+                            ✓ Listo, usar estos datos
+                          </button>
+                        </div>
                       )}
                     </div>
-
-                    <div>
-                      <label className="block text-xs font-medium text-neutral-700 mb-1">
-                        Correo Electrónico *
-                      </label>
-                      <input
-                        type="email"
-                        required
-                        value={customerEmail}
-                        onChange={(e) => setCustomerEmail(e.target.value)}
-                        placeholder="tu@correo.com"
-                        className="w-full px-3 py-2 rounded-lg border border-neutral-300 text-xs focus:ring-1 focus:ring-electric-600 focus:outline-none"
-                      />
-                    </div>
-                  </div>
+                  )}
 
                   {/* Sección de Selección de Ubicación */}
                   <div className="pt-2 border-t border-neutral-100 space-y-3">
@@ -963,47 +1144,56 @@ function BookingContent() {
                       </label>
 
                       {/* Selector de Modo: Direcciones Guardadas vs Nueva */}
-                      {savedAddresses.length > 0 && (
-                        <div className="flex bg-neutral-100 p-0.5 rounded-lg border border-neutral-200 text-[11px]">
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setAddressMode("SAVED");
-                              // Solo auto-seleccionar la primera si no hay ninguna seleccionada aún
-                              if (!selectedAddressId || selectedAddressId === "NEW") {
-                                handleSelectSavedAddress(savedAddresses[0]);
-                              }
-                            }}
-                            className={`px-2.5 py-1 rounded-md font-semibold transition-all flex items-center gap-1 ${
-                              addressMode === "SAVED"
-                                ? "bg-white text-electric-700 shadow-xs"
-                                : "text-neutral-600 hover:text-neutral-900"
-                            }`}
-                          >
-                            <Home className="w-3 h-3" />
-                            <span>Mis Direcciones ({savedAddresses.length})</span>
-                          </button>
+                      <div className="flex items-center gap-2">
+                        {savedAddresses.length > 0 && (
+                          <div className="flex bg-neutral-100 p-0.5 rounded-lg border border-neutral-200 text-[11px]">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setAddressMode("SAVED");
+                                if (!selectedAddressId || selectedAddressId === "NEW") {
+                                  handleSelectSavedAddress(savedAddresses[0]);
+                                }
+                              }}
+                              className={`px-2.5 py-1 rounded-md font-semibold transition-all flex items-center gap-1 ${
+                                addressMode === "SAVED"
+                                  ? "bg-white text-electric-700 shadow-xs"
+                                  : "text-neutral-600 hover:text-neutral-900"
+                              }`}
+                            >
+                              <Home className="w-3 h-3" />
+                              <span>Mis Direcciones ({savedAddresses.length})</span>
+                            </button>
 
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setAddressMode("NEW");
-                              setAddress("");
-                              setAddressStreet("");
-                              setAddressApt("");
-                              setAddressRef("");
-                            }}
-                            className={`px-2.5 py-1 rounded-md font-semibold transition-all flex items-center gap-1 ${
-                              addressMode === "NEW"
-                                ? "bg-white text-electric-700 shadow-xs"
-                                : "text-neutral-600 hover:text-neutral-900"
-                            }`}
-                          >
-                            <Plus className="w-3 h-3" />
-                            <span>Nueva Dirección</span>
-                          </button>
-                        </div>
-                      )}
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setAddressMode("NEW");
+                                setAddress("");
+                                setAddressStreet("");
+                                setAddressApt("");
+                                setAddressRef("");
+                              }}
+                              className={`px-2.5 py-1 rounded-md font-semibold transition-all flex items-center gap-1 ${
+                                addressMode === "NEW"
+                                  ? "bg-white text-electric-700 shadow-xs"
+                                  : "text-neutral-600 hover:text-neutral-900"
+                              }`}
+                            >
+                              <Plus className="w-3 h-3" />
+                              <span>Nueva Dirección</span>
+                            </button>
+                          </div>
+                        )}
+                        <Link
+                          href="/portal/direcciones/nueva"
+                          target="_blank"
+                          className="text-[11px] font-bold text-electric-600 hover:text-electric-700 hover:underline flex items-center gap-1 shrink-0"
+                        >
+                          <Plus className="w-3 h-3" />
+                          <span>+ Registrar nueva dirección</span>
+                        </Link>
+                      </div>
                     </div>
 
                     {/* MODO 1: MIS DIRECCIONES GUARDADAS */}
@@ -1034,8 +1224,8 @@ function BookingContent() {
                                         {item.label}
                                       </span>
                                       {item.isDefault && (
-                                        <span className="text-[10px] text-emerald-700 font-semibold bg-emerald-50 px-1.5 py-0.2 rounded">
-                                          Habitual
+                                        <span className="text-[10px] text-emerald-700 font-bold bg-emerald-100/80 px-1.5 py-0.2 rounded">
+                                          ★ Principal
                                         </span>
                                       )}
                                     </div>
@@ -1077,20 +1267,16 @@ function BookingContent() {
                           <div className="flex items-center gap-2">
                             <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
                             <span>
-                              <strong>Ubicación GPS lista.</strong> No necesitas mover el pin en el mapa al usar una dirección guardada.
+                              <strong>Dirección seleccionada.</strong> Coordenadas GPS fijadas automáticamente.
                             </span>
                           </div>
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setAddressMode("NEW");
-                              setSelectedAddressId("NEW");
-                              setAddress("");
-                            }}
+                          <Link
+                            href="/portal/direcciones/nueva"
+                            target="_blank"
                             className="text-xs font-bold text-electric-600 hover:text-electric-700 hover:underline shrink-0 ml-2"
                           >
-                            + Agregar otra
-                          </button>
+                            + Registrar nueva
+                          </Link>
                         </div>
                       </div>
                     )}
@@ -1240,7 +1426,6 @@ function BookingContent() {
                               type="button"
                               onClick={() => {
                                 setAddressMode("SAVED");
-                                // Intentar restaurar la última selección válida; si no, usar la primera
                                 const lastValid = savedAddresses.find((a) => a.id === selectedAddressId);
                                 const toRestore = lastValid || savedAddresses[0];
                                 handleSelectSavedAddress(toRestore);
@@ -1257,17 +1442,153 @@ function BookingContent() {
                 </div>
               </div>
 
-              {/* PASO 4: Fecha, Turno y Método de Pago */}
+              {/* PASO 4: SELECCIÓN DE COLABORADOR / PERSONAL */}
+              <div className="bg-white rounded-2xl p-6 sm:p-7 border border-neutral-200 shadow-xs space-y-5">
+                <div className="flex items-center justify-between pb-3 border-b border-neutral-100">
+                  <div className="flex items-center gap-2">
+                    <span className="font-mono text-xs font-bold text-electric-600">04</span>
+                    <h3 className="text-sm font-bold text-neutral-900">Colaborador / Personal Asignado (Opcional)</h3>
+                  </div>
+                  <span className="text-[11px] font-semibold text-slate-500 bg-slate-100 px-2.5 py-1 rounded-full">
+                    {availableEmployees.filter(e => e.isAvailable).length} disponibles
+                  </span>
+                </div>
+
+                <div className="space-y-3">
+                  <p className="text-xs text-slate-600">
+                    Puedes elegir un profesional preferido o dejar que nuestro sistema asigne automáticamente al colaborador mejor evaluado y disponible en tu zona.
+                  </p>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    {/* Opción 1: Asignación Automática Inteligente */}
+                    <button
+                      type="button"
+                      onClick={() => setSelectedCleanerId(null)}
+                      className={`p-3.5 rounded-2xl border text-left flex items-center justify-between transition-all ${
+                        selectedCleanerId === null
+                          ? "bg-electric-50/70 border-electric-500 ring-2 ring-electric-500/20 shadow-xs"
+                          : "bg-white border-neutral-200 hover:bg-neutral-50 hover:border-neutral-300"
+                      }`}
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className={`w-10 h-10 rounded-xl flex items-center justify-center font-bold text-sm ${
+                          selectedCleanerId === null ? "bg-electric-600 text-white shadow-electric-sm" : "bg-slate-100 text-slate-700"
+                        }`}>
+                          <Sparkles className="w-5 h-5" />
+                        </div>
+                        <div>
+                          <p className="text-xs font-bold text-neutral-900 flex items-center gap-1.5">
+                            <span>Asignación Inteligente</span>
+                            <span className="text-[9px] font-black uppercase bg-electric-100 text-electric-800 px-1.5 py-0.2 rounded-full">
+                              Recomendada
+                            </span>
+                          </p>
+                          <p className="text-[11px] text-neutral-500">Asignaremos al profesional ideal para tu zona</p>
+                        </div>
+                      </div>
+                      <div className={`w-4 h-4 rounded-full border flex items-center justify-center shrink-0 ${
+                        selectedCleanerId === null ? "border-electric-600 bg-electric-600 text-white" : "border-neutral-300"
+                      }`}>
+                        {selectedCleanerId === null && <Check className="w-2.5 h-2.5" />}
+                      </div>
+                    </button>
+
+                    {/* Lista de Colaboradores Reales */}
+                    {availableEmployees.map((emp) => {
+                      const isSelected = selectedCleanerId === emp.id;
+                      return (
+                        <button
+                          key={emp.id}
+                          type="button"
+                          disabled={!emp.isAvailable}
+                          onClick={() => emp.isAvailable && setSelectedCleanerId(emp.id)}
+                          className={`p-3.5 rounded-2xl border text-left flex items-start justify-between transition-all relative ${
+                            !emp.isAvailable
+                              ? "bg-slate-50/70 border-slate-200 opacity-60 cursor-not-allowed"
+                              : isSelected
+                              ? "bg-electric-50/70 border-electric-500 ring-2 ring-electric-500/20 shadow-xs"
+                              : "bg-white border-neutral-200 hover:bg-neutral-50 hover:border-neutral-300"
+                          }`}
+                        >
+                          <div className="flex items-start gap-3 min-w-0">
+                            {/* Foto o Avatar */}
+                            <div className="relative w-10 h-10 rounded-xl overflow-hidden bg-slate-100 shrink-0 border border-slate-200 flex items-center justify-center">
+                              {emp.image ? (
+                                <Image
+                                  src={emp.image}
+                                  alt={emp.name}
+                                  fill
+                                  className="object-cover"
+                                />
+                              ) : (
+                                <span className="font-extrabold text-xs text-slate-700">
+                                  {emp.name.slice(0, 2).toUpperCase()}
+                                </span>
+                              )}
+                            </div>
+
+                            <div className="min-w-0 space-y-0.5">
+                              <p className="text-xs font-bold text-neutral-900 truncate">
+                                {emp.name}
+                              </p>
+                              
+                              {/* Rating y Reseñas */}
+                              <div className="flex items-center gap-1 text-[11px] text-amber-500 font-bold">
+                                <Star className="w-3 h-3 fill-amber-400 text-amber-400 shrink-0" />
+                                <span>{emp.rating.toFixed(1)}</span>
+                                <span className="text-slate-400 font-normal text-[10px]">
+                                  ({emp.reviewCount || 0} reseñas)
+                                </span>
+                              </div>
+
+                              {/* Servicios concluidos & IPS */}
+                              <div className="flex items-center gap-1.5 flex-wrap pt-0.5">
+                                <span className="text-[9.5px] font-bold text-slate-600 bg-slate-100 px-1.5 py-0.2 rounded">
+                                  ✓ {emp.completedBookingsCount} servicios
+                                </span>
+                                {emp.ipsVerified && (
+                                  <span className="text-[9.5px] font-black text-emerald-800 bg-emerald-100 px-1.5 py-0.2 rounded">
+                                    IPS Activo
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+
+                          <div className="shrink-0 flex flex-col items-end gap-1">
+                            <div className={`w-4 h-4 rounded-full border flex items-center justify-center ${
+                              isSelected ? "border-electric-600 bg-electric-600 text-white" : "border-neutral-300"
+                            }`}>
+                              {isSelected && <Check className="w-2.5 h-2.5" />}
+                            </div>
+                            {!emp.isAvailable && (
+                              <span className="text-[9px] font-bold text-rose-600 bg-rose-50 px-1 py-0.5 rounded border border-rose-200">
+                                Ocupado
+                              </span>
+                            )}
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
+
+              {/* PASO 5: FECHA Y TURNO */}
               <div className="bg-white rounded-2xl p-6 sm:p-7 border border-neutral-200 shadow-xs space-y-5">
                 <div className="flex items-center gap-2 pb-3 border-b border-neutral-100">
-                  <span className="font-mono text-xs font-bold text-electric-600">04</span>
-                  <h3 className="text-sm font-bold text-neutral-900">Fecha, Turno y Pago</h3>
+                  <span className="font-mono text-xs font-bold text-electric-600">05</span>
+                  <h3 className="text-sm font-bold text-neutral-900">Fecha y Turno del Servicio</h3>
                 </div>
 
                 {/* Calendario Visual e Interactivo */}
                 <div className="space-y-2">
                   <label className="block text-xs font-bold text-neutral-800 flex items-center justify-between">
-                    <span>1. Selecciona la Fecha del Servicio *</span>
+                    <span>
+                      {(frequency === "multi_weekly" || frequency === "weekly_2_4") 
+                        ? "1. Selecciona los Días en la Misma Semana (Mínimo 2) *" 
+                        : "1. Selecciona la Fecha del Servicio *"}
+                    </span>
                     {!serviceDate ? (
                       <span className="text-[10px] font-bold text-amber-600 bg-amber-50 px-2 py-0.5 rounded-md border border-amber-200">
                         Selección Obligatoria en Calendario
@@ -1286,6 +1607,13 @@ function BookingContent() {
                   <BookingCalendarPicker
                     selectedDate={serviceDate}
                     onSelectDate={(newDate) => setServiceDate(newDate)}
+                    selectedDates={selectedDates}
+                    onSelectDates={(newDates) => {
+                      setSelectedDates(newDates);
+                      if (newDates.length > 0) setServiceDate(newDates[0]);
+                    }}
+                    isMultiSelect={frequency === "multi_weekly" || frequency === "weekly_2_4"}
+                    minSelectedCount={2}
                     availabilitySettings={availabilitySettings}
                   />
 
@@ -1321,13 +1649,13 @@ function BookingContent() {
                   )}
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2 border-t border-neutral-100">
+                <div className="pt-2 border-t border-neutral-100">
                   {/* Selector Dinámico de Turno de Llegada */}
                   <div>
                     <label className="block text-xs font-bold text-neutral-800 mb-1 flex items-center justify-between">
-                      <span>2. Turno de Llegada *</span>
+                      <span>2. Turno de Llegada Estimado *</span>
                       <span className="text-[10px] font-semibold text-neutral-500">
-                        Hora estimada de arribo
+                        Hora de arribo del personal
                       </span>
                     </label>
 
@@ -1383,32 +1711,77 @@ function BookingContent() {
                       </p>
                     )}
                   </div>
+                </div>
+              </div>
 
-                  {/* Método de Pago */}
-                  <div>
-                    <label className="block text-xs font-bold text-neutral-800 mb-1">
-                      3. Método de Pago (al finalizar)
-                    </label>
-                    <div className="grid grid-cols-3 gap-2">
-                      {[
-                        { id: "cash", label: "Efectivo" },
-                        { id: "sipap", label: "SIPAP / Transf." },
-                        { id: "card", label: "Tarjeta" },
-                      ].map((m) => (
-                        <button
-                          key={m.id}
-                          type="button"
-                          onClick={() => setPaymentMethod(m.id as PaymentMethod)}
-                          className={`py-2 px-2 rounded-xl border text-center text-xs font-medium transition-all ${
-                            paymentMethod === m.id
-                              ? "bg-electric-50 border-electric-400 text-electric-900 font-bold shadow-2xs"
-                              : "bg-white text-neutral-600 border-neutral-200 hover:bg-neutral-50"
-                          }`}
-                        >
-                          {m.label}
-                        </button>
-                      ))}
-                    </div>
+              {/* PASO 6: MÉTODO DE PAGO Y NOTAS */}
+              <div className="bg-white rounded-2xl p-6 sm:p-7 border border-neutral-200 shadow-xs space-y-5">
+                <div className="flex items-center gap-2 pb-3 border-b border-neutral-100">
+                  <span className="font-mono text-xs font-bold text-electric-600">06</span>
+                  <h3 className="text-sm font-bold text-neutral-900">Método de Pago y Notas</h3>
+                </div>
+
+                {/* Métodos de Pago Electrónicos Únicamente */}
+                <div>
+                  <label className="block text-xs font-bold text-neutral-800 mb-2">
+                    Selecciona tu Método de Pago Electrónico:
+                  </label>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    {/* Opción 1: SIPAP / Transferencia */}
+                    <button
+                      type="button"
+                      onClick={() => setPaymentMethod("sipap")}
+                      className={`p-3.5 rounded-2xl border text-left flex items-start justify-between transition-all ${
+                        paymentMethod === "sipap"
+                          ? "bg-electric-50/70 border-electric-500 ring-2 ring-electric-500/20 shadow-xs"
+                          : "bg-white border-neutral-200 hover:bg-neutral-50 hover:border-neutral-300"
+                      }`}
+                    >
+                      <div className="flex items-start gap-3">
+                        <div className={`w-9 h-9 rounded-xl flex items-center justify-center font-bold text-xs shrink-0 ${
+                          paymentMethod === "sipap" ? "bg-electric-600 text-white" : "bg-neutral-100 text-neutral-700"
+                        }`}>
+                          <Building className="w-4 h-4" />
+                        </div>
+                        <div>
+                          <p className="text-xs font-bold text-neutral-900">Transferencia Bancaria (SIPAP)</p>
+                          <p className="text-[11px] text-neutral-500 mt-0.5">Banco GNB / Itaú / Visión (RUC oficial)</p>
+                        </div>
+                      </div>
+                      <div className={`w-4 h-4 rounded-full border flex items-center justify-center shrink-0 ${
+                        paymentMethod === "sipap" ? "border-electric-600 bg-electric-600 text-white" : "border-neutral-300"
+                      }`}>
+                        {paymentMethod === "sipap" && <Check className="w-2.5 h-2.5" />}
+                      </div>
+                    </button>
+
+                    {/* Opción 2: Tarjeta / QR */}
+                    <button
+                      type="button"
+                      onClick={() => setPaymentMethod("card")}
+                      className={`p-3.5 rounded-2xl border text-left flex items-start justify-between transition-all ${
+                        paymentMethod === "card"
+                          ? "bg-electric-50/70 border-electric-500 ring-2 ring-electric-500/20 shadow-xs"
+                          : "bg-white border-neutral-200 hover:bg-neutral-50 hover:border-neutral-300"
+                      }`}
+                    >
+                      <div className="flex items-start gap-3">
+                        <div className={`w-9 h-9 rounded-xl flex items-center justify-center font-bold text-xs shrink-0 ${
+                          paymentMethod === "card" ? "bg-electric-600 text-white" : "bg-neutral-100 text-neutral-700"
+                        }`}>
+                          <CreditCard className="w-4 h-4" />
+                        </div>
+                        <div>
+                          <p className="text-xs font-bold text-neutral-900">Tarjeta de Débito / Crédito / QR</p>
+                          <p className="text-[11px] text-neutral-500 mt-0.5">Pago digital seguro o código QR</p>
+                        </div>
+                      </div>
+                      <div className={`w-4 h-4 rounded-full border flex items-center justify-center shrink-0 ${
+                        paymentMethod === "card" ? "border-electric-600 bg-electric-600 text-white" : "border-neutral-300"
+                      }`}>
+                        {paymentMethod === "card" && <Check className="w-2.5 h-2.5" />}
+                      </div>
+                    </button>
                   </div>
                 </div>
 
@@ -1438,7 +1811,10 @@ function BookingContent() {
 
                 <div className="space-y-2 text-xs text-neutral-600 pb-4 border-b border-neutral-200">
                   <div className="flex justify-between">
-                    <span>Base ({serviceHours} Horas):</span>
+                    <span>
+                      Base ({serviceHours} Horas
+                      {datesCount > 1 ? ` x ${datesCount} días` : ""}):
+                    </span>
                     <span className="font-medium text-neutral-900">{formatGs(pricing.basePrice)}</span>
                   </div>
                   {pricing.extrasTotal > 0 && (
@@ -1449,13 +1825,23 @@ function BookingContent() {
                   )}
                   {pricing.discountAmount > 0 && (
                     <div className="flex justify-between text-emerald-700 font-medium">
-                      <span>Descuento recurrente ({pricing.discountPercentage}%):</span>
+                      <span>Descuento por Frecuencia ({pricing.discountPercentage}%):</span>
                       <span>-{formatGs(pricing.discountAmount)}</span>
+                    </div>
+                  )}
+                  {selectedCleanerId && (
+                    <div className="flex justify-between text-electric-700 font-semibold text-[11px] pt-1">
+                      <span>Colaborador preferido:</span>
+                      <span>{availableEmployees.find(e => e.id === selectedCleanerId)?.name || "Seleccionado"}</span>
                     </div>
                   )}
                   <div className="flex justify-between text-neutral-500 text-[11px] pt-1">
                     <span>Fecha:</span>
-                    <span>{serviceDate || "Por seleccionar"} ({serviceTime} hs)</span>
+                    <span>
+                      {(frequency === "multi_weekly" || frequency === "weekly_2_4") && selectedDates.length > 1
+                        ? `${selectedDates.length} fechas (${selectedDates.map(d => d.slice(8, 10)).join(", ")})`
+                        : `${serviceDate || "Por seleccionar"} (${serviceTime} hs)`}
+                    </span>
                   </div>
                 </div>
 
@@ -1465,7 +1851,7 @@ function BookingContent() {
                     {formatGs(pricing.finalPrice)}
                   </div>
                   <p className="text-[11px] text-neutral-400 mt-1">
-                    ✓ Sin pagos por adelantado. Abonarás al finalizar.
+                    ✓ Sin pagos por adelantado. Abonarás al finalizar el servicio.
                   </p>
                 </div>
 
@@ -1474,7 +1860,7 @@ function BookingContent() {
                   type="button"
                   onClick={() => handleSubmit()}
                   disabled={isSubmitting}
-                  className="w-full py-3.5 px-4 bg-electric-600 hover:bg-electric-700 text-white text-xs font-semibold rounded-xl flex items-center justify-center gap-2 shadow-electric transition-all active:scale-[0.98] disabled:opacity-50"
+                  className="w-full py-3.5 px-4 bg-electric-600 hover:bg-electric-700 text-white text-xs font-semibold rounded-xl flex items-center justify-center gap-2 shadow-electric transition-all active:scale-[0.98] disabled:opacity-50 cursor-pointer"
                 >
                   <span>{isSubmitting ? "Procesando Reserva..." : "Confirmar Reserva"}</span>
                   <ArrowRight className="w-3.5 h-3.5" />

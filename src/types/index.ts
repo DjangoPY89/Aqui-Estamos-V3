@@ -1,6 +1,6 @@
 export type ServiceHour = 4 | 6 | 8;
-export type FrequencyType = 'once' | 'weekly_2_4' | 'biweekly' | 'monthly';
-export type PaymentMethod = 'cash' | 'sipap' | 'card';
+export type FrequencyType = 'once' | 'multi_weekly' | 'weekly' | 'biweekly' | 'monthly' | 'weekly_2_4';
+export type PaymentMethod = 'sipap' | 'card' | 'cash';
 export type BookingStatus = 'PENDING' | 'CONFIRMED' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED';
 export type PaymentStatus = 'PENDING' | 'PAID' | 'REFUNDED';
 export type UserRole = 'CUSTOMER' | 'ADMIN' | 'CLEANER';
@@ -27,12 +27,14 @@ export interface Booking {
   frequency: FrequencyType;
   extras: string[]; // IDs de extras
   serviceDate: string; // YYYY-MM-DD
+  selectedDates?: string[]; // Fechas múltiples para multi_weekly
   serviceTime: string; // "08:00", "09:00", etc.
   totalPrice: number; // en Gs.
   discount: number; // en Gs.
   paymentMethod: PaymentMethod;
   paymentStatus: PaymentStatus;
   status: BookingStatus;
+  preferredCleanerId?: string | null;
   assignedCleaner?: string | null;
   employeeName?: string | null;
   employeeImage?: string | null;

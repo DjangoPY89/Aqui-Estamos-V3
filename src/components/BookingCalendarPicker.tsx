@@ -15,6 +15,10 @@ import { AvailabilitySettings, BlockedDate } from '@/types';
 interface BookingCalendarPickerProps {
   selectedDate: string;
   onSelectDate: (date: string) => void;
+  selectedDates?: string[];
+  onSelectDates?: (dates: string[]) => void;
+  isMultiSelect?: boolean;
+  minSelectedCount?: number;
   availabilitySettings?: AvailabilitySettings | null;
   disabled?: boolean;
 }
@@ -26,12 +30,26 @@ const MONTH_NAMES = [
 
 const DAY_NAMES = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'];
 
+function getWeekIdentifier(dateStr: string) {
+  const d = new Date(dateStr + "T00:00:00");
+  const day = d.getDay();
+  const diffToMonday = (day + 6) % 7;
+  const monday = new Date(d);
+  monday.setDate(d.getDate() - diffToMonday);
+  return monday.toISOString().split("T")[0];
+}
+
 export default function BookingCalendarPicker({
   selectedDate,
   onSelectDate,
+  selectedDates = [],
+  onSelectDates,
+  isMultiSelect = false,
+  minSelectedCount = 2,
   availabilitySettings,
   disabled = false,
 }: BookingCalendarPickerProps) {
+  const [multiNotice, setMultiNotice] = useState<string | null>(null);
   // Fecha actual o fecha seleccionada para inicializar el mes visible
   const initialDate = selectedDate ? new Date(selectedDate + 'T00:00:00') : new Date();
   const [currentYear, setCurrentYear] = useState(initialDate.getFullYear());
@@ -223,7 +241,9 @@ export default function BookingCalendarPicker({
       }
 
       const isSelectable = !isPast && !isTooFar && !isDayOfWeekClosed && !isBlocked;
-      const isSelected = selectedDate === dateStr;
+      const isSelected = isMultiSelect
+        ? selectedDates.includes(dateStr) || selectedDate === dateStr
+        : selectedDate === dateStr;
 
       days.push({
         dayNumber: d,
@@ -243,7 +263,47 @@ export default function BookingCalendarPicker({
     }
 
     return days;
-  }, [currentYear, currentMonth, localSettings, selectedDate]);
+  }, [currentYear, currentMonth, localSettings, selectedDate, isMultiSelect, selectedDates]);
+
+  const handleDayClick = (dateStr: string) => {
+    if (!isMultiSelect) {
+      onSelectDate(dateStr);
+      return;
+    }
+
+    // Modo selección múltiple (Más de una vez por semana)
+    let newDates = [...selectedDates];
+    if (newDates.includes(dateStr)) {
+      newDates = newDates.filter((d) => d !== dateStr);
+      if (newDates.length === 0) {
+        newDates = [dateStr]; // Mantener al menos una
+      }
+    } else {
+      // Verificar si la fecha pertenece a la misma semana
+      if (newDates.length > 0) {
+        const firstWeek = getWeekIdentifier(newDates[0]);
+        const thisWeek = getWeekIdentifier(dateStr);
+        if (firstWeek !== thisWeek) {
+          // Cambiar a la nueva semana
+          newDates = [dateStr];
+          setMultiNotice("Has seleccionado un día de otra semana. Se ha reiniciado la selección para esa nueva semana.");
+          setTimeout(() => setMultiNotice(null), 4000);
+        } else {
+          newDates.push(dateStr);
+          newDates.sort();
+        }
+      } else {
+        newDates = [dateStr];
+      }
+    }
+
+    if (onSelectDates) {
+      onSelectDates(newDates);
+    }
+    if (newDates.length > 0) {
+      onSelectDate(newDates[0]);
+    }
+  };
 
   return (
     <div className="bg-white rounded-2xl sm:rounded-3xl border border-slate-200 p-3 sm:p-5 shadow-xs select-none space-y-4 touch-manipulation">
@@ -258,7 +318,11 @@ export default function BookingCalendarPicker({
             <h4 className="font-extrabold text-sm sm:text-base text-slate-900 capitalize">
               {MONTH_NAMES[currentMonth]} {currentYear}
             </h4>
-            <p className="text-[10px] text-slate-500 font-medium">Selecciona un día disponible</p>
+            <p className="text-[10px] text-slate-500 font-medium">
+              {isMultiSelect 
+                ? "Selecciona 2 o más días en la misma semana (15% OFF)" 
+                : "Selecciona un día disponible"}
+            </p>
           </div>
         </div>
 
@@ -281,6 +345,33 @@ export default function BookingCalendarPicker({
           </button>
         </div>
       </div>
+
+      {/* Aviso de selección múltiple */}
+      {isMultiSelect && (
+        <div className={`p-3 rounded-2xl text-xs font-semibold flex items-center justify-between gap-2 border transition-all ${
+          selectedDates.length >= minSelectedCount
+            ? "bg-emerald-50 border-emerald-200 text-emerald-800"
+            : "bg-amber-50 border-amber-200 text-amber-800"
+        }`}>
+          <div className="flex items-center gap-2">
+            <Sparkles className="w-4 h-4 shrink-0 text-electric-600" />
+            <span>
+              {selectedDates.length >= minSelectedCount
+                ? `✓ ${selectedDates.length} días seleccionados en la semana (${selectedDates.map(d => d.slice(8, 10)).join(", ")})`
+                : `Selecciona al menos ${minSelectedCount} días en la misma semana (llevas ${selectedDates.length}).`}
+            </span>
+          </div>
+          <span className="text-[10px] font-black px-2 py-0.5 rounded-full bg-electric-600 text-white shrink-0">
+            15% Descuento
+          </span>
+        </div>
+      )}
+
+      {multiNotice && (
+        <div className="p-2.5 bg-blue-50 border border-blue-200 text-blue-800 text-[11px] rounded-xl font-medium animate-in fade-in">
+          {multiNotice}
+        </div>
+      )}
 
       {/* Días de la semana (LUN a DOM) */}
       <div className="grid grid-cols-7 gap-1 text-center">
@@ -344,7 +435,7 @@ export default function BookingCalendarPicker({
               key={dateStr}
               type="button"
               disabled={!isSelectable || disabled}
-              onClick={() => isSelectable && onSelectDate(dateStr)}
+              onClick={() => isSelectable && handleDayClick(dateStr)}
               title={tooltipText}
               className={tileClass}
             >

@@ -95,35 +95,45 @@ export const AVAILABLE_EXTRAS: ExtraService[] = [
 export function calculatePricing(
   hours: ServiceHour,
   frequency: FrequencyType,
-  selectedExtrasIds: string[] = []
+  selectedExtrasIds: string[] = [],
+  datesCount: number = 1
 ): PricingBreakdown {
   const pkg = SERVICE_PACKAGES[hours] || SERVICE_PACKAGES[4];
   const basePrice = pkg.basePrice;
 
-  // Calcular suma de extras con costo adicional
+  // Calcular suma de extras con costo adicional por servicio
   const extrasTotal = selectedExtrasIds.reduce((sum, extraId) => {
     const extra = AVAILABLE_EXTRAS.find((e) => e.id === extraId);
     return sum + (extra ? extra.price : 0);
   }, 0);
 
-  const subtotal = basePrice + extrasTotal;
+  const singleServiceSubtotal = basePrice + extrasTotal;
+  const count = frequency === "multi_weekly" || frequency === "weekly_2_4" ? Math.max(datesCount, 1) : 1;
+  const subtotal = singleServiceSubtotal * count;
 
-  // Descuento por frecuencia
+  // Descuentos según las especificaciones:
+  // - Más de una vez por semana: 15% OFF
+  // - Semanal: 15% OFF
+  // - Quincenal: 10% OFF
+  // - Mensual: 5% OFF
+  // - Servicio Único: 0%
   let discountPercentage = 0;
-  if (frequency === "weekly_2_4") {
+  if (frequency === "multi_weekly" || frequency === "weekly_2_4") {
+    discountPercentage = 15; // 15% OFF
+  } else if (frequency === "weekly") {
     discountPercentage = 15; // 15% OFF
   } else if (frequency === "biweekly") {
-    discountPercentage = 5;
+    discountPercentage = 10; // 10% OFF
   } else if (frequency === "monthly") {
-    discountPercentage = 10;
+    discountPercentage = 5;  // 5% OFF
   }
 
   const discountAmount = Math.round((subtotal * discountPercentage) / 100);
   const finalPrice = subtotal - discountAmount;
 
   return {
-    basePrice,
-    extrasTotal,
+    basePrice: basePrice * count,
+    extrasTotal: extrasTotal * count,
     subtotal,
     discountPercentage,
     discountAmount,
