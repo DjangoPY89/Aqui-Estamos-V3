@@ -105,6 +105,32 @@ export async function PATCH(
       // El cliente solo puede cancelar o reprogramar fecha/hora
       const allowedUpdates: any = {};
       if (body.status === "CANCELLED") {
+        // Validar reglas de cancelación por tipo de reserva
+        const now = Date.now();
+        const createdTime = new Date(booking.createdAt).getTime();
+        const isBatch = Boolean(booking.batchId || booking.frequency === "multi_weekly" || booking.frequency === "custom" || booking.frequency === "weekly_2_4");
+        const isRecurring = Boolean(booking.subscriptionId || ["weekly", "biweekly", "monthly", "semanal", "quincenal", "mensual"].includes(booking.frequency));
+
+        if (isBatch) {
+          const hoursSinceCreated = (now - createdTime) / (1000 * 60 * 60);
+          if (hoursSinceCreated > 48) {
+            return NextResponse.json(
+              { error: "Han transcurrido más de 48 horas desde la reserva. Para cambios o cancelaciones por favor comunícate con Atención al Cliente." },
+              { status: 400 }
+            );
+          }
+        } else if (!isRecurring) {
+          // Reserva única vez: debe cancelarse al menos 48hs antes del servicio
+          const serviceDateTime = new Date(`${booking.serviceDate}T${booking.serviceTime || "08:00"}:00`).getTime();
+          const hoursUntilService = (serviceDateTime - now) / (1000 * 60 * 60);
+          if (hoursUntilService < 48) {
+            return NextResponse.json(
+              { error: "Las reservas de servicio único solo pueden cancelarse con al menos 48 horas de anticipación. Por favor comunícate con Atención al Cliente." },
+              { status: 400 }
+            );
+          }
+        }
+
         allowedUpdates.status = "CANCELLED";
       }
       if (body.serviceDate) allowedUpdates.serviceDate = body.serviceDate;

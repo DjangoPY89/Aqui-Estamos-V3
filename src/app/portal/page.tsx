@@ -519,6 +519,7 @@ function CustomerPortalContent() {
               bookings={bookings}
               onOpenReceipt={(b) => setReceiptBooking(b)}
               onOpenInvoice={(b) => setInvoiceBooking(b)}
+              onRefreshBookings={loadPortalData}
             />
           )}
 

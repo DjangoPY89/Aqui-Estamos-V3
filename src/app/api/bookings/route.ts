@@ -280,43 +280,128 @@ export async function POST(req: Request) {
       }
     }
 
-    // Formatear notas con metadatos de fechas múltiples y colaborador preferido
-    let finalNotes = notes || "";
-    if (selectedDates && Array.isArray(selectedDates) && selectedDates.length > 1) {
-      finalNotes = `[FECHAS: ${selectedDates.join(", ")}] ${finalNotes}`.trim();
+    // Determinar fechas a generar y IDs de grupo
+    const isRecurringPlan = frequency === "weekly" || frequency === "biweekly" || frequency === "monthly" || frequency === "semanal" || frequency === "quincenal" || frequency === "mensual";
+    const isBatchPlan = frequency === "multi_weekly" || frequency === "custom" || frequency === "weekly_2_4";
+
+    let targetDates: string[] = [];
+    let subscriptionId: string | null = null;
+    let batchId: string | null = null;
+
+    if (isRecurringPlan) {
+      subscriptionId = `sub_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
+      const start = new Date(serviceDate + "T00:00:00");
+      if (frequency === "weekly" || frequency === "semanal") {
+        // 52 semanas (1 año)
+        for (let i = 0; i < 52; i++) {
+          const d = new Date(start);
+          d.setDate(start.getDate() + i * 7);
+          targetDates.push(d.toISOString().slice(0, 10));
+        }
+      } else if (frequency === "biweekly" || frequency === "quincenal") {
+        // 26 quincenas (1 año)
+        for (let i = 0; i < 26; i++) {
+          const d = new Date(start);
+          d.setDate(start.getDate() + i * 14);
+          targetDates.push(d.toISOString().slice(0, 10));
+        }
+      } else if (frequency === "monthly" || frequency === "mensual") {
+        // 12 meses (1 año)
+        const targetDay = start.getDate();
+        for (let i = 0; i < 12; i++) {
+          const d = new Date(start.getFullYear(), start.getMonth() + i, 1);
+          const daysInMonth = new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate();
+          d.setDate(Math.min(targetDay, daysInMonth));
+          targetDates.push(d.toISOString().slice(0, 10));
+        }
+      }
+    } else if (isBatchPlan) {
+      batchId = `batch_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
+      if (Array.isArray(selectedDates) && selectedDates.length > 0) {
+        targetDates = [...selectedDates].sort();
+      } else {
+        targetDates = [serviceDate];
+      }
+    } else {
+      targetDates = [serviceDate];
     }
+
+    // Calcular precio unitario por cada reserva generada
+    const singlePricing = calculatePricing(Number(serviceHours) as any, frequency as any, extras, 1);
+    const unitPrice = singlePricing.finalPrice;
+    const unitDiscount = singlePricing.discountAmount;
+
+    // Formatear notas base con metadatos
+    let baseNotes = notes || "";
     if (preferredCleanerName) {
-      finalNotes = `[PREFERIDO: ${preferredCleanerName}] ${finalNotes}`.trim();
+      baseNotes = `[PREFERIDO: ${preferredCleanerName}] ${baseNotes}`.trim();
     }
 
     const initialCleaner = preferredCleanerName || preferredCleanerId || null;
 
-    let booking: any = null;
-    try {
-      booking = await supabaseCreateBooking({
-        userId: userId || undefined,
-        customerName,
-        customerPhone,
-        customerEmail: targetEmail,
-        address,
-        latitude: latitude ? parseFloat(latitude.toString()) : undefined,
-        longitude: longitude ? parseFloat(longitude.toString()) : undefined,
-        serviceHours: Number(serviceHours),
-        frequency: frequency || "once",
-        extras,
-        serviceDate,
-        serviceTime,
-        totalPrice: pricing.finalPrice,
-        discount: pricing.discountAmount,
-        paymentMethod,
-        assignedCleaner: initialCleaner,
-        notes: finalNotes || undefined,
-      });
+    let primaryBooking: any = null;
+    const createdBookings: any[] = [];
 
-      // Sincronizar en local por respaldo
+    for (let i = 0; i < targetDates.length; i++) {
+      const currentDate = targetDates[i];
+      const seqNotes = targetDates.length > 1
+        ? (isRecurringPlan ? `[Cita ${i + 1}/52] ${baseNotes}`.trim() : `[Cita ${i + 1}/${targetDates.length}] ${baseNotes}`.trim())
+        : baseNotes;
+
+      let bk: any = null;
       try {
-        createBooking({
-          bookingNumber: booking.bookingNumber || bookingNumber,
+        bk = await supabaseCreateBooking({
+          userId: userId || undefined,
+          customerName,
+          customerPhone,
+          customerEmail: targetEmail,
+          address,
+          latitude: latitude ? parseFloat(latitude.toString()) : undefined,
+          longitude: longitude ? parseFloat(longitude.toString()) : undefined,
+          serviceHours: Number(serviceHours),
+          frequency: frequency || "once",
+          extras,
+          serviceDate: currentDate,
+          serviceTime,
+          totalPrice: unitPrice,
+          discount: unitDiscount,
+          paymentMethod,
+          assignedCleaner: initialCleaner,
+          subscriptionId,
+          batchId,
+          notes: seqNotes || undefined,
+        });
+
+        // Sincronizar en local por respaldo
+        try {
+          createBooking({
+            bookingNumber: bk.bookingNumber || `AE-${currentDate.replace(/-/g, "").substring(2)}-${Math.floor(100 + Math.random() * 900)}`,
+            userId: userId || null,
+            customerName,
+            customerPhone,
+            customerEmail: targetEmail,
+            address,
+            latitude: latitude ? parseFloat(latitude.toString()) : null,
+            longitude: longitude ? parseFloat(longitude.toString()) : null,
+            serviceHours: Number(serviceHours) as any,
+            frequency: frequency || "once",
+            extras,
+            serviceDate: currentDate,
+            serviceTime,
+            totalPrice: unitPrice,
+            discount: unitDiscount,
+            paymentMethod,
+            paymentStatus: "PENDING",
+            status: "PENDING",
+            subscriptionId,
+            batchId,
+            assignedCleaner: initialCleaner,
+            notes: seqNotes || null,
+          });
+        } catch (e) {}
+      } catch (e) {
+        bk = createBooking({
+          bookingNumber: `AE-${currentDate.replace(/-/g, "").substring(2)}-${Math.floor(100 + Math.random() * 900)}`,
           userId: userId || null,
           customerName,
           customerPhone,
@@ -327,47 +412,31 @@ export async function POST(req: Request) {
           serviceHours: Number(serviceHours) as any,
           frequency: frequency || "once",
           extras,
-          serviceDate,
+          serviceDate: currentDate,
           serviceTime,
-          totalPrice: pricing.finalPrice,
-          discount: pricing.discountAmount,
+          totalPrice: unitPrice,
+          discount: unitDiscount,
           paymentMethod,
           paymentStatus: "PENDING",
           status: "PENDING",
+          subscriptionId,
+          batchId,
           assignedCleaner: initialCleaner,
-          notes: finalNotes || null,
+          notes: seqNotes || null,
         });
-      } catch (e) {}
-    } catch (e) {
-      booking = createBooking({
-        bookingNumber,
-        userId: userId || null,
-        customerName,
-        customerPhone,
-        customerEmail: targetEmail,
-        address,
-        latitude: latitude ? parseFloat(latitude.toString()) : null,
-        longitude: longitude ? parseFloat(longitude.toString()) : null,
-        serviceHours: Number(serviceHours) as any,
-        frequency: frequency || "once",
-        extras,
-        serviceDate,
-        serviceTime,
-        totalPrice: pricing.finalPrice,
-        discount: pricing.discountAmount,
-        paymentMethod,
-        paymentStatus: "PENDING",
-        status: "PENDING",
-        assignedCleaner: initialCleaner,
-        notes: finalNotes || null,
-      });
+      }
+
+      if (i === 0) {
+        primaryBooking = bk;
+      }
+      createdBookings.push(bk);
     }
 
     // Enviar notificación por correo al Administrador y al Cliente (+ Bienvenida si es nuevo cliente)
     try {
       const emailPromises: Promise<any>[] = [
-        sendNewBookingAdminNotification(booking),
-        sendBookingConfirmationToCustomer(booking),
+        sendNewBookingAdminNotification(primaryBooking),
+        sendBookingConfirmationToCustomer(primaryBooking),
       ];
       if (isNewCustomer && targetEmail) {
         emailPromises.push(sendWelcomeEmail({ email: targetEmail, name: customerName }));
@@ -379,8 +448,13 @@ export async function POST(req: Request) {
 
     return NextResponse.json(
       {
-        message: "¡Reserva creada exitosamente!",
-        booking,
+        message: targetDates.length > 1
+          ? `¡Se han generado exitosamente ${targetDates.length} reservas para tu plan!`
+          : "¡Reserva creada exitosamente!",
+        booking: primaryBooking,
+        totalCreated: targetDates.length,
+        subscriptionId,
+        batchId,
       },
       { status: 201 }
     );

@@ -34,6 +34,8 @@ export interface Booking {
   paymentMethod: PaymentMethod;
   paymentStatus: PaymentStatus;
   status: BookingStatus;
+  subscriptionId?: string | null; // ID de suscripción recurrente (anual)
+  batchId?: string | null; // ID de lote multi-fecha (+1 vez/sem, personalizado)
   preferredCleanerId?: string | null;
   assignedCleaner?: string | null;
   employeeName?: string | null;

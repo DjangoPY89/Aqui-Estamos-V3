@@ -994,6 +994,43 @@ export default function AdminDashboardPage() {
     }
   };
 
+  const handleDeleteBatchOrSubscription = async (b: Booking) => {
+    const isSub = Boolean(b.subscriptionId);
+    const isBatch = Boolean(b.batchId);
+    if (!isSub && !isBatch) return;
+
+    const label = isSub ? "la suscripción anual completa" : "el paquete de reservas asociadas";
+    if (
+      !confirm(
+        `¿Deseas eliminar todas las reservas vinculadas a ${label}?\n\n(Regla de seguridad: Solo se eliminarán las reservas que NO se encuentren con estatus Confirmado, En curso o Finalizado).`
+      )
+    ) {
+      return;
+    }
+
+    try {
+      const res = await fetch("/api/bookings/batch", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(
+          isSub
+            ? { action: "cancel_subscription", subscriptionId: b.subscriptionId }
+            : { action: "delete_batch", batchId: b.batchId }
+        ),
+      });
+
+      const data = await res.json();
+      if (res.ok) {
+        showNotification(`✓ ${data.message || "Reservas asociadas eliminadas exitosamente."}`);
+        loadData();
+      } else {
+        alert(data.error || "Error al eliminar reservas asociadas.");
+      }
+    } catch (err) {
+      console.error("Error al eliminar reservas de lote:", err);
+    }
+  };
+
   const handleLeadStatusChange = async (leadId: string, newStatus: CorporateLead["status"]) => {
     try {
       const res = await fetch("/api/corporate", {
@@ -2573,24 +2610,47 @@ export default function AdminDashboardPage() {
                         };
 
                         const formatFrequency = () => {
+                          let badge = null;
                           switch (b.frequency as string) {
                             case "custom":
-                              return <span className="px-2 py-0.5 rounded-full bg-amber-50 text-amber-800 font-bold text-[10px] border border-amber-200">Personalizado</span>;
+                              badge = <span className="px-2 py-0.5 rounded-full bg-amber-50 text-amber-800 font-bold text-[10px] border border-amber-200">Personalizado</span>;
+                              break;
                             case "multi_weekly":
                             case "weekly_2_4":
-                              return <span className="px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-800 font-bold text-[10px] border border-emerald-200">+1 vez/sem</span>;
+                              badge = <span className="px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-800 font-bold text-[10px] border border-emerald-200">+1 vez/sem</span>;
+                              break;
                             case "weekly":
                             case "semanal":
-                              return <span className="px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 font-bold text-[10px] border border-blue-200">Semanal</span>;
+                              badge = <span className="px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 font-bold text-[10px] border border-blue-200">Semanal</span>;
+                              break;
                             case "biweekly":
                             case "quincenal":
-                              return <span className="px-2 py-0.5 rounded-full bg-purple-50 text-purple-700 font-bold text-[10px] border border-purple-200">Quincenal</span>;
+                              badge = <span className="px-2 py-0.5 rounded-full bg-purple-50 text-purple-700 font-bold text-[10px] border border-purple-200">Quincenal</span>;
+                              break;
                             case "monthly":
                             case "mensual":
-                              return <span className="px-2 py-0.5 rounded-full bg-cyan-50 text-cyan-700 font-bold text-[10px] border border-cyan-200">Mensual</span>;
+                              badge = <span className="px-2 py-0.5 rounded-full bg-cyan-50 text-cyan-700 font-bold text-[10px] border border-cyan-200">Mensual</span>;
+                              break;
                             default:
-                              return <span className="px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 font-medium text-[10px]">Única vez</span>;
+                              badge = <span className="px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 font-medium text-[10px]">Única vez</span>;
+                              break;
                           }
+
+                          return (
+                            <div className="flex flex-col items-center gap-0.5">
+                              {badge}
+                              {b.subscriptionId && (
+                                <span className="text-[9px] font-bold text-blue-600 bg-blue-50/80 px-1.5 py-0.2 rounded border border-blue-200/50">
+                                  Anual
+                                </span>
+                              )}
+                              {b.batchId && (
+                                <span className="text-[9px] font-bold text-amber-700 bg-amber-50/80 px-1.5 py-0.2 rounded border border-amber-200/50">
+                                  Lote
+                                </span>
+                              )}
+                            </div>
+                          );
                         };
 
                         return (
@@ -2827,11 +2887,21 @@ export default function AdminDashboardPage() {
                                   >
                                     <Edit3 className="w-3.5 h-3.5" />
                                   </button>
+                                  {(b.subscriptionId || b.batchId) && (
+                                    <button
+                                      type="button"
+                                      onClick={() => handleDeleteBatchOrSubscription(b)}
+                                      className="p-1.5 bg-amber-50 hover:bg-amber-100 text-amber-800 rounded-xl font-bold border border-amber-200 transition-all flex items-center gap-1"
+                                      title={b.subscriptionId ? "Eliminar citas asociadas de la suscripción anual" : "Eliminar citas asociadas del paquete"}
+                                    >
+                                      <Layers className="w-3.5 h-3.5 text-amber-700" />
+                                    </button>
+                                  )}
                                   <button
                                     type="button"
                                     onClick={() => handleDeleteBooking(b.id, b.bookingNumber)}
                                     className="p-1.5 bg-rose-50 hover:bg-rose-100 text-rose-600 rounded-xl font-bold border border-rose-200 transition-all"
-                                    title="Eliminar reserva"
+                                    title="Eliminar esta reserva"
                                   >
                                     <Trash2 className="w-3.5 h-3.5" />
                                   </button>

@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
 import Link from "next/link";
 import { 
   Calendar, 
@@ -25,16 +25,76 @@ interface ActiveBookingsTabProps {
   bookings: Booking[];
   onOpenReceipt: (booking: Booking) => void;
   onOpenInvoice: (booking: Booking) => void;
+  onRefreshBookings?: () => void;
 }
 
 export default function ActiveBookingsTab({
   bookings,
   onOpenReceipt,
   onOpenInvoice,
+  onRefreshBookings,
 }: ActiveBookingsTabProps) {
+  const [cancelModal, setCancelModal] = useState<{
+    isOpen: boolean;
+    type: "subscription" | "batch" | "single";
+    id: string;
+    bookingNumber: string;
+    title: string;
+    description: string;
+  } | null>(null);
+  const [isCancelling, setIsCancelling] = useState(false);
+  const [cancelFeedback, setCancelFeedback] = useState<{ message: string; isError?: boolean } | null>(null);
+
   const activeList = bookings.filter((b) =>
     ["PENDING", "CONFIRMED", "IN_PROGRESS"].includes(b.status)
   );
+
+  const handleConfirmCancel = async () => {
+    if (!cancelModal) return;
+    setIsCancelling(true);
+    setCancelFeedback(null);
+
+    try {
+      if (cancelModal.type === "subscription") {
+        const res = await fetch("/api/bookings/batch", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ action: "cancel_subscription", subscriptionId: cancelModal.id }),
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || "Error al cancelar suscripción.");
+        setCancelFeedback({ message: data.message || "Suscripción cancelada con éxito." });
+      } else if (cancelModal.type === "batch") {
+        const res = await fetch("/api/bookings/batch", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ action: "delete_batch", batchId: cancelModal.id }),
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || "Error al cancelar paquete de reservas.");
+        setCancelFeedback({ message: data.message || "Paquete de reservas cancelado con éxito." });
+      } else {
+        const res = await fetch(`/api/bookings/${cancelModal.id}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ status: "CANCELLED" }),
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || "Error al cancelar la reserva.");
+        setCancelFeedback({ message: "Reserva cancelada con éxito." });
+      }
+
+      setTimeout(() => {
+        setCancelModal(null);
+        setCancelFeedback(null);
+        if (onRefreshBookings) onRefreshBookings();
+      }, 1500);
+    } catch (err: any) {
+      setCancelFeedback({ message: err.message || "Error al procesar la cancelación.", isError: true });
+    } finally {
+      setIsCancelling(false);
+    }
+  };
 
   if (activeList.length === 0) {
     return (
@@ -99,6 +159,17 @@ export default function ActiveBookingsTab({
           const bookingNum = (booking as any).bookingNumber || booking.id.slice(-4);
           const extrasList = Array.isArray(booking.extras) ? booking.extras : [];
 
+          // Reglas de cancelación por tipo de reserva
+          const now = Date.now();
+          const createdTime = new Date(booking.createdAt).getTime();
+          const hoursSinceCreation = (now - createdTime) / (1000 * 60 * 60);
+
+          const serviceDateTime = new Date(`${booking.serviceDate}T${booking.serviceTime || "08:00"}:00`).getTime();
+          const hoursUntilService = (serviceDateTime - now) / (1000 * 60 * 60);
+
+          const isRecurring = Boolean(booking.subscriptionId || ["weekly", "biweekly", "monthly", "semanal", "quincenal", "mensual"].includes(booking.frequency));
+          const isBatch = Boolean(booking.batchId || booking.frequency === "multi_weekly" || booking.frequency === "custom" || booking.frequency === "weekly_2_4");
+
           return (
             <div
               key={booking.id}
@@ -115,9 +186,19 @@ export default function ActiveBookingsTab({
                       <h3 className="text-base sm:text-lg font-black text-slate-950 tracking-tight">
                         Limpieza Residencial • {hours} Horas
                       </h3>
-                      <span className="px-2.5 py-0.5 rounded-full bg-slate-100 text-slate-600 text-[10px] font-semibold uppercase tracking-wider">
-                        {booking.frequency === "once" ? "Servicio Único" : "Plan Recurrente"}
-                      </span>
+                      {isRecurring ? (
+                        <span className="px-2.5 py-0.5 rounded-full bg-blue-50 text-blue-700 text-[10px] font-bold border border-blue-200 uppercase tracking-wider">
+                          Suscripción Anual
+                        </span>
+                      ) : isBatch ? (
+                        <span className="px-2.5 py-0.5 rounded-full bg-amber-50 text-amber-800 text-[10px] font-bold border border-amber-200 uppercase tracking-wider">
+                          Paquete de Citas
+                        </span>
+                      ) : (
+                        <span className="px-2.5 py-0.5 rounded-full bg-slate-100 text-slate-600 text-[10px] font-semibold uppercase tracking-wider">
+                          Servicio Único
+                        </span>
+                      )}
                     </div>
                     <p className="text-xs text-slate-400 font-medium mt-0.5">
                       Reserva registrada el {new Date(booking.createdAt).toLocaleDateString("es-PY", { day: '2-digit', month: 'long', year: 'numeric' })}
@@ -252,13 +333,13 @@ export default function ActiveBookingsTab({
 
                 {/* 💳 Inversión y Forma de Pago */}
                 <div className="p-4 rounded-2xl bg-slate-50/80 border border-slate-200/60 space-y-1.5 flex flex-col justify-between">
-                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Total con IVA</span>
+                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Total por Servicio</span>
                   <div className="space-y-0.5">
                     <p className="text-lg sm:text-xl font-black text-slate-950 tracking-tight">
                       {formatGs(price)}
                     </p>
                     <p className="text-[11px] text-slate-500 font-medium capitalize">
-                      {booking.paymentMethod === "sipap" ? "Transferencia SIPAP" : booking.paymentMethod === "card" ? "Tarjeta POS" : "Efectivo al finalizar"}
+                      {booking.paymentMethod === "sipap" ? "Transferencia SIPAP" : booking.paymentMethod === "card" ? "Tarjeta / QR" : "Efectivo al finalizar"}
                     </p>
                   </div>
                   <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded-full inline-block w-max">
@@ -291,7 +372,7 @@ export default function ActiveBookingsTab({
                 </div>
               )}
 
-              {/* 5. Barra de Acciones al Pie */}
+              {/* 5. Barra de Acciones y Cancelaciones Inteligentes */}
               <div className="flex flex-wrap items-center justify-between gap-3 pt-3 border-t border-slate-100">
                 <div className="flex flex-wrap items-center gap-2.5">
                   <button
@@ -303,10 +384,86 @@ export default function ActiveBookingsTab({
                     <span>Recibo Digital</span>
                   </button>
 
-                  <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-slate-50 text-slate-500 rounded-full text-[11px] font-medium border border-slate-200/60">
-                    <FileText className="w-3.5 h-3.5 text-slate-400" />
-                    <span>Factura Legal: Al finalizar</span>
-                  </span>
+                  {/* Botón de Cancelación según Tipo de Plan */}
+                  {isRecurring ? (
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setCancelModal({
+                          isOpen: true,
+                          type: "subscription",
+                          id: booking.subscriptionId || booking.id,
+                          bookingNumber: bookingNum,
+                          title: "Cancelar Suscripción Recurrente",
+                          description:
+                            "¿Estás seguro de cancelar tu suscripción recurrente? Esta acción cancelará y eliminará automáticamente todas las citas futuras del plan que no hayan sido completadas o estén en curso.",
+                        })
+                      }
+                      className="inline-flex items-center gap-1 px-3.5 py-1.5 rounded-full bg-rose-50 hover:bg-rose-100 text-rose-700 text-xs font-bold border border-rose-200 transition-colors cursor-pointer"
+                    >
+                      <span>Cancelar Suscripción</span>
+                    </button>
+                  ) : isBatch ? (
+                    hoursSinceCreation <= 48 ? (
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setCancelModal({
+                            isOpen: true,
+                            type: "batch",
+                            id: booking.batchId || booking.id,
+                            bookingNumber: bookingNum,
+                            title: "Cancelar Paquete de Reservas",
+                            description:
+                              "¿Deseas cancelar todas las reservas correspondientes a este paquete contratado? (Válido dentro de las 48hs de realizada la reserva).",
+                          })
+                        }
+                        className="inline-flex items-center gap-1 px-3.5 py-1.5 rounded-full bg-rose-50 hover:bg-rose-100 text-rose-700 text-xs font-bold border border-rose-200 transition-colors cursor-pointer"
+                      >
+                        <span>Cancelar Paquete</span>
+                      </button>
+                    ) : (
+                      <a
+                        href={`https://wa.me/595981000000?text=Hola%20Aqu%C3%AD%20Estamos,%20necesito%20cancelar%20mi%20paquete%20de%20reservas%20%23${bookingNum}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full bg-slate-50 text-slate-500 text-[11px] font-semibold border border-slate-200 hover:text-[#0071E3]"
+                        title="Han pasado más de 48h desde la reserva. Para cambios o cancelaciones contacta a Atención al Cliente."
+                      >
+                        <span>Cancelar: Contactar Atención al Cliente</span>
+                      </a>
+                    )
+                  ) : (
+                    hoursUntilService >= 48 ? (
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setCancelModal({
+                            isOpen: true,
+                            type: "single",
+                            id: booking.id,
+                            bookingNumber: bookingNum,
+                            title: "Cancelar Reserva de Servicio",
+                            description:
+                              "¿Estás seguro de cancelar esta reserva? (Permitido hasta 48hs antes del día de la cita).",
+                          })
+                        }
+                        className="inline-flex items-center gap-1 px-3.5 py-1.5 rounded-full bg-rose-50 hover:bg-rose-100 text-rose-700 text-xs font-bold border border-rose-200 transition-colors cursor-pointer"
+                      >
+                        <span>Cancelar Cita</span>
+                      </button>
+                    ) : (
+                      <a
+                        href={`https://wa.me/595981000000?text=Hola%20Aqu%C3%AD%20Estamos,%20necesito%20modificar%20mi%20reserva%20%23${bookingNum}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full bg-slate-50 text-slate-500 text-[11px] font-semibold border border-slate-200 hover:text-[#0071E3]"
+                        title="Faltan menos de 48h para la cita. Para coordinar cambios comunícate con Soporte Central."
+                      >
+                        <span>Cancelar: Contactar Soporte Central</span>
+                      </a>
+                    )
+                  )}
                 </div>
 
                 <a
@@ -324,6 +481,63 @@ export default function ActiveBookingsTab({
           );
         })}
       </div>
+
+      {/* MODAL DE CONFIRMACIÓN DE CANCELACIÓN */}
+      {cancelModal && cancelModal.isOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-white rounded-3xl max-w-md w-full p-6 sm:p-7 border border-slate-200 shadow-2xl space-y-4 animate-in zoom-in-95 duration-150">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+              <h3 className="text-base font-black text-slate-950">{cancelModal.title}</h3>
+              <button
+                type="button"
+                onClick={() => setCancelModal(null)}
+                disabled={isCancelling}
+                className="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 flex items-center justify-center text-sm font-bold"
+              >
+                ✕
+              </button>
+            </div>
+
+            <p className="text-xs sm:text-sm text-slate-600 leading-relaxed">
+              {cancelModal.description}
+            </p>
+
+            {cancelFeedback && (
+              <div className={`p-3 rounded-xl text-xs font-bold ${
+                cancelFeedback.isError ? "bg-rose-50 text-rose-700 border border-rose-200" : "bg-emerald-50 text-emerald-800 border border-emerald-200"
+              }`}>
+                {cancelFeedback.message}
+              </div>
+            )}
+
+            <div className="flex items-center justify-end gap-2.5 pt-3 border-t border-slate-100">
+              <button
+                type="button"
+                onClick={() => setCancelModal(null)}
+                disabled={isCancelling}
+                className="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition-colors"
+              >
+                Volver
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmCancel}
+                disabled={isCancelling}
+                className="px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold transition-colors flex items-center gap-1.5 shadow-xs"
+              >
+                {isCancelling ? (
+                  <>
+                    <span className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    <span>Cancelando...</span>
+                  </>
+                ) : (
+                  <span>Confirmar Cancelación</span>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

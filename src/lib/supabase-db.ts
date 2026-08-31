@@ -476,64 +476,22 @@ export async function supabaseDeleteEmployee(id: string): Promise<boolean> {
 // 3. REPOSITORIO DE RESERVAS
 // ==========================================
 
-export async function supabaseGetAllBookings(): Promise<Booking[]> {
-  const supabase = getSupabase();
-  const { data, error } = await supabase
-    .from("bookings")
-    .select("*")
-    .order("service_date", { ascending: false });
-
-  if (error || !data) return [];
-
-  return data.map((r) => {
-    const ratedMatch = r.notes ? r.notes.match(/\[RATED:(\d+)\]/) : null;
-    const ratingNum = ratedMatch ? Number(ratedMatch[1]) : (r.rating !== undefined && r.rating !== null ? Number(r.rating) : null);
-    const cleanNotes = r.notes ? r.notes.replace(/\[RATED:\d+\]\s*/g, "").trim() : r.notes;
-
-    return {
-      id: r.id,
-      bookingNumber: r.booking_number,
-      userId: r.user_id,
-      customerName: r.customer_name,
-      customerPhone: r.customer_phone,
-      customerEmail: r.customer_email,
-      address: r.address,
-      latitude: r.latitude,
-      longitude: r.longitude,
-      serviceHours: r.service_hours,
-      frequency: r.frequency,
-      extras: typeof r.extras === "string" ? JSON.parse(r.extras) : (r.extras || []),
-      serviceDate: r.service_date,
-      serviceTime: r.service_time,
-      totalPrice: r.total_price,
-      discount: r.discount || 0,
-      paymentMethod: r.payment_method,
-      paymentStatus: r.payment_status,
-      status: r.status,
-      assignedCleaner: r.assigned_cleaner,
-      notes: cleanNotes,
-      rating: ratingNum,
-      reviewComment: r.review_comment || null,
-      reviewedAt: ratingNum ? (r.updated_at || r.created_at) : (r.reviewed_at || null),
-      createdAt: r.created_at,
-      updatedAt: r.updated_at || r.created_at,
-    };
-  });
-}
-
-export async function supabaseGetBookingById(id: string): Promise<Booking | null> {
-  const supabase = getSupabase();
-  const { data: r, error } = await supabase
-    .from("bookings")
-    .select("*")
-    .eq("id", id)
-    .maybeSingle();
-
-  if (error || !r) return null;
-
+export function mapSupabaseBooking(r: any): Booking {
   const ratedMatch = r.notes ? r.notes.match(/\[RATED:(\d+)\]/) : null;
   const ratingNum = ratedMatch ? Number(ratedMatch[1]) : (r.rating !== undefined && r.rating !== null ? Number(r.rating) : null);
-  const cleanNotes = r.notes ? r.notes.replace(/\[RATED:\d+\]\s*/g, "").trim() : r.notes;
+
+  const subMatch = r.notes ? r.notes.match(/\[SUB:([^\]]+)\]/) : null;
+  const batchMatch = r.notes ? r.notes.match(/\[BATCH:([^\]]+)\]/) : null;
+  const subscriptionId = r.subscription_id || (subMatch ? subMatch[1] : null);
+  const batchId = r.batch_id || (batchMatch ? batchMatch[1] : null);
+
+  const cleanNotes = r.notes 
+    ? r.notes
+        .replace(/\[RATED:\d+\]\s*/g, "")
+        .replace(/\[SUB:[^\]]+\]\s*/g, "")
+        .replace(/\[BATCH:[^\]]+\]\s*/g, "")
+        .trim() 
+    : r.notes;
 
   return {
     id: r.id,
@@ -555,6 +513,8 @@ export async function supabaseGetBookingById(id: string): Promise<Booking | null
     paymentMethod: r.payment_method,
     paymentStatus: r.payment_status,
     status: r.status,
+    subscriptionId,
+    batchId,
     assignedCleaner: r.assigned_cleaner,
     notes: cleanNotes,
     rating: ratingNum,
@@ -563,6 +523,29 @@ export async function supabaseGetBookingById(id: string): Promise<Booking | null
     createdAt: r.created_at,
     updatedAt: r.updated_at || r.created_at,
   };
+}
+
+export async function supabaseGetBookings(): Promise<Booking[]> {
+  const supabase = getSupabase();
+  const { data, error } = await supabase
+    .from("bookings")
+    .select("*")
+    .order("service_date", { ascending: false });
+
+  if (error || !data) return [];
+  return data.map(mapSupabaseBooking);
+}
+
+export async function supabaseGetBookingById(id: string): Promise<Booking | null> {
+  const supabase = getSupabase();
+  const { data: r, error } = await supabase
+    .from("bookings")
+    .select("*")
+    .eq("id", id)
+    .maybeSingle();
+
+  if (error || !r) return null;
+  return mapSupabaseBooking(r);
 }
 
 export async function supabaseGetBookingsByUserId(userId: string): Promise<Booking[]> {
@@ -574,41 +557,11 @@ export async function supabaseGetBookingsByUserId(userId: string): Promise<Booki
     .order("service_date", { ascending: false });
 
   if (error || !data) return [];
+  return data.map(mapSupabaseBooking);
+}
 
-  return data.map((r) => {
-    const ratedMatch = r.notes ? r.notes.match(/\[RATED:(\d+)\]/) : null;
-    const ratingNum = ratedMatch ? Number(ratedMatch[1]) : (r.rating !== undefined && r.rating !== null ? Number(r.rating) : null);
-    const cleanNotes = r.notes ? r.notes.replace(/\[RATED:\d+\]\s*/g, "").trim() : r.notes;
-
-    return {
-      id: r.id,
-      bookingNumber: r.booking_number,
-      userId: r.user_id,
-      customerName: r.customer_name,
-      customerPhone: r.customer_phone,
-      customerEmail: r.customer_email,
-      address: r.address,
-      latitude: r.latitude,
-      longitude: r.longitude,
-      serviceHours: r.service_hours,
-      frequency: r.frequency,
-      extras: typeof r.extras === "string" ? JSON.parse(r.extras) : (r.extras || []),
-      serviceDate: r.service_date,
-      serviceTime: r.service_time,
-      totalPrice: r.total_price,
-      discount: r.discount || 0,
-      paymentMethod: r.payment_method,
-      paymentStatus: r.payment_status,
-      status: r.status,
-      assignedCleaner: r.assigned_cleaner,
-      notes: cleanNotes,
-      rating: ratingNum,
-      reviewComment: r.review_comment || null,
-      reviewedAt: ratingNum ? (r.updated_at || r.created_at) : (r.reviewed_at || null),
-      createdAt: r.created_at,
-      updatedAt: r.updated_at || r.created_at,
-    };
-  });
+export async function supabaseGetAllBookings(): Promise<Booking[]> {
+  return supabaseGetBookings();
 }
 
 export async function supabaseCreateBooking(data: {
@@ -628,6 +581,8 @@ export async function supabaseCreateBooking(data: {
   discount?: number;
   paymentMethod: string;
   assignedCleaner?: string | null;
+  subscriptionId?: string | null;
+  batchId?: string | null;
   notes?: string;
 }): Promise<Booking> {
   const supabase = getSupabase();
@@ -635,6 +590,14 @@ export async function supabaseCreateBooking(data: {
   const dateStr = data.serviceDate.replace(/-/g, "").substring(2);
   const randomSuffix = Math.floor(100 + Math.random() * 900);
   const bookingNumber = `AE-${dateStr}-${randomSuffix}`;
+
+  let finalNotes = data.notes?.trim() || "";
+  if (data.subscriptionId) {
+    finalNotes = `[SUB:${data.subscriptionId}] ${finalNotes}`.trim();
+  }
+  if (data.batchId) {
+    finalNotes = `[BATCH:${data.batchId}] ${finalNotes}`.trim();
+  }
 
   const { data: inserted, error } = await supabase
     .from("bookings")
@@ -659,7 +622,7 @@ export async function supabaseCreateBooking(data: {
       payment_status: "PENDING",
       status: "PENDING",
       assigned_cleaner: data.assignedCleaner || null,
-      notes: data.notes?.trim() || null,
+      notes: finalNotes || null,
     })
     .select()
     .single();
@@ -668,7 +631,76 @@ export async function supabaseCreateBooking(data: {
     throw new Error(error?.message || "Error al registrar reserva en Supabase");
   }
 
-  return (await supabaseGetBookingById(id))!;
+  return mapSupabaseBooking(inserted);
+}
+
+// Cancelar todas las reservas futuras de una suscripción recurrente que no estén COMPLETED ni IN_PROGRESS
+export async function supabaseCancelSubscriptionBookings(subscriptionId: string): Promise<{ cancelledCount: number }> {
+  const supabase = getSupabase();
+  const today = new Date().toISOString().slice(0, 10);
+  
+  // Buscar todas las reservas vinculadas a la suscripción
+  const allBookings = await supabaseGetBookings();
+  const targetBookings = allBookings.filter(
+    (b) => b.subscriptionId === subscriptionId &&
+           b.serviceDate >= today &&
+           b.status !== "COMPLETED" &&
+           b.status !== "IN_PROGRESS"
+  );
+
+  let count = 0;
+  for (const b of targetBookings) {
+    const { error } = await supabase.from("bookings").delete().eq("id", b.id);
+    if (!error) count++;
+  }
+
+  return { cancelledCount: count };
+}
+
+// Eliminar o cancelar reservas de un lote multi-fecha (+1 vez por semana o Personalizado)
+export async function supabaseDeleteBatchBookings(
+  batchId: string,
+  isAdmin: boolean = false
+): Promise<{ deletedCount: number; blockedReason?: string }> {
+  const supabase = getSupabase();
+  const allBookings = await supabaseGetBookings();
+  const batchBookings = allBookings.filter((b) => b.batchId === batchId);
+
+  if (batchBookings.length === 0) {
+    return { deletedCount: 0 };
+  }
+
+  // Si es cliente, validar límite de 48h desde la creación de la reserva
+  if (!isAdmin) {
+    const firstBooking = batchBookings[0];
+    const createdTime = new Date(firstBooking.createdAt).getTime();
+    const hoursSinceCreation = (Date.now() - createdTime) / (1000 * 60 * 60);
+    if (hoursSinceCreation > 48) {
+      return {
+        deletedCount: 0,
+        blockedReason: "Han transcurrido más de 48 horas desde la reserva. Por favor contacta a Atención al Cliente.",
+      };
+    }
+  }
+
+  // Filtrar reservas que se pueden eliminar según el rol
+  const eligibleBookings = batchBookings.filter((b) => {
+    if (isAdmin) {
+      // Admin: no puede eliminar si está COMPLETED, CONFIRMED o IN_PROGRESS
+      return b.status !== "COMPLETED" && b.status !== "CONFIRMED" && b.status !== "IN_PROGRESS";
+    } else {
+      // Cliente: no puede eliminar si está COMPLETED o IN_PROGRESS
+      return b.status !== "COMPLETED" && b.status !== "IN_PROGRESS";
+    }
+  });
+
+  let count = 0;
+  for (const b of eligibleBookings) {
+    const { error } = await supabase.from("bookings").delete().eq("id", b.id);
+    if (!error) count++;
+  }
+
+  return { deletedCount: count };
 }
 
 export async function supabaseUpdateBooking(
