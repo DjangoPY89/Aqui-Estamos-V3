@@ -2034,7 +2034,7 @@ export default function AdminDashboardPage() {
                 </h1>
                 <div className="flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-800 text-[11px] font-bold">
                   <span className={`w-2 h-2 rounded-full bg-emerald-500 ${isSyncing ? "animate-ping" : "animate-pulse"} shrink-0`} />
-                  <span>{isSyncing ? "Sincronizando..." : "En Vivo • Tiempo Real"}</span>
+                  <span>{isSyncing ? "Sincronizando..." : "En vivo"}</span>
                 </div>
               </div>
               <p className="text-xs text-slate-500 mt-0.5">
