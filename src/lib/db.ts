@@ -173,38 +173,7 @@ function getInitialStore(): DbStore {
       },
     ],
     corporateLeads: [],
-    reviews: [
-      {
-        id: "rev_1",
-        userId: "seed",
-        userName: "Carolina M. (Villa Morra)",
-        rating: 5,
-        comment: "Excelente servicio. La puntualidad y la atención al detalle de Carmen superaron mis expectativas. El piso y la cocina quedaron relucientes.",
-        serviceType: "Integral (6 Horas)",
-        isPublished: true,
-        createdAt: "2025-02-01T00:00:00.000Z",
-      },
-      {
-        id: "rev_2",
-        userId: "seed",
-        userName: "Esteban R. (Ykua Satî)",
-        rating: 5,
-        comment: "Increíble cómo cambió la casa después de 8 horas de limpieza profunda. Muy confiable el personal y 100% profesionales.",
-        serviceType: "Full Day (8 Horas)",
-        isPublished: true,
-        createdAt: "2025-02-05T00:00:00.000Z",
-      },
-      {
-        id: "rev_3",
-        userId: "seed",
-        userName: "Valeria D. (Mcal. López)",
-        rating: 5,
-        comment: "Tengo contratado el plan recurrente 3 veces por semana y no lo cambio por nada. Me ahorra horas de vida y la facturación es impecable.",
-        serviceType: "Plan Recurrente (15% OFF)",
-        isPublished: true,
-        createdAt: "2025-02-10T00:00:00.000Z",
-      },
-    ],
+    reviews: [],
   };
 }
 
