@@ -4,7 +4,7 @@ import { Star, ArrowRight, Sparkles, ShieldCheck } from "lucide-react";
 
 export default function Hero() {
   return (
-    <section className="relative w-full min-h-[620px] sm:min-h-[700px] lg:min-h-[800px] flex items-center justify-center overflow-hidden bg-white text-slate-900 border-b border-slate-200">
+    <section className="relative w-full min-h-[620px] sm:min-h-[700px] lg:min-h-[800px] flex items-center justify-center overflow-hidden bg-white text-neutral-900 border-b border-neutral-200">
       
       {/* Video Background Full-Width (100% de ancho de pantalla) */}
       <div className="absolute inset-0 w-full h-full overflow-hidden">
@@ -16,29 +16,27 @@ export default function Hero() {
           playsInline
           className="w-full h-full object-cover scale-105"
         />
-        {/* Capas de Fondo Blanco al 75% de Transparencia para Máxima Luminosidad y Legibilidad */}
-        <div className="absolute inset-0 bg-white/75 backdrop-blur-[1px]" />
-        <div className="absolute inset-0 bg-gradient-to-t from-white/95 via-white/75 to-white/75" />
-        <div className="absolute inset-0 bg-gradient-to-r from-white/90 via-white/75 to-white/50" />
+        {/* Capa Blanca con 60% de Transparencia */}
+        <div className="absolute inset-0 bg-white/60" />
       </div>
 
       {/* Contenido Hero Superpuesto */}
       <div className="relative z-10 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-24 sm:py-28 lg:py-36 flex flex-col justify-center">
         <div className="max-w-3xl space-y-6 sm:space-y-8 animate-in fade-in duration-500">
           
-          {/* Tagline con azul eléctrico y fondo blanco blur */}
-          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white/80 backdrop-blur-md text-slate-800 text-xs font-bold border border-slate-300/80 shadow-xs">
+          {/* Tagline con toque de azul eléctrico y fondo blur */}
+          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white/80 backdrop-blur-md text-neutral-900 text-xs font-semibold border border-neutral-200/80 shadow-sm">
             <span className="w-2 h-2 rounded-full bg-electric-600 animate-pulse"></span>
             <span>Servicio profesional en Asunción y Gran Asunción</span>
           </div>
 
           {/* Titular */}
-          <h1 className="text-4xl sm:text-5xl lg:text-6xl xl:text-7xl font-black text-slate-900 tracking-tight leading-[1.12]">
+          <h1 className="text-4xl sm:text-5xl lg:text-6xl xl:text-7xl font-bold text-neutral-950 tracking-tight leading-[1.12]">
             Cuidado profesional y confiable para tu <span className="text-electric-600">hogar.</span>
           </h1>
 
           {/* Bajada */}
-          <p className="text-base sm:text-lg lg:text-xl text-slate-700 leading-relaxed font-medium max-w-2xl">
+          <p className="text-base sm:text-lg lg:text-xl text-neutral-700 leading-relaxed font-normal max-w-2xl">
             Servicios de limpieza por horas con personal rigurosamente verificado y contratado formalmente bajo normativas de IPS. Reserva online en 60 segundos con tarifa plana en Guaraníes y garantía total.
           </p>
 
@@ -46,7 +44,7 @@ export default function Hero() {
           <div className="pt-2 flex flex-col sm:flex-row items-stretch sm:items-center gap-3.5">
             <Link
               href="/reservar"
-              className="inline-flex items-center justify-center gap-2.5 px-7 py-4 bg-electric-600 hover:bg-electric-700 text-white font-bold text-sm sm:text-base rounded-2xl shadow-electric transition-all active:scale-[0.98] hover:shadow-lg hover:shadow-electric-600/30"
+              className="inline-flex items-center justify-center gap-2.5 px-7 py-4 bg-electric-600 hover:bg-electric-500 text-white font-bold text-sm sm:text-base rounded-2xl shadow-electric transition-all active:scale-[0.98] hover:shadow-lg hover:shadow-electric-600/30"
             >
               <span>Reservar Limpieza</span>
               <ArrowRight className="w-4 h-4 text-white/90" />
@@ -54,34 +52,34 @@ export default function Hero() {
 
             <Link
               href="/corporativo"
-              className="inline-flex items-center justify-center gap-2 px-6 py-4 bg-white/85 hover:bg-white text-slate-900 font-bold text-sm sm:text-base rounded-2xl border border-slate-300 shadow-xs backdrop-blur-md transition-all active:scale-[0.98]"
+              className="inline-flex items-center justify-center gap-2 px-6 py-4 bg-white/80 hover:bg-white backdrop-blur-md text-neutral-900 font-semibold text-sm sm:text-base rounded-2xl border border-neutral-200 shadow-sm transition-all"
             >
               <span>Soluciones para Empresas</span>
             </Link>
           </div>
 
           {/* Indicadores de Confianza */}
-          <div className="pt-6 sm:pt-8 border-t border-slate-300/80 grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6 text-left">
+          <div className="pt-6 sm:pt-8 border-t border-neutral-200/80 grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6 text-left">
             <div className="flex items-center sm:block gap-3">
               <div className="flex items-center gap-1 text-amber-500 text-sm font-semibold">
                 <Star className="w-4 h-4 fill-amber-400 text-amber-400" />
-                <span className="text-slate-900 font-extrabold">4.9 / 5.0</span>
+                <span className="text-neutral-900 font-bold">4.9 / 5.0</span>
               </div>
-              <p className="text-xs text-slate-600 mt-0.5 font-medium">Google Reviews (+1.5k servicios)</p>
+              <p className="text-xs text-neutral-600 mt-0.5">Google Reviews (+1.5k servicios)</p>
             </div>
 
             <div className="flex items-center sm:block gap-3">
-              <p className="text-sm font-extrabold text-slate-900 flex items-center gap-1.5">
-                <span className="text-electric-600 font-black">✓</span> 100% Legal
+              <p className="text-sm font-bold text-neutral-900 flex items-center gap-1.5">
+                <span className="text-electric-600 font-bold">✓</span> 100% Legal
               </p>
-              <p className="text-xs text-slate-600 mt-0.5 font-medium">Inscripción formal en IPS</p>
+              <p className="text-xs text-neutral-600 mt-0.5">Inscripción formal en IPS</p>
             </div>
 
             <div className="flex items-center sm:block gap-3">
-              <p className="text-sm font-extrabold text-slate-900 flex items-center gap-1.5">
-                <span className="text-electric-600 font-black">✓</span> Garantía 200%
+              <p className="text-sm font-bold text-neutral-900 flex items-center gap-1.5">
+                <span className="text-electric-600 font-bold">✓</span> Garantía 200%
               </p>
-              <p className="text-xs text-slate-600 mt-0.5 font-medium">Satisfacción asegurada</p>
+              <p className="text-xs text-neutral-600 mt-0.5">Satisfacción asegurada</p>
             </div>
           </div>
 
