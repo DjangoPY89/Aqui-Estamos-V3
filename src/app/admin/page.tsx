@@ -522,19 +522,124 @@ export default function AdminDashboardPage() {
     }, 4000);
   };
 
-  // Asignar Empleado Rápido con 1 Clic
+  // Helper para verificar disponibilidad en tiempo real de un empleado para una cita específica sin solapamiento
+  const getEmployeeAvailabilityForBooking = (
+    emp: Employee,
+    targetDate?: string,
+    targetTime?: string,
+    targetHours?: number,
+    excludeBookingId?: string
+  ): { isAvailable: boolean; reason?: string } => {
+    if (emp.status !== "ACTIVE") {
+      return { isAvailable: false, reason: "Inactivo / De Licencia" };
+    }
+    if (!targetDate) {
+      return { isAvailable: true };
+    }
+
+    const empNameLower = emp.name.trim().toLowerCase();
+    const empIdLower = emp.id.trim().toLowerCase();
+
+    // Buscar reservas existentes asignadas a este empleado en esa misma fecha
+    const empBookingsOnDate = bookings.filter((b) => {
+      if (b.id === excludeBookingId) return false;
+      if (b.serviceDate !== targetDate) return false;
+      if (b.status === "CANCELLED") return false;
+      if (!b.assignedCleaner) return false;
+      const clean = b.assignedCleaner.trim().toLowerCase();
+      return clean === empIdLower || clean === empNameLower || clean.includes(empNameLower) || empNameLower.includes(clean);
+    });
+
+    const [y, m, d] = targetDate.split("-").map(Number);
+    const dateObj = new Date(y, m - 1, d);
+    const isSaturday = dateObj.getDay() === 6;
+
+    const reqTime = targetTime || "08:00";
+    const reqHours = Number(targetHours) || 4;
+    const reqStartHour = parseInt(reqTime.split(":")[0], 10) || 8;
+    const reqEndHour = reqStartHour + reqHours;
+
+    if (isSaturday) {
+      if (reqHours >= 6) {
+        return { isAvailable: false, reason: "Sábados solo 4hs" };
+      }
+      if (empBookingsOnDate.length >= 1) {
+        return { isAvailable: false, reason: "Cupo sábado cubierto (1 servicio)" };
+      }
+    } else {
+      // Lunes a Viernes
+      const hasLongService = empBookingsOnDate.some((b) => Number(b.serviceHours) >= 6);
+      if (hasLongService) {
+        return { isAvailable: false, reason: "Jornada completa asignada (6/8h)" };
+      }
+
+      const fourHourCount = empBookingsOnDate.filter((b) => Number(b.serviceHours) === 4).length;
+      if (fourHourCount >= 2) {
+        return { isAvailable: false, reason: "Tope diario alcanzado (2 servicios de 4h)" };
+      }
+
+      if (reqHours >= 6 && empBookingsOnDate.length > 0) {
+        return { isAvailable: false, reason: "Requiere día completo libre" };
+      }
+
+      // Verificar solapamiento horario
+      for (const b of empBookingsOnDate) {
+        const bTime = b.serviceTime || "08:00";
+        const bHours = Number(b.serviceHours) || 4;
+        const bStartHour = parseInt(bTime.split(":")[0], 10) || 8;
+        const bEndHour = bStartHour + bHours;
+
+        const hasOverlap = Math.max(reqStartHour, bStartHour) < Math.min(reqEndHour, bEndHour);
+        if (hasOverlap) {
+          return { isAvailable: false, reason: `Solapamiento con cita de ${bTime} hs` };
+        }
+      }
+    }
+
+    return { isAvailable: true };
+  };
+
+  // Asignar Empleado Rápido con 1 Clic (Solo disponibles sin solapamiento)
   const handleQuickAssignCleaner = async (bookingId: string, cleanerName: string) => {
     try {
+      const currentBooking = bookings.find((b) => b.id === bookingId);
       if (cleanerName === "RANDOM") {
-        const activeEmployees = employees.filter((e) => e.status === "ACTIVE");
-        if (activeEmployees.length === 0) {
-          alert("No hay empleados activos disponibles para asignar.");
+        const availableActive = employees.filter((e) => {
+          if (!currentBooking) return e.status === "ACTIVE";
+          return getEmployeeAvailabilityForBooking(
+            e,
+            currentBooking.serviceDate,
+            currentBooking.serviceTime,
+            currentBooking.serviceHours,
+            bookingId
+          ).isAvailable;
+        });
+
+        if (availableActive.length === 0) {
+          alert("⚠️ No hay personal disponible libre de solapamiento para esta fecha y horario.");
           return;
         }
-        const randomIndex = Math.floor(Math.random() * activeEmployees.length);
-        cleanerName = `${activeEmployees[randomIndex].name}`;
+        const randomIndex = Math.floor(Math.random() * availableActive.length);
+        cleanerName = `${availableActive[randomIndex].name}`;
       } else if (cleanerName === "UNASSIGNED") {
         cleanerName = "";
+      } else if (cleanerName && currentBooking) {
+        const targetEmp = employees.find((e) => e.name.toLowerCase() === cleanerName.toLowerCase() || e.id === cleanerName);
+        if (targetEmp) {
+          const check = getEmployeeAvailabilityForBooking(
+            targetEmp,
+            currentBooking.serviceDate,
+            currentBooking.serviceTime,
+            currentBooking.serviceHours,
+            bookingId
+          );
+          if (!check.isAvailable) {
+            const proceed = confirm(
+              `⚠️ Advertencia de Disponibilidad:\n${targetEmp.name} presenta: ${check.reason}.\n\n¿Deseas forzar la asignación de todas formas?`
+            );
+            if (!proceed) return;
+          }
+        }
       }
 
       const res = await fetch(`/api/bookings/${bookingId}`, {
@@ -2813,6 +2918,18 @@ export default function AdminDashboardPage() {
                               <td className="px-3 py-2.5 border-r border-slate-100 min-w-[175px]">
                                 {(() => {
                                   const empColor = getEmployeeColor(b.assignedCleaner);
+                                  const availableList: Employee[] = [];
+                                  const occupiedList: { emp: Employee; reason: string }[] = [];
+
+                                  employees.filter((e) => e.status === "ACTIVE").forEach((emp) => {
+                                    const check = getEmployeeAvailabilityForBooking(emp, b.serviceDate, b.serviceTime, b.serviceHours, b.id);
+                                    if (check.isAvailable) {
+                                      availableList.push(emp);
+                                    } else {
+                                      occupiedList.push({ emp, reason: check.reason || "Ocupado" });
+                                    }
+                                  });
+
                                   return (
                                     <div className="relative inline-block w-full">
                                       <div className={`w-full flex items-center justify-between gap-2 px-3 py-1.5 rounded-full border shadow-2xs transition-all duration-150 ${
@@ -2838,16 +2955,25 @@ export default function AdminDashboardPage() {
                                         title="Cambiar empleado asignado"
                                       >
                                         <option value="UNASSIGNED">⚪ Sin Asignar</option>
-                                        <option value="RANDOM">🎲 Asignar al Azar</option>
-                                        <optgroup label="Personal Activo">
-                                          {employees
-                                            .filter((e) => e.status === "ACTIVE")
-                                            .map((emp) => (
-                                              <option key={emp.id} value={`${emp.name}`}>
-                                                ● {emp.name} ({emp.zone.split(" ")[0]})
+                                        {availableList.length > 0 && (
+                                          <option value="RANDOM">🎲 Asignar al Azar ({availableList.length} disponibles)</option>
+                                        )}
+                                        <optgroup label={`Personal Disponible para este horario (${availableList.length})`}>
+                                          {availableList.map((emp) => (
+                                            <option key={emp.id} value={`${emp.name}`}>
+                                              ● {emp.name} ({emp.zone.split(" ")[0]})
+                                            </option>
+                                          ))}
+                                        </optgroup>
+                                        {occupiedList.length > 0 && (
+                                          <optgroup label={`Ocupados / Con Solapamiento (${occupiedList.length})`}>
+                                            {occupiedList.map(({ emp, reason }) => (
+                                              <option key={emp.id} value={`${emp.name}`} disabled>
+                                                ⚠️ {emp.name} — [{reason}]
                                               </option>
                                             ))}
-                                        </optgroup>
+                                          </optgroup>
+                                        )}
                                       </select>
                                     </div>
                                   );
@@ -4585,16 +4711,37 @@ export default function AdminDashboardPage() {
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block text-xs font-bold text-slate-700 mb-1">Asignar Empleado</label>
-                  <select
-                    value={newBookingCleaner}
-                    onChange={(e) => setNewBookingCleaner(e.target.value)}
-                    className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs focus:ring-2 focus:ring-electric-600 focus:outline-none"
-                  >
-                    <option value="">Sin Asignar (Pendiente)</option>
-                    {employees.filter((e) => e.status === "ACTIVE").map((emp) => (
-                      <option key={emp.id} value={emp.name}>👤 {emp.name}</option>
-                    ))}
-                  </select>
+                  {(() => {
+                    const newAvailable: Employee[] = [];
+                    const newOccupied: { emp: Employee; reason: string }[] = [];
+                    employees.filter((e) => e.status === "ACTIVE").forEach((emp) => {
+                      const check = getEmployeeAvailabilityForBooking(emp, newBookingDate, newBookingTime, newBookingHours);
+                      if (check.isAvailable) newAvailable.push(emp);
+                      else newOccupied.push({ emp, reason: check.reason || "Ocupado" });
+                    });
+
+                    return (
+                      <select
+                        value={newBookingCleaner}
+                        onChange={(e) => setNewBookingCleaner(e.target.value)}
+                        className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs focus:ring-2 focus:ring-electric-600 focus:outline-none"
+                      >
+                        <option value="">⚪ Sin Asignar (Pendiente)</option>
+                        <optgroup label={`Personal Disponible (${newAvailable.length})`}>
+                          {newAvailable.map((emp) => (
+                            <option key={emp.id} value={emp.name}>● {emp.name}</option>
+                          ))}
+                        </optgroup>
+                        {newOccupied.length > 0 && (
+                          <optgroup label={`Ocupados / Solapados (${newOccupied.length})`}>
+                            {newOccupied.map(({ emp, reason }) => (
+                              <option key={emp.id} value={emp.name} disabled>⚠️ {emp.name} — [{reason}]</option>
+                            ))}
+                          </optgroup>
+                        )}
+                      </select>
+                    );
+                  })()}
                 </div>
                 <div>
                   <label className="block text-xs font-bold text-slate-700 mb-1">Monto Total (Gs.)</label>
@@ -4727,16 +4874,37 @@ export default function AdminDashboardPage() {
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block text-xs font-bold text-slate-700 mb-1">Empleado Asignado</label>
-                  <select
-                    value={modalCleaner}
-                    onChange={(e) => setModalCleaner(e.target.value)}
-                    className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs focus:ring-2 focus:ring-electric-600 focus:outline-none"
-                  >
-                    <option value="">Sin Asignar</option>
-                    {employees.filter((e) => e.status === "ACTIVE").map((emp) => (
-                      <option key={emp.id} value={emp.name}>👤 {emp.name}</option>
-                    ))}
-                  </select>
+                  {(() => {
+                    const modalAvailable: Employee[] = [];
+                    const modalOccupied: { emp: Employee; reason: string }[] = [];
+                    employees.filter((e) => e.status === "ACTIVE").forEach((emp) => {
+                      const check = getEmployeeAvailabilityForBooking(emp, modalServiceDate, modalServiceTime, modalServiceHours, editingBooking?.id);
+                      if (check.isAvailable) modalAvailable.push(emp);
+                      else modalOccupied.push({ emp, reason: check.reason || "Ocupado" });
+                    });
+
+                    return (
+                      <select
+                        value={modalCleaner}
+                        onChange={(e) => setModalCleaner(e.target.value)}
+                        className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs focus:ring-2 focus:ring-electric-600 focus:outline-none"
+                      >
+                        <option value="">⚪ Sin Asignar</option>
+                        <optgroup label={`Personal Disponible (${modalAvailable.length})`}>
+                          {modalAvailable.map((emp) => (
+                            <option key={emp.id} value={emp.name}>● {emp.name}</option>
+                          ))}
+                        </optgroup>
+                        {modalOccupied.length > 0 && (
+                          <optgroup label={`Ocupados / Solapados (${modalOccupied.length})`}>
+                            {modalOccupied.map(({ emp, reason }) => (
+                              <option key={emp.id} value={emp.name} disabled>⚠️ {emp.name} — [{reason}]</option>
+                            ))}
+                          </optgroup>
+                        )}
+                      </select>
+                    );
+                  })()}
                 </div>
                 <div>
                   <label className="block text-xs font-bold text-slate-700 mb-1">Estado</label>
