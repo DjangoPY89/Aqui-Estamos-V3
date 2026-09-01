@@ -4,6 +4,7 @@ import { getAllEmployees } from "@/lib/db";
 import { getSupabase } from "@/lib/supabase";
 
 export const dynamic = "force-dynamic";
+export const revalidate = 0;
 
 export async function GET(req: Request) {
   try {
@@ -28,10 +29,8 @@ export async function GET(req: Request) {
       allEmployees = getAllEmployees();
     }
 
-    // Filtrar estrictamente solo colaboradores con status "ACTIVE" (excluir Inactivos y Con Licencia)
-    const activeEmployees = allEmployees.filter(
-      (e) => !e.status || e.status === "ACTIVE"
-    );
+    // Filtrar estrictamente solo colaboradores con status === "ACTIVE" (excluir INACTIVE y ON_LEAVE)
+    const activeEmployees = allEmployees.filter((e) => e.status === "ACTIVE");
 
     const supabase = getSupabase();
 
@@ -54,99 +53,89 @@ export async function GET(req: Request) {
       console.error("Error al obtener conteo de reservas completadas:", err);
     }
 
-    // Verificar disponibilidad real contra bookings existentes
-    let busyEmployeeIds = new Set<string>();
-    let busyEmployeeNames = new Set<string>();
+    // Mapeo canónico de nombres e IDs a cada objeto de empleado activo
+    const isEmployeeMatch = (cleanerStr: string, emp: { id: string; name: string }) => {
+      if (!cleanerStr) return false;
+      const target = cleanerStr.trim().toLowerCase();
+      const empId = emp.id.trim().toLowerCase();
+      const empName = emp.name.trim().toLowerCase();
+      return target === empId || target === empName || target.includes(empName) || empName.includes(target);
+    };
 
+    // Consultar reservas activas en las fechas solicitadas
+    let dateBookingsList: any[] = [];
     if (targetDates.length > 0) {
       try {
-        const reqTime = time || "08:00";
-        const reqHours = hoursStr ? parseInt(hoursStr, 10) : 4;
-        const reqStartHour = parseInt(reqTime.split(":")[0], 10) || 8;
-        const reqEndHour = reqStartHour + reqHours;
-
-        const { data: dateBookings } = await supabase
+        const { data: bookingsData } = await supabase
           .from("bookings")
-          .select("assigned_cleaner, service_date, service_time, service_hours, status")
+          .select("id, assigned_cleaner, service_date, service_time, service_hours, status")
           .in("service_date", targetDates)
           .in("status", ["PENDING", "CONFIRMED", "IN_PROGRESS"]);
 
-        if (dateBookings && dateBookings.length > 0) {
-          // Agrupar reservas por fecha y por empleado
-          // date -> cleaner -> array de reservas
-          const dateCleanerMap: Record<string, Record<string, any[]>> = {};
-
-          dateBookings.forEach((b: any) => {
-            if (!b.assigned_cleaner) return;
-            const cKey = String(b.assigned_cleaner).trim().toLowerCase();
-            const dKey = b.service_date;
-
-            if (!dateCleanerMap[dKey]) dateCleanerMap[dKey] = {};
-            if (!dateCleanerMap[dKey][cKey]) dateCleanerMap[dKey][cKey] = [];
-            dateCleanerMap[dKey][cKey].push(b);
-          });
-
-          // Evaluar para cada fecha si el empleado excede la carga diaria permitida
-          for (const dKey of targetDates) {
-            const cleanersOnDate = dateCleanerMap[dKey] || {};
-
-            for (const [cleanerKey, bookings] of Object.entries(cleanersOnDate)) {
-              // 1. Si ya tiene una reserva de 6 u 8 horas en esa fecha -> no puede tomar ningún otro servicio
-              const hasLongService = bookings.some((b) => Number(b.service_hours) >= 6);
-              if (hasLongService) {
-                busyEmployeeIds.add(cleanerKey);
-                busyEmployeeNames.add(cleanerKey);
-                continue;
-              }
-
-              // 2. Si ya tiene 2 o más reservas de 4 horas en esa fecha -> jornada completa alcanzada
-              const fourHourCount = bookings.filter((b) => Number(b.service_hours) === 4).length;
-              if (fourHourCount >= 2) {
-                busyEmployeeIds.add(cleanerKey);
-                busyEmployeeNames.add(cleanerKey);
-                continue;
-              }
-
-              // 3. Si el cliente solicita 6 u 8 horas y el empleado ya tiene al menos 1 servicio ese día -> no puede
-              if (reqHours >= 6 && bookings.length > 0) {
-                busyEmployeeIds.add(cleanerKey);
-                busyEmployeeNames.add(cleanerKey);
-                continue;
-              }
-
-              // 4. Si el empleado tiene 1 servicio de 4h y se solicita otro de 4h, verificar solapamiento de horario
-              for (const b of bookings) {
-                const bTime = b.service_time || "08:00";
-                const bHours = Number(b.service_hours) || 4;
-                const bStartHour = parseInt(bTime.split(":")[0], 10) || 8;
-                const bEndHour = bStartHour + bHours;
-
-                const hasOverlap = Math.max(reqStartHour, bStartHour) < Math.min(reqEndHour, bEndHour);
-                if (hasOverlap) {
-                  busyEmployeeIds.add(cleanerKey);
-                  busyEmployeeNames.add(cleanerKey);
-                  break;
-                }
-              }
-            }
-          }
+        if (bookingsData && Array.isArray(bookingsData)) {
+          dateBookingsList = bookingsData;
         }
       } catch (err) {
-        console.error("Error al verificar reservas de empleados:", err);
+        console.error("Error al consultar reservas por fecha:", err);
       }
     }
 
-    // Mapear colaboradores con su estado de disponibilidad y conteo real de servicios
+    const reqTime = time || "08:00";
+    const reqHours = hoursStr ? parseInt(hoursStr, 10) : 4;
+    const reqStartHour = parseInt(reqTime.split(":")[0], 10) || 8;
+    const reqEndHour = reqStartHour + reqHours;
+
+    // Evaluar disponibilidad para cada empleado activo
     const formatted = activeEmployees.map((emp) => {
+      let isAvailable = true;
+
+      if (targetDates.length > 0) {
+        for (const dKey of targetDates) {
+          // Obtener todas las reservas asignadas a este empleado en la fecha dKey
+          const empBookingsOnDate = dateBookingsList.filter(
+            (b) => b.service_date === dKey && isEmployeeMatch(b.assigned_cleaner, emp)
+          );
+
+          // 1. Si ya tiene un servicio de 6 u 8 horas en esa fecha -> jornada completa tomada
+          const hasLongService = empBookingsOnDate.some((b) => Number(b.service_hours) >= 6);
+          if (hasLongService) {
+            isAvailable = false;
+            break;
+          }
+
+          // 2. Si ya tiene 2 o más servicios de 4 horas en esa fecha -> cupo máximo diario (2x4h) alcanzado
+          const fourHourCount = empBookingsOnDate.filter((b) => Number(b.service_hours) === 4).length;
+          if (fourHourCount >= 2) {
+            isAvailable = false;
+            break;
+          }
+
+          // 3. Si el cliente solicita 6 u 8 horas y el empleado ya tiene al menos 1 servicio agendado hoy -> no puede
+          if (reqHours >= 6 && empBookingsOnDate.length > 0) {
+            isAvailable = false;
+            break;
+          }
+
+          // 4. Si el empleado tiene 1 servicio de 4h y se solicita otro de 4h -> verificar si hay solapamiento horario
+          if (reqHours === 4 && fourHourCount === 1) {
+            const existingBooking = empBookingsOnDate[0];
+            const bTime = existingBooking.service_time || "08:00";
+            const bHours = Number(existingBooking.service_hours) || 4;
+            const bStartHour = parseInt(bTime.split(":")[0], 10) || 8;
+            const bEndHour = bStartHour + bHours;
+
+            const hasOverlap = Math.max(reqStartHour, bStartHour) < Math.min(reqEndHour, bEndHour);
+            if (hasOverlap) {
+              isAvailable = false;
+              break;
+            }
+          }
+        }
+      }
+
+      // Conteo de servicios completados en base de datos
       const empIdLower = emp.id.trim().toLowerCase();
       const empNameLower = emp.name.trim().toLowerCase();
-
-      const isBusy = 
-        busyEmployeeIds.has(empIdLower) ||
-        busyEmployeeNames.has(empNameLower) ||
-        Array.from(busyEmployeeNames).some((b) => b.includes(empNameLower) || empNameLower.includes(b));
-
-      // Conteo de servicios: base del perfil + conteo real de Supabase
       const dbCompleted = (completedCountMap[empIdLower] || 0) + (completedCountMap[empNameLower] || 0);
       const totalCompleted = Math.max(emp.completedBookingsCount || 0, dbCompleted);
 
@@ -159,7 +148,7 @@ export async function GET(req: Request) {
         completedBookingsCount: totalCompleted,
         zone: emp.zone || "Asunción y Gran Asunción",
         ipsVerified: Boolean(emp.ipsVerified),
-        isAvailable: !isBusy,
+        isAvailable,
       };
     });
 
@@ -190,10 +179,19 @@ export async function GET(req: Request) {
       return a.name.localeCompare(b.name);
     });
 
-    return NextResponse.json({
-      ok: true,
-      employees: formatted,
-    });
+    return NextResponse.json(
+      {
+        ok: true,
+        employees: formatted,
+      },
+      {
+        headers: {
+          "Cache-Control": "no-store, no-cache, must-revalidate, proxy-revalidate",
+          "Pragma": "no-cache",
+          "Expires": "0",
+        },
+      }
+    );
   } catch (error: any) {
     console.error("Error en /api/employees:", error);
     return NextResponse.json(

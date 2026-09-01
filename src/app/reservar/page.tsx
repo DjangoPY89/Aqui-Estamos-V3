@@ -170,7 +170,7 @@ function BookingContent() {
     }
   }, [searchParams]);
 
-  // Cargar colaboradores en tiempo real con disponibilidad
+  // Cargar colaboradores en tiempo real con disponibilidad sincronizada con Citas & Reservas
   useEffect(() => {
     let isMounted = true;
     const fetchEmployees = async () => {
@@ -187,12 +187,24 @@ function BookingContent() {
         if (serviceTime) query.append("time", serviceTime);
         if (serviceHours) query.append("hours", serviceHours.toString());
         if (selectedZone) query.append("zone", selectedZone);
+        query.append("t", Date.now().toString());
 
-        const res = await fetch(`/api/employees?${query.toString()}`);
+        const res = await fetch(`/api/employees?${query.toString()}`, {
+          cache: "no-store",
+          headers: {
+            "Cache-Control": "no-cache, no-store, must-revalidate",
+            "Pragma": "no-cache",
+          },
+        });
         if (res.ok) {
           const data = await res.json();
           if (isMounted && data.employees) {
             setAvailableEmployees(data.employees);
+            // Si el colaborador previamente seleccionado ya no está en la lista de activos disponibles, resetear a Asignación Inteligente
+            if (selectedCleanerId) {
+              const isValid = data.employees.some((e: any) => e.id === selectedCleanerId && e.isAvailable);
+              if (!isValid) setSelectedCleanerId(null);
+            }
           }
         }
       } catch (err) {

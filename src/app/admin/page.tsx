@@ -680,6 +680,8 @@ export default function AdminDashboardPage() {
 
   // Cambiar estado de empleado (Activo / Inactivo / Licencia)
   const handleEmployeeStatusChange = async (id: string, newStatus: Employee["status"]) => {
+    // Actualización optimista inmediata en la UI
+    setEmployees((prev) => prev.map((e) => (e.id === id ? { ...e, status: newStatus } : e)));
     try {
       const res = await fetch("/api/admin/employees", {
         method: "PATCH",
@@ -687,10 +689,16 @@ export default function AdminDashboardPage() {
         body: JSON.stringify({ id, status: newStatus }),
       });
       if (res.ok) {
+        showNotification(`✓ Estado del personal actualizado a: ${newStatus === "ACTIVE" ? "Activo" : newStatus === "ON_LEAVE" ? "De Licencia" : "Inactivo"}.`);
+        loadData();
+      } else {
+        const data = await res.json();
+        alert(data.error || "Error al actualizar estado.");
         loadData();
       }
     } catch (err) {
       console.error("Error al actualizar estado de empleado:", err);
+      loadData();
     }
   };
 
@@ -3002,11 +3010,21 @@ export default function AdminDashboardPage() {
                                 <p className="text-[11px] text-slate-500 font-mono mt-0.5">CI: {emp.ci || "Sin CI"}</p>
                               </div>
                             </div>
-                            <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase ${
-                              emp.status === "ACTIVE" ? "bg-emerald-50 text-emerald-800 border border-emerald-200" : "bg-slate-100 text-slate-600"
-                            }`}>
-                              {emp.status === "ACTIVE" ? "Activo" : "Inactivo"}
-                            </span>
+                            <select
+                              value={emp.status || "ACTIVE"}
+                              onChange={(e) => handleEmployeeStatusChange(emp.id, e.target.value as Employee["status"])}
+                              className={`px-2 py-1 rounded-xl text-[10px] font-extrabold uppercase border transition-all cursor-pointer focus:outline-none focus:ring-2 focus:ring-electric-500 shadow-2xs ${
+                                emp.status === "ACTIVE"
+                                  ? "bg-emerald-50 text-emerald-800 border-emerald-300 hover:bg-emerald-100"
+                                  : emp.status === "ON_LEAVE"
+                                  ? "bg-amber-50 text-amber-800 border-amber-300 hover:bg-amber-100"
+                                  : "bg-slate-100 text-slate-700 border-slate-300 hover:bg-slate-200"
+                              }`}
+                            >
+                              <option value="ACTIVE">● Activo</option>
+                              <option value="INACTIVE">○ Inactivo</option>
+                              <option value="ON_LEAVE">⏳ De Licencia</option>
+                            </select>
                           </div>
 
                           {/* Calificación de Servicio Obtenida (Computada tras evaluación del cliente) */}
