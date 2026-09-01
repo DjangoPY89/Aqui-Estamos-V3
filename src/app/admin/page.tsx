@@ -58,6 +58,7 @@ import {
   SlidersHorizontal,
   Home,
   Receipt,
+  Bell,
   FileText,
   QrCode,
   Printer,
@@ -692,6 +693,48 @@ export default function AdminDashboardPage() {
       alert("Error de conexión al asignar personal.");
     } finally {
       setIsAutoAssigning(false);
+    }
+  };
+
+  // Disparar Notificación de Asignación por WhatsApp con Botones
+  const handleTriggerWhatsAppAssignment = async (bookingId: string) => {
+    try {
+      const res = await fetch("/api/admin/whatsapp", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "NOTIFY_ASSIGNMENT", bookingId }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        showNotification("🤖 ✓ Notificación interactiva enviada por WhatsApp a la colaboradora con botones de confirmación.");
+      } else {
+        alert(data.error || "Error al enviar notificación interactiva.");
+      }
+    } catch (err) {
+      console.error("Error al disparar WhatsApp:", err);
+      alert("Error de conexión al enviar WhatsApp.");
+    }
+  };
+
+  // Disparar Recordatorios 24h antes por WhatsApp (Cron Manual)
+  const [isSendingReminders, setIsSendingReminders] = useState(false);
+  const handleTrigger24hReminders = async () => {
+    setIsSendingReminders(true);
+    try {
+      const res = await fetch("/api/cron/reminders");
+      const data = await res.json();
+      if (res.ok && data.stats) {
+        showNotification(
+          `🔔 ✓ Recordatorios 24h enviados: ${data.stats.customerRemindersSent} a clientes, ${data.stats.employeeRemindersSent} a colaboradoras.`
+        );
+      } else {
+        alert(data.error || "Error al ejecutar recordatorios.");
+      }
+    } catch (err) {
+      console.error("Error al disparar recordatorios:", err);
+      alert("Error de conexión al procesar recordatorios.");
+    } finally {
+      setIsSendingReminders(false);
     }
   };
 
@@ -2172,6 +2215,17 @@ export default function AdminDashboardPage() {
                 <Shuffle className={`w-4 h-4 text-amber-600 ${isAutoAssigning ? "animate-spin" : ""}`} />
                 <span>Asignar al Azar ({unassignedCount})</span>
               </button>
+
+              <button
+                type="button"
+                onClick={handleTrigger24hReminders}
+                disabled={isSendingReminders}
+                className="w-full flex items-center gap-2.5 px-3.5 py-2.5 bg-emerald-50 hover:bg-emerald-100/80 text-emerald-800 font-bold text-xs rounded-xl border border-emerald-200/80 transition-all active:scale-98 disabled:opacity-50"
+                title="Enviar recordatorios automáticos de WhatsApp 24h antes para citas de mañana"
+              >
+                <Bell className={`w-4 h-4 text-emerald-600 ${isSendingReminders ? "animate-bounce" : ""}`} />
+                <span>{isSendingReminders ? "Enviando..." : "Recordatorios 24h WhatsApp"}</span>
+              </button>
             </div>
           </div>
 
@@ -2985,27 +3039,35 @@ export default function AdminDashboardPage() {
                             {visibleColumns.whatsapp && (
                               <td className="px-4 py-3 border-r border-slate-100 text-center whitespace-nowrap">
                                 {assignedEmp ? (
-                                  <div className="inline-flex items-center gap-1.5 justify-center">
-                                    <a
-                                      href={generateWhatsAppEmployeeUrl(b, assignedEmp)}
-                                      target="_blank"
-                                      rel="noopener noreferrer"
-                                      className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] font-bold shadow-xs transition-all active:scale-95"
-                                      title={`Enviar orden con ubicación en Google Maps a ${assignedEmp.name}`}
-                                    >
-                                      <Send className="w-3 h-3" />
-                                      <span>WhatsApp Empleado</span>
-                                    </a>
-                                    <a
-                                      href={generateWhatsAppCustomerUrl(b)}
-                                      target="_blank"
-                                      rel="noopener noreferrer"
-                                      className="p-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-emerald-700 border border-slate-200 transition-all"
-                                      title="Enviar confirmación al cliente"
-                                    >
-                                      <MessageSquare className="w-3.5 h-3.5" />
-                                    </a>
-                                  </div>
+                                    <div className="inline-flex items-center gap-1.5 justify-center">
+                                      <button
+                                        type="button"
+                                        onClick={() => handleTriggerWhatsAppAssignment(b.id)}
+                                        className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-purple-600 hover:bg-purple-700 text-white text-[11px] font-bold shadow-xs transition-all active:scale-95 cursor-pointer"
+                                        title="Disparar Bot de WhatsApp con Botones de Confirmación a la colaboradora"
+                                      >
+                                        <span>🤖 Bot RRHH</span>
+                                      </button>
+                                      <a
+                                        href={generateWhatsAppEmployeeUrl(b, assignedEmp)}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="inline-flex items-center gap-1 px-2 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] font-bold shadow-xs transition-all active:scale-95"
+                                        title={`Enviar orden con ubicación en Google Maps a ${assignedEmp.name}`}
+                                      >
+                                        <Send className="w-3 h-3" />
+                                        <span>WhatsApp</span>
+                                      </a>
+                                      <a
+                                        href={generateWhatsAppCustomerUrl(b)}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="p-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-emerald-700 border border-slate-200 transition-all"
+                                        title="Enviar confirmación al cliente"
+                                      >
+                                        <MessageSquare className="w-3.5 h-3.5" />
+                                      </a>
+                                    </div>
                                 ) : (
                                   <a
                                     href={generateWhatsAppCustomerUrl(b)}
