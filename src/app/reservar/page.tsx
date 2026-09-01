@@ -1433,7 +1433,7 @@ function BookingContent() {
                       </span>
                     ) : availabilityCheck && !availabilityCheck.isOpen ? (
                       <span className="text-[10px] font-bold text-rose-600 bg-rose-50 px-2 py-0.5 rounded-md border border-rose-200">
-                        Día No Disponible
+                        Sin Disponibilidad
                       </span>
                     ) : (
                       <span className="text-[10px] font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200">

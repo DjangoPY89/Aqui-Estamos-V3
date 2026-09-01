@@ -58,6 +58,7 @@ export default function BookingCalendarPicker({
   disabled = false,
 }: BookingCalendarPickerProps) {
   const [multiNotice, setMultiNotice] = useState<string | null>(null);
+  const [fullyBookedDates, setFullyBookedDates] = useState<string[]>([]);
   // Fecha actual o fecha seleccionada para inicializar el mes visible
   const initialDate = selectedDate ? new Date(selectedDate + 'T00:00:00') : new Date();
   const [currentYear, setCurrentYear] = useState(initialDate.getFullYear());
@@ -89,6 +90,9 @@ export default function BookingCalendarPicker({
           try {
             localStorage.setItem('aquiestamos_admin_availability_settings', JSON.stringify(data.settings));
           } catch (e) {}
+        }
+        if (data?.fullyBookedDates && Array.isArray(data.fullyBookedDates)) {
+          setFullyBookedDates(data.fullyBookedDates);
         }
       })
       .catch((err) => console.error('Error loading calendar availability:', err))
@@ -232,6 +236,12 @@ export default function BookingCalendarPicker({
       let blockReason = '';
       let isHoliday = false;
 
+      const isFullyBooked = fullyBookedDates.includes(dateStr);
+      if (isFullyBooked) {
+        isBlocked = true;
+        blockReason = 'Sin Disponibilidad';
+      }
+
       if (localSettings?.blockedDates && Array.isArray(localSettings.blockedDates)) {
         const matchingBlocked = localSettings.blockedDates.find((b: BlockedDate) => {
           if (!b.enabled) return false;
@@ -256,7 +266,7 @@ export default function BookingCalendarPicker({
         blockReason = 'Los sábados solo operamos servicios de 4 horas (jornada diurna reducida)';
       }
 
-      const isSelectable = !isPast && !isTooFar && !isDayOfWeekClosed && !isBlocked && !isSaturdayRestricted;
+      const isSelectable = !isPast && !isTooFar && !isDayOfWeekClosed && !isBlocked && !isSaturdayRestricted && !isFullyBooked;
       const isSelected = isMultiSelect
         ? selectedDates.includes(dateStr) || selectedDate === dateStr
         : selectedDate === dateStr;
@@ -275,13 +285,14 @@ export default function BookingCalendarPicker({
         isBlocked,
         blockReason,
         isHoliday,
+        isFullyBooked,
         isSelectable,
         isSelected,
       });
     }
 
     return days;
-  }, [currentYear, currentMonth, localSettings, selectedDate, isMultiSelect, selectedDates]);
+  }, [currentYear, currentMonth, localSettings, fullyBookedDates, selectedDate, isMultiSelect, selectedDates, serviceHours]);
 
   const handleDayClick = (dateStr: string) => {
     if (!isMultiSelect) {
@@ -427,6 +438,7 @@ export default function BookingCalendarPicker({
             isBlocked,
             blockReason,
             isHoliday,
+            isFullyBooked,
             isSelectable,
             isSelected,
           } = item;
@@ -436,6 +448,8 @@ export default function BookingCalendarPicker({
 
           if (isSelected) {
             tileClass += 'bg-electric-600 text-white shadow-md shadow-electric-600/30 ring-2 ring-electric-600 ring-offset-2 scale-105 z-10';
+          } else if (isFullyBooked) {
+            tileClass += 'bg-rose-50/90 border border-rose-200 text-rose-500 cursor-not-allowed opacity-80';
           } else if (isBlocked) {
             tileClass += 'bg-rose-50/90 border border-rose-200 text-rose-500 cursor-not-allowed opacity-80';
           } else if (isDayOfWeekClosed) {
@@ -446,7 +460,9 @@ export default function BookingCalendarPicker({
             tileClass += 'bg-slate-50/80 hover:bg-electric-50 hover:text-electric-700 hover:border-electric-300 border border-slate-200/80 text-slate-800 cursor-pointer active:scale-95 shadow-2xs';
           }
 
-          const tooltipText = isBlocked
+          const tooltipText = isFullyBooked
+            ? '🚫 Sin Disponibilidad (Cupos completos para esta fecha)'
+            : isBlocked
             ? `🚫 Bloqueado: ${blockReason}`
             : isDayOfWeekClosed
             ? `⛔ ${dayClosedReason}`
@@ -468,6 +484,10 @@ export default function BookingCalendarPicker({
               {/* Indicador visual inferior */}
               {isSelected ? (
                 <Check className="w-3 h-3 text-white stroke-[3] mt-0.5" />
+              ) : isFullyBooked ? (
+                <span className="text-[6.5px] sm:text-[7.5px] font-black text-rose-600 leading-none truncate max-w-full px-0.5 mt-0.5 tracking-tighter">
+                  Sin Disponibilidad
+                </span>
               ) : isBlocked ? (
                 <span className="text-[7.5px] sm:text-[8px] font-black text-rose-600 leading-none truncate max-w-full px-0.5 mt-0.5">
                   {isHoliday ? 'Feriado' : 'Cerrado'}
@@ -496,7 +516,7 @@ export default function BookingCalendarPicker({
         </div>
         <div className="flex items-center gap-1.5">
           <span className="w-2.5 h-2.5 rounded-full bg-rose-500" />
-          <span>Feriado / Rango Bloqueado</span>
+          <span>Sin Disponibilidad / Feriado</span>
         </div>
         <div className="flex items-center gap-1.5">
           <span className="w-2.5 h-2.5 rounded-full bg-slate-300" />

@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { checkDateAvailability, getAvailabilitySettingsAsync } from '@/lib/availability';
+import { checkDateAvailability, getAvailabilitySettingsAsync, getFullyBookedDates } from '@/lib/availability';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -24,8 +24,12 @@ export async function GET(req: Request) {
       );
     }
 
-    // Si no se especifica fecha, devolver las reglas generales de disponibilidad
-    const settings = await getAvailabilitySettingsAsync();
+    // Si no se especifica fecha, devolver las reglas generales de disponibilidad y fechas agotadas
+    const [settings, fullyBookedDates] = await Promise.all([
+      getAvailabilitySettingsAsync(),
+      getFullyBookedDates(90),
+    ]);
+
     return NextResponse.json(
       {
         success: true,
@@ -38,6 +42,7 @@ export async function GET(req: Request) {
           minAdvanceHours: settings.minAdvanceHours,
           maxAdvanceDays: settings.maxAdvanceDays,
         },
+        fullyBookedDates,
       },
       {
         headers: {

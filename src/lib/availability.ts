@@ -397,3 +397,71 @@ export async function checkDateAvailability(dateStr: string): Promise<DateAvaila
     slots,
   };
 }
+
+/**
+ * Calcula todas las fechas en los próximos N días que se encuentran totalmente llenas (sin cupo disponible).
+ */
+export async function getFullyBookedDates(daysAhead: number = 90): Promise<string[]> {
+  const settings = await getAvailabilitySettingsAsync();
+  let employees: any[] = [];
+  try {
+    employees = await supabaseGetAllEmployees();
+  } catch (e) {
+    employees = getAllEmployees();
+  }
+  const activeEmployees = employees.filter((emp) => emp.status === 'ACTIVE');
+  const totalActiveEmployees = Math.max(1, activeEmployees.length);
+
+  let allBookings: any[] = [];
+  try {
+    allBookings = await supabaseGetAllBookings();
+  } catch (e) {
+    allBookings = getBookings();
+  }
+
+  // Agrupar reservas activas por fecha
+  const bookingsByDate = new Map<string, any[]>();
+  allBookings.forEach((b) => {
+    if (b.status === 'CANCELLED' || !b.serviceDate) return;
+    const list = bookingsByDate.get(b.serviceDate) || [];
+    list.push(b);
+    bookingsByDate.set(b.serviceDate, list);
+  });
+
+  const fullyBooked: string[] = [];
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  for (let i = 1; i <= daysAhead; i++) {
+    const d = new Date(today);
+    d.setDate(d.getDate() + i);
+    const yearStr = d.getFullYear().toString();
+    const monthStr = (d.getMonth() + 1).toString().padStart(2, '0');
+    const dayStr = d.getDate().toString().padStart(2, '0');
+    const dateStr = `${yearStr}-${monthStr}-${dayStr}`;
+
+    const dayOfWeek = d.getDay();
+    const isSaturday = dayOfWeek === 6;
+    const maxCapacityPerEmp = isSaturday ? 1 : (settings.maxBookingsPerEmployeePerDay || 2);
+    const maxCapacity = settings.capacityMode === 'AUTO_BY_EMPLOYEES'
+      ? totalActiveEmployees * maxCapacityPerEmp
+      : (isSaturday ? Math.min(totalActiveEmployees, settings.manualDailyMaxBookings || 4) : (settings.manualDailyMaxBookings || 8));
+
+    const dateBookings = bookingsByDate.get(dateStr) || [];
+    let effectiveUsedCapacity = 0;
+    dateBookings.forEach((b) => {
+      const hours = Number(b.serviceHours) || 4;
+      if (isSaturday) {
+        effectiveUsedCapacity += 1;
+      } else {
+        effectiveUsedCapacity += hours >= 6 ? 2 : 1;
+      }
+    });
+
+    if (effectiveUsedCapacity >= maxCapacity && maxCapacity > 0) {
+      fullyBooked.push(dateStr);
+    }
+  }
+
+  return fullyBooked;
+}
