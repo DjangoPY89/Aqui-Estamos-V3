@@ -16,10 +16,10 @@ export default function Hero() {
           playsInline
           className="w-full h-full object-cover scale-105"
         />
-        {/* Capas de Fondo Blanco al 60% de Transparencia para Máxima Luminosidad y Legibilidad */}
-        <div className="absolute inset-0 bg-white/60 backdrop-blur-[1px]" />
-        <div className="absolute inset-0 bg-gradient-to-t from-white/90 via-white/50 to-white/60" />
-        <div className="absolute inset-0 bg-gradient-to-r from-white/85 via-white/60 to-transparent" />
+        {/* Capas de Fondo Blanco al 75% de Transparencia para Máxima Luminosidad y Legibilidad */}
+        <div className="absolute inset-0 bg-white/75 backdrop-blur-[1px]" />
+        <div className="absolute inset-0 bg-gradient-to-t from-white/95 via-white/75 to-white/75" />
+        <div className="absolute inset-0 bg-gradient-to-r from-white/90 via-white/75 to-white/50" />
       </div>
 
       {/* Contenido Hero Superpuesto */}
