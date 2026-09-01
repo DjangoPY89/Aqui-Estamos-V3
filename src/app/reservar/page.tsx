@@ -1533,6 +1533,7 @@ function BookingContent() {
                     }
                     multiSelectBadge={frequency === "custom" ? "20% Descuento" : "15% Descuento"}
                     availabilitySettings={availabilitySettings}
+                    serviceHours={serviceHours}
                   />
 
                   {/* Feedback en vivo de la fecha */}

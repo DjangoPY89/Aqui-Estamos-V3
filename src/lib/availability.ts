@@ -77,13 +77,13 @@ export const DEFAULT_AVAILABILITY_SETTINGS: AvailabilitySettings = {
     wednesday: { enabled: true, name: 'Miércoles', startTime: '07:00', endTime: '18:00' },
     thursday: { enabled: true, name: 'Jueves', startTime: '07:00', endTime: '18:00' },
     friday: { enabled: true, name: 'Viernes', startTime: '07:00', endTime: '18:00' },
-    saturday: { enabled: true, name: 'Sábado', startTime: '07:30', endTime: '15:00' },
+    saturday: { enabled: true, name: 'Sábado', startTime: '07:30', endTime: '13:00' },
     sunday: { enabled: false, name: 'Domingo', startTime: '08:00', endTime: '14:00' },
   },
   timeSlots: DEFAULT_TIME_SLOTS,
   capacityMode: 'AUTO_BY_EMPLOYEES',
-  maxBookingsPerEmployeePerDay: 1,
-  manualDailyMaxBookings: 4,
+  maxBookingsPerEmployeePerDay: 2,
+  manualDailyMaxBookings: 8,
   blockedDates: DEFAULT_PARAGUAY_HOLIDAYS,
   allowSundayBookings: false,
   allowHolidayBookings: false,
@@ -289,12 +289,23 @@ export async function checkDateAvailability(dateStr: string): Promise<DateAvaila
   const activeEmployees = employees.filter((emp) => emp.status === 'ACTIVE');
   const totalActiveEmployees = Math.max(1, activeEmployees.length);
 
-  // 2. Determinar capacidad máxima
-  const maxCapacity = settings.capacityMode === 'AUTO_BY_EMPLOYEES'
-    ? totalActiveEmployees * (settings.maxBookingsPerEmployeePerDay || 1)
-    : (settings.manualDailyMaxBookings || 4);
+  // 2. Analizar día de la semana
+  const [y, m, d] = dateStr.split('-').map(Number);
+  const dateObj = new Date(y, m - 1, d);
+  const dayKey = DAY_OF_WEEK_MAP[dateObj.getDay()];
+  const daySchedule = settings.workingDays[dayKey];
+  const isSunday = dayKey === 'sunday';
+  const isSaturday = dayKey === 'saturday';
 
-  // 3. Obtener reservas existentes para esa fecha
+  // 3. Determinar capacidad máxima según reglas operativas
+  // Sábado: 1 servicio de 4h por empleada activa (capacidad = N * 1)
+  // Lunes a Viernes: hasta 2 servicios de 4h por empleada activa (capacidad = N * 2 cupos de 4h)
+  const maxCapacityPerEmp = isSaturday ? 1 : (settings.maxBookingsPerEmployeePerDay || 2);
+  const maxCapacity = settings.capacityMode === 'AUTO_BY_EMPLOYEES'
+    ? totalActiveEmployees * maxCapacityPerEmp
+    : (isSaturday ? Math.min(totalActiveEmployees, settings.manualDailyMaxBookings || 4) : (settings.manualDailyMaxBookings || 8));
+
+  // 4. Obtener reservas existentes para esa fecha
   let allBookings: any[] = [];
   try {
     allBookings = await supabaseGetAllBookings();
@@ -305,18 +316,25 @@ export async function checkDateAvailability(dateStr: string): Promise<DateAvaila
   const dateBookings = allBookings.filter(
     (b) => b.serviceDate === dateStr && b.status !== 'CANCELLED'
   );
+  
+  // Consumo efectivo de cupos de 4 horas:
+  // - En sábado: cada servicio consume 1 cupo.
+  // - De lunes a viernes: servicios de 6 u 8 horas consumen 2 cupos; servicios de 4 horas consumen 1 cupo.
+  let effectiveUsedCapacity = 0;
+  dateBookings.forEach((b) => {
+    const hours = Number(b.serviceHours) || 4;
+    if (isSaturday) {
+      effectiveUsedCapacity += 1;
+    } else {
+      effectiveUsedCapacity += hours >= 6 ? 2 : 1;
+    }
+  });
+
   const currentBookingsCount = dateBookings.length;
-  const availableCapacity = Math.max(0, maxCapacity - currentBookingsCount);
-  const isFullyBooked = currentBookingsCount >= maxCapacity;
+  const availableCapacity = Math.max(0, maxCapacity - effectiveUsedCapacity);
+  const isFullyBooked = availableCapacity <= 0;
 
-  // 4. Analizar día de la semana
-  const [y, m, d] = dateStr.split('-').map(Number);
-  const dateObj = new Date(y, m - 1, d);
-  const dayKey = DAY_OF_WEEK_MAP[dateObj.getDay()];
-  const daySchedule = settings.workingDays[dayKey];
-  const isSunday = dayKey === 'sunday';
-
-  // 5. Analizar si es Feriado o Fecha Bloqueada (fecha puntual o rango de fechas)
+  // 5. Analizar si es Feriado o Fecha Bloqueada
   const blockedEntry = settings.blockedDates.find((b) => {
     if (!b.enabled) return false;
     if (b.endDate) {
@@ -342,20 +360,22 @@ export async function checkDateAvailability(dateStr: string): Promise<DateAvaila
     closedReason = (daySchedule?.name || 'Día') + ' no operativo.';
   } else if (isFullyBooked) {
     isOpen = false;
-    closedReason = 'Capacidad completa (' + currentBookingsCount + '/' + maxCapacity + ' servicios agendados para este día).';
+    closedReason = `Capacidad completa (${effectiveUsedCapacity}/${maxCapacity} cupos cubiertos hoy).`;
   }
 
   // 6. Slots y disponibilidad por turno
   const enabledSlots = settings.timeSlots.filter((s) => s.enabled);
   const slots = enabledSlots.map((slot) => {
+    // Sábados: turnos posteriores a las 12:00 PM no operan
+    const isSaturdayAfternoon = isSaturday && slot.time >= '13:00';
     const slotBookings = dateBookings.filter((b) => b.serviceTime === slot.time).length;
-    const slotMaxCapacity = slot.maxCapacityPerSlot || totalActiveEmployees;
-    const slotAvailable = isOpen && slotBookings < slotMaxCapacity && !isFullyBooked;
+    const slotMaxCapacity = isSaturday ? totalActiveEmployees : (slot.maxCapacityPerSlot || totalActiveEmployees);
+    const slotAvailable = isOpen && !isSaturdayAfternoon && slotBookings < slotMaxCapacity && !isFullyBooked;
 
     return {
       time: slot.time,
       label: slot.label,
-      enabled: slot.enabled,
+      enabled: slot.enabled && !isSaturdayAfternoon,
       currentBookings: slotBookings,
       maxCapacity: slotMaxCapacity,
       available: slotAvailable,

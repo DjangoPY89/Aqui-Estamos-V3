@@ -23,6 +23,7 @@ interface BookingCalendarPickerProps {
   multiSelectLabel?: string;
   multiSelectBadge?: string;
   availabilitySettings?: AvailabilitySettings | null;
+  serviceHours?: number;
   disabled?: boolean;
 }
 
@@ -53,6 +54,7 @@ export default function BookingCalendarPicker({
   multiSelectLabel,
   multiSelectBadge,
   availabilitySettings,
+  serviceHours = 4,
   disabled = false,
 }: BookingCalendarPickerProps) {
   const [multiNotice, setMultiNotice] = useState<string | null>(null);
@@ -246,7 +248,15 @@ export default function BookingCalendarPicker({
         }
       }
 
-      const isSelectable = !isPast && !isTooFar && !isDayOfWeekClosed && !isBlocked;
+      // 4. Validar restricción de Sábados para servicios de 6 u 8 horas
+      const isSaturday = dayOfWeekIndex === 6;
+      let isSaturdayRestricted = false;
+      if (isSaturday && (serviceHours === 6 || serviceHours === 8)) {
+        isSaturdayRestricted = true;
+        blockReason = 'Los sábados solo operamos servicios de 4 horas (jornada diurna reducida)';
+      }
+
+      const isSelectable = !isPast && !isTooFar && !isDayOfWeekClosed && !isBlocked && !isSaturdayRestricted;
       const isSelected = isMultiSelect
         ? selectedDates.includes(dateStr) || selectedDate === dateStr
         : selectedDate === dateStr;
@@ -258,6 +268,8 @@ export default function BookingCalendarPicker({
         isPast,
         isTooFar,
         isSunday,
+        isSaturday,
+        isSaturdayRestricted,
         isDayOfWeekClosed,
         dayClosedReason,
         isBlocked,

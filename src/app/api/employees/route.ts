@@ -91,43 +91,63 @@ export async function GET(req: Request) {
 
       if (targetDates.length > 0) {
         for (const dKey of targetDates) {
+          // Determinar si la fecha es sábado
+          const [y, m, d] = dKey.split("-").map(Number);
+          const dateObj = new Date(y, m - 1, d);
+          const isSaturday = dateObj.getDay() === 6;
+
           // Obtener todas las reservas asignadas a este empleado en la fecha dKey
           const empBookingsOnDate = dateBookingsList.filter(
             (b) => b.service_date === dKey && isEmployeeMatch(b.assigned_cleaner, emp)
           );
 
-          // 1. Si ya tiene un servicio de 6 u 8 horas en esa fecha -> jornada completa tomada
-          const hasLongService = empBookingsOnDate.some((b) => Number(b.service_hours) >= 6);
-          if (hasLongService) {
-            isAvailable = false;
-            break;
-          }
-
-          // 2. Si ya tiene 2 o más servicios de 4 horas en esa fecha -> cupo máximo diario (2x4h) alcanzado
-          const fourHourCount = empBookingsOnDate.filter((b) => Number(b.service_hours) === 4).length;
-          if (fourHourCount >= 2) {
-            isAvailable = false;
-            break;
-          }
-
-          // 3. Si el cliente solicita 6 u 8 horas y el empleado ya tiene al menos 1 servicio agendado hoy -> no puede
-          if (reqHours >= 6 && empBookingsOnDate.length > 0) {
-            isAvailable = false;
-            break;
-          }
-
-          // 4. Si el empleado tiene 1 servicio de 4h y se solicita otro de 4h -> verificar si hay solapamiento horario
-          if (reqHours === 4 && fourHourCount === 1) {
-            const existingBooking = empBookingsOnDate[0];
-            const bTime = existingBooking.service_time || "08:00";
-            const bHours = Number(existingBooking.service_hours) || 4;
-            const bStartHour = parseInt(bTime.split(":")[0], 10) || 8;
-            const bEndHour = bStartHour + bHours;
-
-            const hasOverlap = Math.max(reqStartHour, bStartHour) < Math.min(reqEndHour, bEndHour);
-            if (hasOverlap) {
+          if (isSaturday) {
+            // REGLAS PARA SÁBADOS:
+            // 1. Servicios de 6 u 8 horas NO disponibles los sábados
+            if (reqHours >= 6) {
               isAvailable = false;
               break;
+            }
+            // 2. Solo 1 servicio de 4 horas por empleado en sábado
+            if (empBookingsOnDate.length >= 1) {
+              isAvailable = false;
+              break;
+            }
+          } else {
+            // REGLAS PARA LUNES A VIERNES:
+            // 1. Si ya tiene un servicio de 6 u 8 horas en esa fecha -> jornada completa tomada
+            const hasLongService = empBookingsOnDate.some((b) => Number(b.service_hours) >= 6);
+            if (hasLongService) {
+              isAvailable = false;
+              break;
+            }
+
+            // 2. Si ya tiene 2 o más servicios de 4 horas en esa fecha -> cupo máximo diario (2x4h) alcanzado
+            const fourHourCount = empBookingsOnDate.filter((b) => Number(b.service_hours) === 4).length;
+            if (fourHourCount >= 2) {
+              isAvailable = false;
+              break;
+            }
+
+            // 3. Si el cliente solicita 6 u 8 horas y el empleado ya tiene al menos 1 servicio agendado hoy -> no puede
+            if (reqHours >= 6 && empBookingsOnDate.length > 0) {
+              isAvailable = false;
+              break;
+            }
+
+            // 4. Si el empleado tiene 1 servicio de 4h y se solicita otro de 4h -> verificar si hay solapamiento horario
+            if (reqHours === 4 && fourHourCount === 1) {
+              const existingBooking = empBookingsOnDate[0];
+              const bTime = existingBooking.service_time || "08:00";
+              const bHours = Number(existingBooking.service_hours) || 4;
+              const bStartHour = parseInt(bTime.split(":")[0], 10) || 8;
+              const bEndHour = bStartHour + bHours;
+
+              const hasOverlap = Math.max(reqStartHour, bStartHour) < Math.min(reqEndHour, bEndHour);
+              if (hasOverlap) {
+                isAvailable = false;
+                break;
+              }
             }
           }
         }

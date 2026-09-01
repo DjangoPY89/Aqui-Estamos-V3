@@ -472,8 +472,11 @@ export default function AvailabilityManager({ employees, onNotice }: Availabilit
   const activeEmployees = employees.filter((e) => e.status === 'ACTIVE');
   const activeCount = Math.max(1, activeEmployees.length);
   const calculatedDailyCapacity = settings.capacityMode === 'AUTO_BY_EMPLOYEES'
-    ? activeCount * (settings.maxBookingsPerEmployeePerDay || 1)
+    ? activeCount * (settings.maxBookingsPerEmployeePerDay || 2)
     : settings.manualDailyMaxBookings;
+  const calculatedSaturdayCapacity = settings.capacityMode === 'AUTO_BY_EMPLOYEES'
+    ? activeCount * 1
+    : Math.min(activeCount, settings.manualDailyMaxBookings || 4);
 
   const customBlockedRules = (settings.blockedDates || []).filter((b) => !b.isHoliday && b.enabled);
   const paraguayHolidays = (settings.blockedDates || []).filter((b) => b.isHoliday);
@@ -1081,26 +1084,30 @@ export default function AvailabilityManager({ employees, onNotice }: Availabilit
                 </span>
               </div>
               <p className="text-xs text-slate-600 leading-relaxed">
-                Multiplica las {activeCount} empleadas activas por los servicios diarios configurados ({calculatedDailyCapacity} cupos totales al día).
+                Calcula la capacidad operativa diaria según las <strong>{activeCount} empleadas activas</strong> registradas en el Directorio IPS.
               </p>
 
-              <div className="mt-4 pt-3 border-t border-slate-200/60 flex items-center justify-between">
-                <label className="text-[11px] font-semibold text-slate-700">
-                  Servicios por Empleada / Día:
-                </label>
-                <select
-                  value={settings.maxBookingsPerEmployeePerDay || 1}
-                  onChange={(e) => {
-                    const val = Number(e.target.value);
-                    const updated = { ...settings, maxBookingsPerEmployeePerDay: val };
-                    setSettings(updated);
-                    handleAutoSave(updated, `Capacidad: ${val} servicio(s) por empleada.`);
-                  }}
-                  className="text-xs font-bold border border-slate-300 rounded-lg px-2.5 py-1 bg-white text-slate-900 focus:outline-none focus:ring-1 focus:ring-electric-600"
-                >
-                  <option value={1}>1 servicio por día</option>
-                  <option value={2}>2 servicios por día</option>
-                </select>
+              {/* Detalle Operativo Semanal */}
+              <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+                <div className="p-2.5 bg-white rounded-xl border border-slate-200 space-y-1">
+                  <p className="font-extrabold text-slate-800 flex items-center justify-between">
+                    <span>🗓️ Lunes a Viernes</span>
+                    <span className="text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded font-black text-[11px]">{calculatedDailyCapacity} cupos</span>
+                  </p>
+                  <p className="text-[11px] text-slate-500">
+                    Hasta 2 servicios de 4h por empleada o 1 servicio de 6/8h por día.
+                  </p>
+                </div>
+
+                <div className="p-2.5 bg-white rounded-xl border border-slate-200 space-y-1">
+                  <p className="font-extrabold text-slate-800 flex items-center justify-between">
+                    <span>⚡ Sábados</span>
+                    <span className="text-amber-800 bg-amber-50 px-1.5 py-0.5 rounded font-black text-[11px]">{calculatedSaturdayCapacity} cupos</span>
+                  </p>
+                  <p className="text-[11px] text-slate-500">
+                    Solo 1 servicio de 4h por empleada. 6h y 8h no disponibles.
+                  </p>
+                </div>
               </div>
             </div>
 
