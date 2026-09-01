@@ -61,7 +61,8 @@ import {
   FileText,
   QrCode,
   Printer,
-  Quote
+  Quote,
+  RotateCcw
 } from "lucide-react";
 import { Booking, CorporateLead, Employee, Review, User } from "@/types";
 import { formatGs } from "@/lib/pricing";
@@ -163,16 +164,22 @@ export default function AdminDashboardPage() {
   const [currentCalendarDate, setCurrentCalendarDate] = useState(new Date());
   const [calendarViewMode, setCalendarViewMode] = useState<"MONTH" | "AGENDA" | "GOOGLE">("MONTH");
 
-  // Estados de Ordenamiento Dinámico de Columnas
-  const [sortField, setSortField] = useState<string>("createdAt");
-  const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc");
+  // Estados de Ordenamiento Dinámico de Columnas (Por defecto: Estatus -> Fecha Cercana -> Horas 8h a 4h)
+  const [sortField, setSortField] = useState<string>("default");
+  const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
 
   const handleSort = (field: string) => {
     if (sortField === field) {
-      setSortDirection((prev) => (prev === "asc" ? "desc" : "asc"));
+      if (sortDirection === "asc") {
+        setSortDirection("desc");
+      } else {
+        // Restablecer al orden predeterminado en el tercer clic
+        setSortField("default");
+        setSortDirection("asc");
+      }
     } else {
       setSortField(field);
-      setSortDirection("asc");
+      setSortDirection(field === "serviceHours" || field === "totalPrice" ? "desc" : "asc");
     }
   };
 
@@ -1083,13 +1090,87 @@ export default function AdminDashboardPage() {
     });
   }, [bookings, quickViewFilter, statusFilter, searchTerm]);
 
+  // Prioridad de ordenamiento por ESTATUS
+  const STATUS_PRIORITY_MAP: Record<string, number> = {
+    PENDING: 1,      // 🟡 Pendiente primero
+    CONFIRMED: 2,    // ✅ Confirmado
+    IN_PROGRESS: 3,  // ⏳ En Curso
+    COMPLETED: 4,    // 🎉 Finalizado
+    CANCELLED: 5,    // ❌ Cancelado
+  };
+
+  // Comparador predeterminado multicriterio:
+  // 1. ESTATUS (Pendiente primero)
+  // 2. FECHA SERVICIO (Fecha más cercana primero)
+  // 3. CANTIDAD DE HORAS (8h -> 6h -> 4h)
+  const compareDefaultBookings = (a: any, b: any) => {
+    // 1. Primero ESTATUS empezando por Pendiente
+    const prioA = STATUS_PRIORITY_MAP[a.status] || 99;
+    const prioB = STATUS_PRIORITY_MAP[b.status] || 99;
+    if (prioA !== prioB) {
+      return prioA - prioB;
+    }
+
+    // 2. Luego por FECHA SERVICIO empezando por la fecha más cercana (ascendente)
+    const dateA = (a.serviceDate || "") + " " + (a.serviceTime || "00:00");
+    const dateB = (b.serviceDate || "") + " " + (b.serviceTime || "00:00");
+    if (dateA !== dateB) {
+      if (!a.serviceDate) return 1;
+      if (!b.serviceDate) return -1;
+      return dateA.localeCompare(dateB);
+    }
+
+    // 3. Luego por cantidad de horas empezando con 8 horas (descendente: 8h, 6h, 4h)
+    const hoursA = Number(a.serviceHours) || 0;
+    const hoursB = Number(b.serviceHours) || 0;
+    if (hoursB !== hoursA) {
+      return hoursB - hoursA;
+    }
+
+    // Desempate por fecha de creación (más reciente primero)
+    const createdA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+    const createdB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+    return createdB - createdA;
+  };
+
   // Ordenamiento Dinámico de Menor a Mayor / Mayor a Menor para cualquier columna
   const sortedBookings = useMemo(() => {
     return [...filteredBookings].sort((a, b) => {
+      // Si el orden es el predeterminado
+      if (sortField === "default") {
+        return compareDefaultBookings(a, b);
+      }
+
       let valA: any = "";
       let valB: any = "";
 
       switch (sortField) {
+        case "status": {
+          const pA = STATUS_PRIORITY_MAP[a.status] || 99;
+          const pB = STATUS_PRIORITY_MAP[b.status] || 99;
+          if (pA !== pB) {
+            return sortDirection === "asc" ? pA - pB : pB - pA;
+          }
+          return compareDefaultBookings(a, b);
+        }
+        case "serviceDate": {
+          const dateA = (a.serviceDate || "") + " " + (a.serviceTime || "00:00");
+          const dateB = (b.serviceDate || "") + " " + (b.serviceTime || "00:00");
+          if (dateA !== dateB) {
+            if (!a.serviceDate) return 1;
+            if (!b.serviceDate) return -1;
+            return sortDirection === "asc" ? dateA.localeCompare(dateB) : dateB.localeCompare(dateA);
+          }
+          return compareDefaultBookings(a, b);
+        }
+        case "serviceHours": {
+          const hA = Number(a.serviceHours) || 0;
+          const hB = Number(b.serviceHours) || 0;
+          if (hA !== hB) {
+            return sortDirection === "desc" ? hB - hA : hA - hB;
+          }
+          return compareDefaultBookings(a, b);
+        }
         case "createdAt":
           valA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
           valB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
@@ -1106,10 +1187,6 @@ export default function AdminDashboardPage() {
           valA = (a.customerEmail || "").toLowerCase();
           valB = (b.customerEmail || "").toLowerCase();
           break;
-        case "serviceHours":
-          valA = Number(a.serviceHours) || 0;
-          valB = Number(b.serviceHours) || 0;
-          break;
         case "extras":
           valA = (a.extras || []).length;
           valB = (b.extras || []).length;
@@ -1117,10 +1194,6 @@ export default function AdminDashboardPage() {
         case "totalPrice":
           valA = Number(a.totalPrice) || 0;
           valB = Number(b.totalPrice) || 0;
-          break;
-        case "serviceDate":
-          valA = (a.serviceDate || "") + " " + (a.serviceTime || "");
-          valB = (b.serviceDate || "") + " " + (b.serviceTime || "");
           break;
         case "serviceTime":
           valA = a.serviceTime || "";
@@ -1137,10 +1210,6 @@ export default function AdminDashboardPage() {
         case "assignedCleaner":
           valA = (a.assignedCleaner || "").toLowerCase();
           valB = (b.assignedCleaner || "").toLowerCase();
-          break;
-        case "status":
-          valA = (a.status || "").toLowerCase();
-          valB = (b.status || "").toLowerCase();
           break;
         case "employeePhone": {
           const empA = getAssignedEmployee(a.assignedCleaner);
@@ -1163,7 +1232,7 @@ export default function AdminDashboardPage() {
 
       if (valA < valB) return sortDirection === "asc" ? -1 : 1;
       if (valA > valB) return sortDirection === "asc" ? 1 : -1;
-      return 0;
+      return compareDefaultBookings(a, b);
     });
   }, [filteredBookings, sortField, sortDirection, employees]);
 
@@ -2561,6 +2630,21 @@ export default function AdminDashboardPage() {
                       <BarChart3 className="w-3.5 h-3.5 text-slate-500" />
                       <span>{showCharts ? "Ocultar Gráficos" : "Ver Gráficos"}</span>
                     </button>
+
+                    {sortField !== "default" && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setSortField("default");
+                          setSortDirection("asc");
+                        }}
+                        className="px-3 py-1.5 bg-electric-50 hover:bg-electric-100 text-electric-800 font-bold text-xs rounded-full border border-electric-200 shadow-2xs transition-all flex items-center gap-1.5"
+                        title="Restablecer orden predeterminado: Estatus (Pendiente) -> Fecha (Cercana) -> Horas (8h a 4h)"
+                      >
+                        <RotateCcw className="w-3 h-3 text-electric-600" />
+                        <span>Orden Predeterminado</span>
+                      </button>
+                    )}
                   </div>
                 </div>
 
