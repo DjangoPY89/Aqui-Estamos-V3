@@ -61,8 +61,7 @@ import {
   FileText,
   QrCode,
   Printer,
-  Quote,
-  RotateCcw
+  Quote
 } from "lucide-react";
 import { Booking, CorporateLead, Employee, Review, User } from "@/types";
 import { formatGs } from "@/lib/pricing";
@@ -164,22 +163,16 @@ export default function AdminDashboardPage() {
   const [currentCalendarDate, setCurrentCalendarDate] = useState(new Date());
   const [calendarViewMode, setCalendarViewMode] = useState<"MONTH" | "AGENDA" | "GOOGLE">("MONTH");
 
-  // Estados de Ordenamiento Dinámico de Columnas (Por defecto: Estatus -> Fecha Cercana -> Horas 8h a 4h)
-  const [sortField, setSortField] = useState<string>("default");
+  // Estados de Ordenamiento Dinámico de Columnas (Predeterminado: Fecha Servicio Ascendente)
+  const [sortField, setSortField] = useState<string>("serviceDate");
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
 
   const handleSort = (field: string) => {
     if (sortField === field) {
-      if (sortDirection === "asc") {
-        setSortDirection("desc");
-      } else {
-        // Restablecer al orden predeterminado en el tercer clic
-        setSortField("default");
-        setSortDirection("asc");
-      }
+      setSortDirection((prev) => (prev === "asc" ? "desc" : "asc"));
     } else {
       setSortField(field);
-      setSortDirection(field === "serviceHours" || field === "totalPrice" ? "desc" : "asc");
+      setSortDirection("asc");
     }
   };
 
@@ -1090,87 +1083,78 @@ export default function AdminDashboardPage() {
     });
   }, [bookings, quickViewFilter, statusFilter, searchTerm]);
 
-  // Prioridad de ordenamiento por ESTATUS
-  const STATUS_PRIORITY_MAP: Record<string, number> = {
-    PENDING: 1,      // 🟡 Pendiente primero
-    CONFIRMED: 2,    // ✅ Confirmado
-    IN_PROGRESS: 3,  // ⏳ En Curso
-    COMPLETED: 4,    // 🎉 Finalizado
-    CANCELLED: 5,    // ❌ Cancelado
+  // Prioridades de Estatus para ordenamiento predeterminado
+  const statusPriorityMap: Record<string, number> = {
+    PENDING: 1,
+    CONFIRMED: 2,
+    IN_PROGRESS: 3,
+    COMPLETED: 4,
+    CANCELLED: 5,
   };
 
-  // Comparador predeterminado multicriterio:
-  // 1. ESTATUS (Pendiente primero)
-  // 2. FECHA SERVICIO (Fecha más cercana primero)
-  // 3. CANTIDAD DE HORAS (8h -> 6h -> 4h)
-  const compareDefaultBookings = (a: any, b: any) => {
-    // 1. Primero ESTATUS empezando por Pendiente
-    const prioA = STATUS_PRIORITY_MAP[a.status] || 99;
-    const prioB = STATUS_PRIORITY_MAP[b.status] || 99;
-    if (prioA !== prioB) {
-      return prioA - prioB;
-    }
-
-    // 2. Luego por FECHA SERVICIO empezando por la fecha más cercana (ascendente)
-    const dateA = (a.serviceDate || "") + " " + (a.serviceTime || "00:00");
-    const dateB = (b.serviceDate || "") + " " + (b.serviceTime || "00:00");
-    if (dateA !== dateB) {
-      if (!a.serviceDate) return 1;
-      if (!b.serviceDate) return -1;
-      return dateA.localeCompare(dateB);
-    }
-
-    // 3. Luego por cantidad de horas empezando con 8 horas (descendente: 8h, 6h, 4h)
-    const hoursA = Number(a.serviceHours) || 0;
-    const hoursB = Number(b.serviceHours) || 0;
-    if (hoursB !== hoursA) {
-      return hoursB - hoursA;
-    }
-
-    // Desempate por fecha de creación (más reciente primero)
-    const createdA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
-    const createdB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
-    return createdB - createdA;
-  };
-
-  // Ordenamiento Dinámico de Menor a Mayor / Mayor a Menor para cualquier columna
+  // Ordenamiento Dinámico de Citas y Reservas (Por defecto: Fecha más cercana -> Estatus Pendiente -> Sin Asignar)
   const sortedBookings = useMemo(() => {
     return [...filteredBookings].sort((a, b) => {
-      // Si el orden es el predeterminado
-      if (sortField === "default") {
-        return compareDefaultBookings(a, b);
+      // 1. Orden Predeterminado o por Fecha de Servicio
+      if (sortField === "serviceDate" || sortField === "default") {
+        // Criterio 1: Fecha y Hora de Servicio (la fecha más cercana primero)
+        const dateA = (a.serviceDate || "") + " " + (a.serviceTime || "08:00");
+        const dateB = (b.serviceDate || "") + " " + (b.serviceTime || "08:00");
+        if (dateA !== dateB) {
+          return sortDirection === "asc" ? dateA.localeCompare(dateB) : dateB.localeCompare(dateA);
+        }
+
+        // Criterio 2: Estatus (empezando por Pendiente)
+        const statA = statusPriorityMap[a.status?.toUpperCase() || ""] || 99;
+        const statB = statusPriorityMap[b.status?.toUpperCase() || ""] || 99;
+        if (statA !== statB) {
+          return statA - statB;
+        }
+
+        // Criterio 3: Empleado Asignado (empezando por Sin Asignar)
+        const cleanA = (a.assignedCleaner || "").trim();
+        const cleanB = (b.assignedCleaner || "").trim();
+        const isUnassignedA = !cleanA || cleanA.toLowerCase() === "sin asignar";
+        const isUnassignedB = !cleanB || cleanB.toLowerCase() === "sin asignar";
+        if (isUnassignedA && !isUnassignedB) return -1;
+        if (!isUnassignedA && isUnassignedB) return 1;
+        return cleanA.localeCompare(cleanB);
       }
 
+      // 2. Orden por Estatus
+      if (sortField === "status") {
+        const statA = statusPriorityMap[a.status?.toUpperCase() || ""] || 99;
+        const statB = statusPriorityMap[b.status?.toUpperCase() || ""] || 99;
+        if (statA !== statB) {
+          return sortDirection === "asc" ? statA - statB : statB - statA;
+        }
+        const dateA = (a.serviceDate || "") + " " + (a.serviceTime || "08:00");
+        const dateB = (b.serviceDate || "") + " " + (b.serviceTime || "08:00");
+        return dateA.localeCompare(dateB);
+      }
+
+      // 3. Orden por Empleado Asignado
+      if (sortField === "assignedCleaner") {
+        const cleanA = (a.assignedCleaner || "").trim();
+        const cleanB = (b.assignedCleaner || "").trim();
+        const isUnassignedA = !cleanA || cleanA.toLowerCase() === "sin asignar";
+        const isUnassignedB = !cleanB || cleanB.toLowerCase() === "sin asignar";
+
+        if (isUnassignedA && !isUnassignedB) return sortDirection === "asc" ? -1 : 1;
+        if (!isUnassignedA && isUnassignedB) return sortDirection === "asc" ? 1 : -1;
+        const cmp = cleanA.localeCompare(cleanB);
+        if (cmp !== 0) return sortDirection === "asc" ? cmp : -cmp;
+
+        const dateA = (a.serviceDate || "") + " " + (a.serviceTime || "08:00");
+        const dateB = (b.serviceDate || "") + " " + (b.serviceTime || "08:00");
+        return dateA.localeCompare(dateB);
+      }
+
+      // 4. Demás Columnas
       let valA: any = "";
       let valB: any = "";
 
       switch (sortField) {
-        case "status": {
-          const pA = STATUS_PRIORITY_MAP[a.status] || 99;
-          const pB = STATUS_PRIORITY_MAP[b.status] || 99;
-          if (pA !== pB) {
-            return sortDirection === "asc" ? pA - pB : pB - pA;
-          }
-          return compareDefaultBookings(a, b);
-        }
-        case "serviceDate": {
-          const dateA = (a.serviceDate || "") + " " + (a.serviceTime || "00:00");
-          const dateB = (b.serviceDate || "") + " " + (b.serviceTime || "00:00");
-          if (dateA !== dateB) {
-            if (!a.serviceDate) return 1;
-            if (!b.serviceDate) return -1;
-            return sortDirection === "asc" ? dateA.localeCompare(dateB) : dateB.localeCompare(dateA);
-          }
-          return compareDefaultBookings(a, b);
-        }
-        case "serviceHours": {
-          const hA = Number(a.serviceHours) || 0;
-          const hB = Number(b.serviceHours) || 0;
-          if (hA !== hB) {
-            return sortDirection === "desc" ? hB - hA : hA - hB;
-          }
-          return compareDefaultBookings(a, b);
-        }
         case "createdAt":
           valA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
           valB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
@@ -1186,6 +1170,10 @@ export default function AdminDashboardPage() {
         case "customerEmail":
           valA = (a.customerEmail || "").toLowerCase();
           valB = (b.customerEmail || "").toLowerCase();
+          break;
+        case "serviceHours":
+          valA = Number(a.serviceHours) || 0;
+          valB = Number(b.serviceHours) || 0;
           break;
         case "extras":
           valA = (a.extras || []).length;
@@ -1206,10 +1194,6 @@ export default function AdminDashboardPage() {
         case "frequency":
           valA = (a.frequency || "").toLowerCase();
           valB = (b.frequency || "").toLowerCase();
-          break;
-        case "assignedCleaner":
-          valA = (a.assignedCleaner || "").toLowerCase();
-          valB = (b.assignedCleaner || "").toLowerCase();
           break;
         case "employeePhone": {
           const empA = getAssignedEmployee(a.assignedCleaner);
@@ -1232,7 +1216,7 @@ export default function AdminDashboardPage() {
 
       if (valA < valB) return sortDirection === "asc" ? -1 : 1;
       if (valA > valB) return sortDirection === "asc" ? 1 : -1;
-      return compareDefaultBookings(a, b);
+      return 0;
     });
   }, [filteredBookings, sortField, sortDirection, employees]);
 
@@ -2630,21 +2614,6 @@ export default function AdminDashboardPage() {
                       <BarChart3 className="w-3.5 h-3.5 text-slate-500" />
                       <span>{showCharts ? "Ocultar Gráficos" : "Ver Gráficos"}</span>
                     </button>
-
-                    {sortField !== "default" && (
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setSortField("default");
-                          setSortDirection("asc");
-                        }}
-                        className="px-3 py-1.5 bg-electric-50 hover:bg-electric-100 text-electric-800 font-bold text-xs rounded-full border border-electric-200 shadow-2xs transition-all flex items-center gap-1.5"
-                        title="Restablecer orden predeterminado: Estatus (Pendiente) -> Fecha (Cercana) -> Horas (8h a 4h)"
-                      >
-                        <RotateCcw className="w-3 h-3 text-electric-600" />
-                        <span>Orden Predeterminado</span>
-                      </button>
-                    )}
                   </div>
                 </div>
 
