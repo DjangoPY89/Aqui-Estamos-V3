@@ -177,7 +177,7 @@ function BookingContent() {
       setIsLoadingEmployees(true);
       try {
         const query = new URLSearchParams();
-        const targetDates = (frequency === "custom" || frequency === "multi_weekly" || frequency === "weekly_2_4") && selectedDates.length > 0
+        const targetDates = frequency === "custom" && selectedDates.length > 0
           ? selectedDates
           : (serviceDate ? [serviceDate] : []);
 
@@ -447,7 +447,7 @@ function BookingContent() {
     loadSavedAddresses();
   }, [session]);
 
-  const isMulti = frequency === "custom" || frequency === "multi_weekly" || frequency === "weekly_2_4";
+  const isMulti = frequency === "custom";
   const datesCount = isMulti ? Math.max(selectedDates.length, 1) : 1;
   const pricing = calculatePricing(serviceHours, frequency, selectedExtras, datesCount);
 
@@ -533,13 +533,8 @@ function BookingContent() {
       return;
     }
 
-    if (frequency === "custom" && selectedDates.length < 5) {
-      setErrorMsg("Para la frecuencia Personalizada, por favor selecciona al menos 5 fechas en los próximos 30 días en el calendario.");
-      return;
-    }
-
-    if ((frequency === "multi_weekly" || frequency === "weekly_2_4") && selectedDates.length < 2) {
-      setErrorMsg("Para la frecuencia de más de 1 vez por semana, por favor selecciona al menos 2 días en el calendario.");
+    if (frequency === "custom" && selectedDates.length < 3) {
+      setErrorMsg("Para la frecuencia Personalizada, por favor selecciona al menos 3 fechas en los próximos 30 días en el calendario.");
       return;
     }
 
@@ -599,7 +594,7 @@ function BookingContent() {
           frequency,
           extras: selectedExtras,
           serviceDate,
-          selectedDates: (frequency === "custom" || frequency === "multi_weekly" || frequency === "weekly_2_4") ? selectedDates : [serviceDate],
+          selectedDates: frequency === "custom" ? selectedDates : [serviceDate],
           serviceTime,
           paymentMethod,
           preferredCleanerId: preferredEmp?.id || null,
@@ -897,12 +892,12 @@ function BookingContent() {
                   <label className="block text-xs font-semibold text-neutral-600 mb-2.5">
                     Frecuencia del servicio y Descuentos:
                   </label>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5">
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
                     {/* 1. Servicio Único (0% OFF) */}
                     <button
                       type="button"
                       onClick={() => setFrequency("once")}
-                      className={`p-3 rounded-xl border text-left flex items-center justify-between transition-all h-full min-h-[72px] ${
+                      className={`p-3.5 rounded-xl border text-left flex items-center justify-between transition-all h-full min-h-[72px] ${
                         frequency === "once"
                           ? "bg-electric-50 border-electric-400 text-electric-900 font-semibold shadow-xs"
                           : "bg-white border-neutral-200 text-neutral-700 hover:bg-neutral-50"
@@ -915,55 +910,11 @@ function BookingContent() {
                       {frequency === "once" && <Check className="w-4 h-4 text-electric-600 shrink-0" />}
                     </button>
 
-                    {/* 2. Personalizado (20% OFF) */}
-                    <button
-                      type="button"
-                      onClick={() => setFrequency("custom")}
-                      className={`p-3 rounded-xl border text-left flex items-center justify-between transition-all h-full min-h-[72px] ${
-                        frequency === "custom"
-                          ? "bg-electric-50 border-electric-400 text-electric-900 font-semibold shadow-xs"
-                          : "bg-white border-neutral-200 text-neutral-700 hover:bg-neutral-50"
-                      }`}
-                    >
-                      <div className="min-w-0 pr-2">
-                        <div className="flex items-center gap-1.5 flex-wrap">
-                          <p className="text-xs font-bold">Personalizado</p>
-                          <span className="text-[9px] uppercase font-black bg-amber-100 text-amber-900 px-1.5 py-0.5 rounded-full">
-                            20% OFF
-                          </span>
-                        </div>
-                        <p className="text-[11px] text-neutral-500">Elige 5+ fechas en los próximos 30 días</p>
-                      </div>
-                      {frequency === "custom" && <Check className="w-4 h-4 text-electric-600 shrink-0" />}
-                    </button>
-
-                    {/* 3. Más de una vez por semana (15% OFF) */}
-                    <button
-                      type="button"
-                      onClick={() => setFrequency("multi_weekly")}
-                      className={`p-3 rounded-xl border text-left flex items-center justify-between transition-all h-full min-h-[72px] ${
-                        frequency === "multi_weekly" || frequency === "weekly_2_4"
-                          ? "bg-electric-50 border-electric-400 text-electric-900 font-semibold shadow-xs"
-                          : "bg-white border-neutral-200 text-neutral-700 hover:bg-neutral-50"
-                      }`}
-                    >
-                      <div className="min-w-0 pr-2">
-                        <div className="flex items-center gap-1.5 flex-wrap">
-                          <p className="text-xs font-bold">+1 vez por semana</p>
-                          <span className="text-[9px] uppercase font-black bg-emerald-100 text-emerald-800 px-1.5 py-0.5 rounded-full">
-                            15% OFF
-                          </span>
-                        </div>
-                        <p className="text-[11px] text-neutral-500">Selecciona 2 o más días en la misma semana</p>
-                      </div>
-                      {(frequency === "multi_weekly" || frequency === "weekly_2_4") && <Check className="w-4 h-4 text-electric-600 shrink-0" />}
-                    </button>
-
-                    {/* 4. Semanal (15% OFF) */}
+                    {/* 2. Semanal (10% OFF) */}
                     <button
                       type="button"
                       onClick={() => setFrequency("weekly")}
-                      className={`p-3 rounded-xl border text-left flex items-center justify-between transition-all h-full min-h-[72px] ${
+                      className={`p-3.5 rounded-xl border text-left flex items-center justify-between transition-all h-full min-h-[72px] ${
                         frequency === "weekly"
                           ? "bg-electric-50 border-electric-400 text-electric-900 font-semibold shadow-xs"
                           : "bg-white border-neutral-200 text-neutral-700 hover:bg-neutral-50"
@@ -973,7 +924,7 @@ function BookingContent() {
                         <div className="flex items-center gap-1.5 flex-wrap">
                           <p className="text-xs font-bold">Semanal</p>
                           <span className="text-[9px] uppercase font-black bg-emerald-100 text-emerald-800 px-1.5 py-0.5 rounded-full">
-                            15% OFF
+                            10% OFF
                           </span>
                         </div>
                         <p className="text-[11px] text-neutral-500">Agendamiento recurrente semanal</p>
@@ -981,48 +932,26 @@ function BookingContent() {
                       {frequency === "weekly" && <Check className="w-4 h-4 text-electric-600 shrink-0" />}
                     </button>
 
-                    {/* 5. Quincenal (10% OFF) */}
+                    {/* 3. Personalizado (10% OFF - Elige al menos 3 fechas) */}
                     <button
                       type="button"
-                      onClick={() => setFrequency("biweekly")}
-                      className={`p-3 rounded-xl border text-left flex items-center justify-between transition-all h-full min-h-[72px] ${
-                        frequency === "biweekly"
+                      onClick={() => setFrequency("custom")}
+                      className={`p-3.5 rounded-xl border text-left flex items-center justify-between transition-all h-full min-h-[72px] ${
+                        frequency === "custom"
                           ? "bg-electric-50 border-electric-400 text-electric-900 font-semibold shadow-xs"
                           : "bg-white border-neutral-200 text-neutral-700 hover:bg-neutral-50"
                       }`}
                     >
                       <div className="min-w-0 pr-2">
                         <div className="flex items-center gap-1.5 flex-wrap">
-                          <p className="text-xs font-bold">Quincenal</p>
-                          <span className="text-[9px] uppercase font-black bg-blue-100 text-blue-800 px-1.5 py-0.5 rounded-full">
+                          <p className="text-xs font-bold">Personalizado</p>
+                          <span className="text-[9px] uppercase font-black bg-amber-100 text-amber-900 px-1.5 py-0.5 rounded-full">
                             10% OFF
                           </span>
                         </div>
-                        <p className="text-[11px] text-neutral-500">Agendamiento cada 15 días</p>
+                        <p className="text-[11px] text-neutral-500">Elige al menos 3 fechas en los próximos 30 días</p>
                       </div>
-                      {frequency === "biweekly" && <Check className="w-4 h-4 text-electric-600 shrink-0" />}
-                    </button>
-
-                    {/* 6. Mensual (5% OFF) */}
-                    <button
-                      type="button"
-                      onClick={() => setFrequency("monthly")}
-                      className={`p-3 rounded-xl border text-left flex items-center justify-between transition-all h-full min-h-[72px] ${
-                        frequency === "monthly"
-                          ? "bg-electric-50 border-electric-400 text-electric-900 font-semibold shadow-xs"
-                          : "bg-white border-neutral-200 text-neutral-700 hover:bg-neutral-50"
-                      }`}
-                    >
-                      <div className="min-w-0 pr-2">
-                        <div className="flex items-center gap-1.5 flex-wrap">
-                          <p className="text-xs font-bold">Mensual</p>
-                          <span className="text-[9px] uppercase font-black bg-purple-100 text-purple-800 px-1.5 py-0.5 rounded-full">
-                            5% OFF
-                          </span>
-                        </div>
-                        <p className="text-[11px] text-neutral-500">Agendamiento mensual automático</p>
-                      </div>
-                      {frequency === "monthly" && <Check className="w-4 h-4 text-electric-600 shrink-0" />}
+                      {frequency === "custom" && <Check className="w-4 h-4 text-electric-600 shrink-0" />}
                     </button>
                   </div>
                 </div>
@@ -1495,9 +1424,7 @@ function BookingContent() {
                   <label className="block text-xs font-bold text-neutral-800 flex items-center justify-between">
                     <span>
                       {frequency === "custom"
-                        ? "1. Selecciona al menos 5 fechas en los próximos 30 días *"
-                        : (frequency === "multi_weekly" || frequency === "weekly_2_4") 
-                        ? "1. Selecciona los Días en la Misma Semana (Mínimo 2) *" 
+                        ? "1. Selecciona al menos 3 fechas en los próximos 30 días *"
                         : "1. Selecciona la Fecha del Servicio *"}
                     </span>
                     {!serviceDate ? (
@@ -1523,15 +1450,11 @@ function BookingContent() {
                       setSelectedDates(newDates);
                       if (newDates.length > 0) setServiceDate(newDates[0]);
                     }}
-                    isMultiSelect={frequency === "custom" || frequency === "multi_weekly" || frequency === "weekly_2_4"}
-                    minSelectedCount={frequency === "custom" ? 5 : 2}
-                    restrictToSameWeek={frequency !== "custom"}
-                    multiSelectLabel={
-                      frequency === "custom"
-                        ? "Selecciona al menos 5 fechas en los próximos 30 días (20% OFF)"
-                        : "Selecciona 2 o más días en la misma semana (15% OFF)"
-                    }
-                    multiSelectBadge={frequency === "custom" ? "20% Descuento" : "15% Descuento"}
+                    isMultiSelect={frequency === "custom"}
+                    minSelectedCount={3}
+                    restrictToSameWeek={false}
+                    multiSelectLabel="Selecciona al menos 3 fechas en los próximos 30 días (10% OFF)"
+                    multiSelectBadge="10% Descuento"
                     availabilitySettings={availabilitySettings}
                     serviceHours={serviceHours}
                   />

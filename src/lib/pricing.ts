@@ -111,24 +111,21 @@ export function calculatePricing(
   const count = frequency === "custom" || frequency === "multi_weekly" || frequency === "weekly_2_4" ? Math.max(datesCount, 1) : 1;
   const subtotal = singleServiceSubtotal * count;
 
-  // Descuentos según las especificaciones:
-  // - Personalizado (al menos 5 fechas en 30 días): 20% OFF
-  // - Más de una vez por semana: 15% OFF
-  // - Semanal: 15% OFF
-  // - Quincenal: 10% OFF
-  // - Mensual: 5% OFF
-  // - Servicio Único: 0%
+  // Descuentos:
+  // - Semanal: 10% OFF
+  // - Personalizado (al menos 3 fechas en los próximos 30 días): 10% OFF
+  // - Única Vez: 0%
   let discountPercentage = 0;
-  if (frequency === "custom") {
-    discountPercentage = 20; // 20% OFF
-  } else if (frequency === "multi_weekly" || frequency === "weekly_2_4") {
-    discountPercentage = 15; // 15% OFF
-  } else if (frequency === "weekly") {
-    discountPercentage = 15; // 15% OFF
-  } else if (frequency === "biweekly") {
+  if (frequency === "weekly") {
     discountPercentage = 10; // 10% OFF
+  } else if (frequency === "custom") {
+    discountPercentage = 10; // 10% OFF
+  } else if (frequency === "multi_weekly" || frequency === "weekly_2_4") {
+    discountPercentage = 10;
+  } else if (frequency === "biweekly") {
+    discountPercentage = 10;
   } else if (frequency === "monthly") {
-    discountPercentage = 5;  // 5% OFF
+    discountPercentage = 5;
   }
 
   const discountAmount = Math.round((subtotal * discountPercentage) / 100);
