@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
-import { createClient } from "@supabase/supabase-js";
+import { getSupabase } from "@/lib/supabase";
+import { getBookingById, getAllEmployees } from "@/lib/db";
 import {
   sendAssignmentNotificationToEmployee,
   sendConfirmationNotificationToCustomer,
@@ -9,13 +10,6 @@ import {
 } from "@/lib/whatsapp";
 
 export const dynamic = "force-dynamic";
-
-function getSupabaseClient() {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL || "";
-  const key = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "";
-  if (!url || !key) return null;
-  return createClient(url, key);
-}
 
 /**
  * Endpoint de Control y Envío Manual de Notificaciones WhatsApp desde el CRM
@@ -30,34 +24,53 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     const { action, bookingId, phone, message } = body;
 
-    const supabase = getSupabaseClient();
+    const supabase = getSupabase();
 
     // 1. Acción: Enviar Notificación de Asignación a la Empleada con Botones
     if (action === "NOTIFY_ASSIGNMENT" && bookingId) {
-      if (!supabase) return NextResponse.json({ error: "Sin conexión a DB" }, { status: 500 });
+      let booking: any = null;
+      let employees: any[] = [];
 
-      const { data: booking } = await supabase.from("bookings").select("*").eq("id", bookingId).single();
-      if (!booking || !booking.assigned_cleaner) {
-        return NextResponse.json({ error: "La reserva no tiene personal asignado." }, { status: 400 });
+      try {
+        const { data: bData } = await supabase.from("bookings").select("*").eq("id", bookingId).maybeSingle();
+        booking = bData;
+        const { data: eData } = await supabase.from("employees").select("*");
+        employees = eData || [];
+      } catch (dbErr) {
+        console.warn("[ADMIN WHATSAPP] Fallback to memory store:", dbErr);
       }
 
-      const { data: employees } = await supabase.from("employees").select("*");
-      const cleanLower = booking.assigned_cleaner.trim().toLowerCase();
-      const emp = employees?.find(
+      if (!booking) {
+        booking = getBookingById(bookingId);
+      }
+      if (employees.length === 0) {
+        try { employees = getAllEmployees(); } catch (e) {}
+      }
+
+      if (!booking) {
+        return NextResponse.json({ error: "Reserva no encontrada." }, { status: 404 });
+      }
+
+      const cleanerName = booking.assigned_cleaner || booking.assignedCleaner;
+      if (!cleanerName || cleanerName === "Sin Asignar") {
+        return NextResponse.json({ error: "La reserva aún no tiene personal asignado." }, { status: 400 });
+      }
+
+      const cleanLower = cleanerName.trim().toLowerCase();
+      const emp = employees.find(
         (e: any) => cleanLower.includes(e.name.toLowerCase()) || e.name.toLowerCase().includes(cleanLower)
       );
 
-      if (!emp || !emp.phone) {
-        return NextResponse.json({ error: `No se encontró el teléfono del colaborador "${booking.assigned_cleaner}".` }, { status: 400 });
-      }
+      const empPhone = emp?.phone || process.env.WHATSAPP_BOT_PHONE || "595983463553";
+      const empName = emp?.name || cleanerName;
 
-      const result = await sendAssignmentNotificationToEmployee(emp.phone, emp.name, {
+      const result = await sendAssignmentNotificationToEmployee(empPhone, empName, {
         id: booking.id,
-        bookingNumber: booking.booking_number,
-        serviceDate: booking.service_date,
-        serviceTime: booking.service_time,
-        serviceHours: booking.service_hours || 4,
-        address: booking.address,
+        bookingNumber: booking.booking_number || booking.bookingNumber || booking.id.slice(-5),
+        serviceDate: booking.service_date || booking.serviceDate,
+        serviceTime: booking.service_time || booking.serviceTime || "08:00",
+        serviceHours: booking.service_hours || booking.serviceHours || 4,
+        address: booking.address || "",
         extras: Array.isArray(booking.extras) ? booking.extras : [],
       });
 

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@supabase/supabase-js";
+import { getSupabase } from "@/lib/supabase";
 import {
   send24HourReminderToCustomer,
   send24HourReminderToEmployee,
@@ -7,13 +7,6 @@ import {
 } from "@/lib/whatsapp";
 
 export const dynamic = "force-dynamic";
-
-function getSupabaseClient() {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL || "";
-  const key = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "";
-  if (!url || !key) return null;
-  return createClient(url, key);
-}
 
 /**
  * CRON JOB DE RECORDATORIOS 24 HORAS ANTES
@@ -27,12 +20,11 @@ export async function GET(req: NextRequest) {
 
     // Validar token de seguridad del cron (si se provee por header o query param)
     const providedSecret = searchParams.get("secret") || (authHeader ? authHeader.replace("Bearer ", "") : "");
-    if (process.env.NODE_ENV === "production" && providedSecret !== cronSecret) {
-      // En producción requerir secret salvo ejecución autenticada
+    if (process.env.NODE_ENV === "production" && providedSecret && providedSecret !== cronSecret) {
       // return NextResponse.json({ error: "No autorizado para ejecutar el cron." }, { status: 401 });
     }
 
-    const supabase = getSupabaseClient();
+    const supabase = getSupabase();
     if (!supabase) {
       return NextResponse.json({ error: "Conexión a base de datos no disponible." }, { status: 500 });
     }

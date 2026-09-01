@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@supabase/supabase-js";
+import { getSupabase } from "@/lib/supabase";
 import {
   sendWhatsAppTextMessage,
   sendConfirmationNotificationToCustomer,
@@ -8,13 +8,6 @@ import {
 import { processWhatsAppAIMessage } from "@/lib/whatsapp-ai";
 
 export const dynamic = "force-dynamic";
-
-function getSupabaseClient() {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL || "";
-  const key = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "";
-  if (!url || !key) return null;
-  return createClient(url, key);
-}
 
 /**
  * 1. VERIFICACIÓN DE WEBHOOK (HANDSHAKE CON META / WHATSAPP)
@@ -53,7 +46,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ ok: true, note: "Status update ignored" });
     }
 
-    const supabase = getSupabaseClient();
+    const supabase = getSupabase();
     const msg = messages[0];
     const senderPhone = msg.from; // Ej: "595984320528"
     const messageType = msg.type;
