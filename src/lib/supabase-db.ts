@@ -459,6 +459,41 @@ export async function supabaseUpdateEmployee(
     console.error("Error en supabaseUpdateEmployee:", error);
     throw new Error(error.message);
   }
+
+  // Si el estado cambia a Inactivo o Con Licencia, desasignar automáticamente todas sus reservas futuras no concluidas
+  if (data.status === "INACTIVE" || data.status === "ON_LEAVE") {
+    try {
+      const emp = await supabaseGetEmployeeById(id);
+      const today = new Date().toISOString().slice(0, 10);
+      const empName = emp?.name || id;
+
+      const { data: futureBookings } = await supabase
+        .from("bookings")
+        .select("id, assigned_cleaner, service_date, status")
+        .gte("service_date", today)
+        .neq("status", "COMPLETED");
+
+      if (futureBookings && Array.isArray(futureBookings)) {
+        const targetIds = futureBookings
+          .filter((b: any) => {
+            if (!b.assigned_cleaner) return false;
+            const clean = b.assigned_cleaner.trim().toLowerCase();
+            return clean === id.toLowerCase() || clean === empName.trim().toLowerCase() || clean.includes(empName.toLowerCase());
+          })
+          .map((b: any) => b.id);
+
+        if (targetIds.length > 0) {
+          await supabase
+            .from("bookings")
+            .update({ assigned_cleaner: null, updated_at: new Date().toISOString() })
+            .in("id", targetIds);
+        }
+      }
+    } catch (unassignErr) {
+      console.error("Error al desasignar reservas de empleado inactivo/de licencia:", unassignErr);
+    }
+  }
+
   return await supabaseGetEmployeeById(id);
 }
 

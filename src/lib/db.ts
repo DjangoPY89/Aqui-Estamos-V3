@@ -738,6 +738,22 @@ export function updateEmployee(
     ...data,
   };
 
+  if (data.status === "INACTIVE" || data.status === "ON_LEAVE") {
+    const emp = store.employees[empIndex];
+    const empName = emp?.name?.toLowerCase() || id.toLowerCase();
+    const today = new Date().toISOString().slice(0, 10);
+
+    store.bookings.forEach((b) => {
+      if (b.serviceDate >= today && b.status !== "COMPLETED" && b.assignedCleaner) {
+        const c = b.assignedCleaner.toLowerCase();
+        if (c === id.toLowerCase() || c === empName || c.includes(empName)) {
+          b.assignedCleaner = null;
+          b.updatedAt = new Date().toISOString();
+        }
+      }
+    });
+  }
+
   saveStoreToDisk(store);
   return store.employees[empIndex];
 }

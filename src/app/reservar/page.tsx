@@ -124,7 +124,7 @@ function BookingContent() {
   const [isGateLoading, setIsGateLoading] = useState(false);
   const [gateError, setGateError] = useState<string | null>(null);
 
-  const handleGateLogin = async (e: React.FormEvent) => {
+  const handleGateSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setGateError(null);
 
@@ -177,7 +177,13 @@ function BookingContent() {
       setIsLoadingEmployees(true);
       try {
         const query = new URLSearchParams();
-        if (serviceDate) query.append("date", serviceDate);
+        const targetDates = (frequency === "custom" || frequency === "multi_weekly" || frequency === "weekly_2_4") && selectedDates.length > 0
+          ? selectedDates
+          : (serviceDate ? [serviceDate] : []);
+
+        if (targetDates.length > 0) {
+          query.append("dates", targetDates.join(","));
+        }
         if (serviceTime) query.append("time", serviceTime);
         if (serviceHours) query.append("hours", serviceHours.toString());
         if (selectedZone) query.append("zone", selectedZone);
@@ -200,7 +206,7 @@ function BookingContent() {
     return () => {
       isMounted = false;
     };
-  }, [serviceDate, serviceTime, serviceHours, selectedZone]);
+  }, [serviceDate, selectedDates, serviceTime, serviceHours, selectedZone, frequency]);
 
   // Cargar configuraciones de turnos y reglas de disponibilidad generales (con inicio instantáneo desde localStorage)
   useEffect(() => {
@@ -399,22 +405,27 @@ function BookingContent() {
         }
       }
 
-      // Si el usuario tiene direcciones guardadas en su cuenta, mostrarlas
+      // Si el usuario tiene direcciones guardadas en su cuenta, mostrarlas y preseleccionar la Principal
       if (addressesList.length > 0) {
         const sanitized = addressesList.map((a) => ({
           ...a,
+          isDefault: Boolean(a.isDefault),
           latitude: (typeof a.latitude === 'number' && !isNaN(a.latitude)) ? a.latitude : -25.2831,
           longitude: (typeof a.longitude === 'number' && !isNaN(a.longitude)) ? a.longitude : -57.5612,
         }));
+
+        // Ordenar para que la dirección Principal (isDefault: true) quede al inicio
+        sanitized.sort((a, b) => (b.isDefault ? 1 : 0) - (a.isDefault ? 1 : 0));
+
         setSavedAddresses(sanitized);
         setAddressMode("SAVED");
-        const defaultAddr = sanitized[0];
+        const defaultAddr = sanitized.find((a) => a.isDefault) || sanitized[0];
         setSelectedAddressId(defaultAddr.id);
         setAddress(defaultAddr.address);
         setLatitude(defaultAddr.latitude);
         setLongitude(defaultAddr.longitude);
       } else {
-        // Usuario nuevo (Google o directo): iniciar con formulario limpio en modo NEW
+        // Usuario nuevo: iniciar con formulario limpio en modo NEW
         setSavedAddresses([]);
         setAddressMode("NEW");
         setSelectedAddressId("NEW");
@@ -609,33 +620,118 @@ function BookingContent() {
     );
   }
 
+  // 2. Inicio de Sesión Obligatorio para Reservar
+  if (status === "unauthenticated" || !session?.user) {
+    return (
+      <div className="bg-neutral-50 min-h-[85vh] flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
+        <div className="max-w-md w-full bg-white rounded-3xl p-8 sm:p-10 border border-neutral-200 shadow-xl space-y-6 animate-in fade-in zoom-in-95">
+          <div className="text-center space-y-2">
+            <div className="w-14 h-14 rounded-2xl bg-electric-50 text-electric-600 flex items-center justify-center mx-auto mb-3 shadow-2xs">
+              <Lock className="w-7 h-7" />
+            </div>
+            <h2 className="text-2xl font-black text-neutral-900 tracking-tight">
+              Inicia Sesión para Reservar
+            </h2>
+            <p className="text-xs sm:text-sm text-neutral-600 leading-relaxed">
+              Para brindarte un servicio personalizado con cuadrilla IPS y seguimiento satelital, por favor inicia sesión con tu cuenta.
+            </p>
+          </div>
+
+          {gateError && (
+            <div className="p-3.5 bg-rose-50 border border-rose-200 text-rose-700 text-xs rounded-xl flex items-center gap-2">
+              <AlertCircle className="w-4 h-4 shrink-0 text-rose-500" />
+              <span>{gateError}</span>
+            </div>
+          )}
+
+          <div className="space-y-4">
+            <GoogleSignInButton
+              callbackUrl="/reservar"
+              text="Continuar con Google"
+            />
+
+            <div className="relative flex items-center justify-center">
+              <div className="border-t border-neutral-200 w-full" />
+              <span className="bg-white px-3 text-[11px] font-semibold text-neutral-400 uppercase tracking-wider shrink-0">
+                o con tu correo
+              </span>
+              <div className="border-t border-neutral-200 w-full" />
+            </div>
+
+            <form onSubmit={handleGateSubmit} className="space-y-3.5">
+              <div>
+                <label className="block text-xs font-semibold text-neutral-700 mb-1">
+                  Correo Electrónico
+                </label>
+                <input
+                  type="email"
+                  required
+                  value={gateEmail}
+                  onChange={(e) => setGateEmail(e.target.value)}
+                  placeholder="tu@correo.com"
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-neutral-300 text-xs focus:ring-2 focus:ring-electric-600 focus:outline-none"
+                />
+              </div>
+
+              <div>
+                <div className="flex items-center justify-between mb-1">
+                  <label className="block text-xs font-semibold text-neutral-700">
+                    Contraseña
+                  </label>
+                  <Link
+                    href="/recuperar-password"
+                    className="text-[11px] text-electric-600 hover:underline font-semibold"
+                  >
+                    ¿Olvidaste tu contraseña?
+                  </Link>
+                </div>
+                <input
+                  type="password"
+                  required
+                  value={gatePassword}
+                  onChange={(e) => setGatePassword(e.target.value)}
+                  placeholder="••••••••"
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-neutral-300 text-xs focus:ring-2 focus:ring-electric-600 focus:outline-none"
+                />
+              </div>
+
+              <button
+                type="submit"
+                disabled={isGateLoading}
+                className="w-full py-3 bg-electric-600 hover:bg-electric-700 text-white font-bold text-xs rounded-xl shadow-electric-sm transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
+              >
+                {isGateLoading ? (
+                  <>
+                    <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    <span>Iniciando sesión...</span>
+                  </>
+                ) : (
+                  <>
+                    <span>Ingresar y Continuar Reserva</span>
+                    <ArrowRight className="w-4 h-4" />
+                  </>
+                )}
+              </button>
+            </form>
+          </div>
+
+          <div className="pt-4 border-t border-neutral-100 text-center text-xs text-neutral-600">
+            ¿Aún no tienes cuenta?{" "}
+            <Link
+              href="/register?callbackUrl=/reservar"
+              className="text-electric-600 font-bold hover:underline"
+            >
+              Regístrate en 30 segundos
+            </Link>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="bg-neutral-50 min-h-screen py-12 border-b border-neutral-200">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        
-        {/* Banner Opcional de Inicio de Sesión si no está autenticado */}
-        {!session?.user && (
-          <div className="mb-8 p-4 sm:p-5 rounded-2xl bg-gradient-to-r from-electric-50 via-white to-blue-50 border border-electric-200/80 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-2xs animate-in fade-in">
-            <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-xl bg-electric-600 text-white flex items-center justify-center shrink-0 shadow-electric-sm">
-                <Sparkles className="w-4 h-4" />
-              </div>
-              <div>
-                <p className="text-xs font-bold text-slate-900">¿Ya tienes una cuenta en Aquí Estamos?</p>
-                <p className="text-[11px] text-slate-600">Inicia sesión para autocompletar tus datos y utilizar tus direcciones habituales guardadas.</p>
-              </div>
-            </div>
-            <div className="flex items-center gap-2 shrink-0">
-              <Link
-                href="/login?callbackUrl=/reservar"
-                className="text-xs font-bold px-3.5 py-2 rounded-xl bg-electric-600 text-white hover:bg-electric-700 shadow-electric-sm transition-all text-center"
-              >
-                Iniciar Sesión
-              </Link>
-            </div>
-          </div>
-        )}
-
         {/* Encabezado */}
         <div className="max-w-2xl mb-10">
           <p className="text-xs font-semibold uppercase tracking-wider text-electric-600 mb-2">
@@ -790,35 +886,57 @@ function BookingContent() {
                     Frecuencia del servicio y Descuentos:
                   </label>
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5">
-                    {/* 1. Servicio Único */}
+                    {/* 1. Servicio Único (0% OFF) */}
                     <button
                       type="button"
                       onClick={() => setFrequency("once")}
-                      className={`p-3 rounded-xl border text-left flex items-center justify-between transition-all ${
+                      className={`p-3 rounded-xl border text-left flex items-center justify-between transition-all h-full min-h-[72px] ${
                         frequency === "once"
                           ? "bg-electric-50 border-electric-400 text-electric-900 font-semibold shadow-xs"
                           : "bg-white border-neutral-200 text-neutral-700 hover:bg-neutral-50"
                       }`}
                     >
-                      <div>
+                      <div className="min-w-0 pr-2">
                         <p className="text-xs font-bold">Servicio Único</p>
                         <p className="text-[11px] text-neutral-500">Tarifa regular estándar (1 fecha)</p>
                       </div>
                       {frequency === "once" && <Check className="w-4 h-4 text-electric-600 shrink-0" />}
                     </button>
 
-                    {/* 2. Más de una vez por semana */}
+                    {/* 2. Personalizado (20% OFF) */}
+                    <button
+                      type="button"
+                      onClick={() => setFrequency("custom")}
+                      className={`p-3 rounded-xl border text-left flex items-center justify-between transition-all h-full min-h-[72px] ${
+                        frequency === "custom"
+                          ? "bg-electric-50 border-electric-400 text-electric-900 font-semibold shadow-xs"
+                          : "bg-white border-neutral-200 text-neutral-700 hover:bg-neutral-50"
+                      }`}
+                    >
+                      <div className="min-w-0 pr-2">
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <p className="text-xs font-bold">Personalizado</p>
+                          <span className="text-[9px] uppercase font-black bg-amber-100 text-amber-900 px-1.5 py-0.5 rounded-full">
+                            20% OFF
+                          </span>
+                        </div>
+                        <p className="text-[11px] text-neutral-500">Elige 5+ fechas en los próximos 30 días</p>
+                      </div>
+                      {frequency === "custom" && <Check className="w-4 h-4 text-electric-600 shrink-0" />}
+                    </button>
+
+                    {/* 3. Más de una vez por semana (15% OFF) */}
                     <button
                       type="button"
                       onClick={() => setFrequency("multi_weekly")}
-                      className={`p-3 rounded-xl border text-left flex items-center justify-between transition-all ${
+                      className={`p-3 rounded-xl border text-left flex items-center justify-between transition-all h-full min-h-[72px] ${
                         frequency === "multi_weekly" || frequency === "weekly_2_4"
                           ? "bg-electric-50 border-electric-400 text-electric-900 font-semibold shadow-xs"
                           : "bg-white border-neutral-200 text-neutral-700 hover:bg-neutral-50"
                       }`}
                     >
-                      <div>
-                        <div className="flex items-center gap-1.5">
+                      <div className="min-w-0 pr-2">
+                        <div className="flex items-center gap-1.5 flex-wrap">
                           <p className="text-xs font-bold">+1 vez por semana</p>
                           <span className="text-[9px] uppercase font-black bg-emerald-100 text-emerald-800 px-1.5 py-0.5 rounded-full">
                             15% OFF
@@ -829,18 +947,18 @@ function BookingContent() {
                       {(frequency === "multi_weekly" || frequency === "weekly_2_4") && <Check className="w-4 h-4 text-electric-600 shrink-0" />}
                     </button>
 
-                    {/* 3. Semanal */}
+                    {/* 4. Semanal (15% OFF) */}
                     <button
                       type="button"
                       onClick={() => setFrequency("weekly")}
-                      className={`p-3 rounded-xl border text-left flex items-center justify-between transition-all ${
+                      className={`p-3 rounded-xl border text-left flex items-center justify-between transition-all h-full min-h-[72px] ${
                         frequency === "weekly"
                           ? "bg-electric-50 border-electric-400 text-electric-900 font-semibold shadow-xs"
                           : "bg-white border-neutral-200 text-neutral-700 hover:bg-neutral-50"
                       }`}
                     >
-                      <div>
-                        <div className="flex items-center gap-1.5">
+                      <div className="min-w-0 pr-2">
+                        <div className="flex items-center gap-1.5 flex-wrap">
                           <p className="text-xs font-bold">Semanal</p>
                           <span className="text-[9px] uppercase font-black bg-emerald-100 text-emerald-800 px-1.5 py-0.5 rounded-full">
                             15% OFF
@@ -851,18 +969,18 @@ function BookingContent() {
                       {frequency === "weekly" && <Check className="w-4 h-4 text-electric-600 shrink-0" />}
                     </button>
 
-                    {/* 4. Quincenal */}
+                    {/* 5. Quincenal (10% OFF) */}
                     <button
                       type="button"
                       onClick={() => setFrequency("biweekly")}
-                      className={`p-3 rounded-xl border text-left flex items-center justify-between transition-all ${
+                      className={`p-3 rounded-xl border text-left flex items-center justify-between transition-all h-full min-h-[72px] ${
                         frequency === "biweekly"
                           ? "bg-electric-50 border-electric-400 text-electric-900 font-semibold shadow-xs"
                           : "bg-white border-neutral-200 text-neutral-700 hover:bg-neutral-50"
                       }`}
                     >
-                      <div>
-                        <div className="flex items-center gap-1.5">
+                      <div className="min-w-0 pr-2">
+                        <div className="flex items-center gap-1.5 flex-wrap">
                           <p className="text-xs font-bold">Quincenal</p>
                           <span className="text-[9px] uppercase font-black bg-blue-100 text-blue-800 px-1.5 py-0.5 rounded-full">
                             10% OFF
@@ -873,18 +991,18 @@ function BookingContent() {
                       {frequency === "biweekly" && <Check className="w-4 h-4 text-electric-600 shrink-0" />}
                     </button>
 
-                    {/* 5. Mensual */}
+                    {/* 6. Mensual (5% OFF) */}
                     <button
                       type="button"
                       onClick={() => setFrequency("monthly")}
-                      className={`p-3 rounded-xl border text-left flex items-center justify-between transition-all ${
+                      className={`p-3 rounded-xl border text-left flex items-center justify-between transition-all h-full min-h-[72px] ${
                         frequency === "monthly"
                           ? "bg-electric-50 border-electric-400 text-electric-900 font-semibold shadow-xs"
                           : "bg-white border-neutral-200 text-neutral-700 hover:bg-neutral-50"
                       }`}
                     >
-                      <div>
-                        <div className="flex items-center gap-1.5">
+                      <div className="min-w-0 pr-2">
+                        <div className="flex items-center gap-1.5 flex-wrap">
                           <p className="text-xs font-bold">Mensual</p>
                           <span className="text-[9px] uppercase font-black bg-purple-100 text-purple-800 px-1.5 py-0.5 rounded-full">
                             5% OFF
@@ -893,28 +1011,6 @@ function BookingContent() {
                         <p className="text-[11px] text-neutral-500">Agendamiento mensual automático</p>
                       </div>
                       {frequency === "monthly" && <Check className="w-4 h-4 text-electric-600 shrink-0" />}
-                    </button>
-
-                    {/* 6. Personalizado */}
-                    <button
-                      type="button"
-                      onClick={() => setFrequency("custom")}
-                      className={`p-3 rounded-xl border text-left flex items-center justify-between transition-all ${
-                        frequency === "custom"
-                          ? "bg-electric-50 border-electric-400 text-electric-900 font-semibold shadow-xs"
-                          : "bg-white border-neutral-200 text-neutral-700 hover:bg-neutral-50"
-                      }`}
-                    >
-                      <div>
-                        <div className="flex items-center gap-1.5">
-                          <p className="text-xs font-bold">Personalizado</p>
-                          <span className="text-[9px] uppercase font-black bg-amber-100 text-amber-900 px-1.5 py-0.5 rounded-full">
-                            20% OFF
-                          </span>
-                        </div>
-                        <p className="text-[11px] text-neutral-500">Elige 5+ fechas en los próximos 30 días</p>
-                      </div>
-                      {frequency === "custom" && <Check className="w-4 h-4 text-electric-600 shrink-0" />}
                     </button>
                   </div>
                 </div>
@@ -1071,13 +1167,13 @@ function BookingContent() {
 
                   {/* Sección de Selección de Ubicación */}
                   <div className="pt-2 border-t border-neutral-100 space-y-3">
-                    <div className="flex items-center justify-between">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
                       <label className="block text-xs font-bold text-neutral-800">
                         📍 Dirección del Inmueble
                       </label>
 
                       {/* Selector de Modo: Direcciones Guardadas vs Nueva */}
-                      <div className="flex items-center gap-2">
+                      <div className="flex flex-wrap items-center gap-2">
                         {savedAddresses.length > 0 && (
                           <div className="flex bg-neutral-100 p-0.5 rounded-lg border border-neutral-200 text-[11px]">
                             <button
@@ -1121,7 +1217,7 @@ function BookingContent() {
                         <Link
                           href="/portal/direcciones/nueva"
                           target="_blank"
-                          className="text-[11px] font-bold text-electric-600 hover:text-electric-700 hover:underline flex items-center gap-1 shrink-0"
+                          className="text-[11px] font-bold text-electric-600 hover:text-electric-700 hover:underline flex items-center gap-1 shrink-0 px-1 py-0.5"
                         >
                           <Plus className="w-3 h-3" />
                           <span>+ Registrar nueva dirección</span>
@@ -1375,142 +1471,10 @@ function BookingContent() {
                 </div>
               </div>
 
-              {/* PASO 4: SELECCIÓN DE COLABORADOR / PERSONAL */}
-              <div className="bg-white rounded-2xl p-6 sm:p-7 border border-neutral-200 shadow-xs space-y-5">
-                <div className="flex items-center justify-between pb-3 border-b border-neutral-100">
-                  <div className="flex items-center gap-2">
-                    <span className="font-mono text-xs font-bold text-electric-600">04</span>
-                    <h3 className="text-sm font-bold text-neutral-900">Colaborador / Personal Asignado (Opcional)</h3>
-                  </div>
-                  <span className="text-[11px] font-semibold text-slate-500 bg-slate-100 px-2.5 py-1 rounded-full">
-                    {availableEmployees.filter(e => e.isAvailable).length} disponibles
-                  </span>
-                </div>
-
-                <div className="space-y-3">
-                  <p className="text-xs text-slate-600">
-                    Puedes elegir un profesional preferido o dejar que nuestro sistema asigne automáticamente al colaborador mejor evaluado y disponible en tu zona.
-                  </p>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    {/* Opción 1: Asignación Automática Inteligente */}
-                    <button
-                      type="button"
-                      onClick={() => setSelectedCleanerId(null)}
-                      className={`p-3.5 rounded-2xl border text-left flex items-center justify-between transition-all ${
-                        selectedCleanerId === null
-                          ? "bg-electric-50/70 border-electric-500 ring-2 ring-electric-500/20 shadow-xs"
-                          : "bg-white border-neutral-200 hover:bg-neutral-50 hover:border-neutral-300"
-                      }`}
-                    >
-                      <div className="flex items-center gap-3">
-                        <div className={`w-10 h-10 rounded-xl flex items-center justify-center font-bold text-sm ${
-                          selectedCleanerId === null ? "bg-electric-600 text-white shadow-electric-sm" : "bg-slate-100 text-slate-700"
-                        }`}>
-                          <Sparkles className="w-5 h-5" />
-                        </div>
-                        <div>
-                          <p className="text-xs font-bold text-neutral-900 flex items-center gap-1.5">
-                            <span>Asignación Inteligente</span>
-                            <span className="text-[9px] font-black uppercase bg-electric-100 text-electric-800 px-1.5 py-0.2 rounded-full">
-                              Recomendada
-                            </span>
-                          </p>
-                          <p className="text-[11px] text-neutral-500">Asignaremos al profesional ideal para tu zona</p>
-                        </div>
-                      </div>
-                      <div className={`w-4 h-4 rounded-full border flex items-center justify-center shrink-0 ${
-                        selectedCleanerId === null ? "border-electric-600 bg-electric-600 text-white" : "border-neutral-300"
-                      }`}>
-                        {selectedCleanerId === null && <Check className="w-2.5 h-2.5" />}
-                      </div>
-                    </button>
-
-                    {/* Lista de Colaboradores Reales */}
-                    {availableEmployees.map((emp) => {
-                      const isSelected = selectedCleanerId === emp.id;
-                      return (
-                        <button
-                          key={emp.id}
-                          type="button"
-                          disabled={!emp.isAvailable}
-                          onClick={() => emp.isAvailable && setSelectedCleanerId(emp.id)}
-                          className={`p-3.5 rounded-2xl border text-left flex items-start justify-between transition-all relative ${
-                            !emp.isAvailable
-                              ? "bg-slate-50/70 border-slate-200 opacity-60 cursor-not-allowed"
-                              : isSelected
-                              ? "bg-electric-50/70 border-electric-500 ring-2 ring-electric-500/20 shadow-xs"
-                              : "bg-white border-neutral-200 hover:bg-neutral-50 hover:border-neutral-300"
-                          }`}
-                        >
-                          <div className="flex items-start gap-3 min-w-0">
-                            {/* Foto o Avatar */}
-                            <div className="relative w-10 h-10 rounded-xl overflow-hidden bg-slate-100 shrink-0 border border-slate-200 flex items-center justify-center">
-                              {emp.image ? (
-                                <Image
-                                  src={emp.image}
-                                  alt={emp.name}
-                                  fill
-                                  className="object-cover"
-                                />
-                              ) : (
-                                <span className="font-extrabold text-xs text-slate-700">
-                                  {emp.name.slice(0, 2).toUpperCase()}
-                                </span>
-                              )}
-                            </div>
-
-                            <div className="min-w-0 space-y-0.5">
-                              <p className="text-xs font-bold text-neutral-900 truncate">
-                                {emp.name}
-                              </p>
-                              
-                              {/* Rating y Reseñas */}
-                              <div className="flex items-center gap-1 text-[11px] text-amber-500 font-bold">
-                                <Star className="w-3 h-3 fill-amber-400 text-amber-400 shrink-0" />
-                                <span>{emp.rating.toFixed(1)}</span>
-                                <span className="text-slate-400 font-normal text-[10px]">
-                                  ({emp.reviewCount || 0} reseñas)
-                                </span>
-                              </div>
-
-                              {/* Servicios concluidos & IPS */}
-                              <div className="flex items-center gap-1.5 flex-wrap pt-0.5">
-                                <span className="text-[9.5px] font-bold text-slate-600 bg-slate-100 px-1.5 py-0.2 rounded">
-                                  ✓ {emp.completedBookingsCount} servicios
-                                </span>
-                                {emp.ipsVerified && (
-                                  <span className="text-[9.5px] font-black text-emerald-800 bg-emerald-100 px-1.5 py-0.2 rounded">
-                                    IPS Activo
-                                  </span>
-                                )}
-                              </div>
-                            </div>
-                          </div>
-
-                          <div className="shrink-0 flex flex-col items-end gap-1">
-                            <div className={`w-4 h-4 rounded-full border flex items-center justify-center ${
-                              isSelected ? "border-electric-600 bg-electric-600 text-white" : "border-neutral-300"
-                            }`}>
-                              {isSelected && <Check className="w-2.5 h-2.5" />}
-                            </div>
-                            {!emp.isAvailable && (
-                              <span className="text-[9px] font-bold text-rose-600 bg-rose-50 px-1 py-0.5 rounded border border-rose-200">
-                                Ocupado
-                              </span>
-                            )}
-                          </div>
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-              </div>
-
-              {/* PASO 5: FECHA Y TURNO */}
+              {/* PASO 4: FECHA Y TURNO */}
               <div className="bg-white rounded-2xl p-6 sm:p-7 border border-neutral-200 shadow-xs space-y-5">
                 <div className="flex items-center gap-2 pb-3 border-b border-neutral-100">
-                  <span className="font-mono text-xs font-bold text-electric-600">05</span>
+                  <span className="font-mono text-xs font-bold text-electric-600">04</span>
                   <h3 className="text-sm font-bold text-neutral-900">Fecha y Turno del Servicio</h3>
                 </div>
 
@@ -1652,6 +1616,138 @@ function BookingContent() {
                         </span>
                       </p>
                     )}
+                  </div>
+                </div>
+              </div>
+
+              {/* PASO 5: SELECCIÓN DE COLABORADOR / PERSONAL */}
+              <div className="bg-white rounded-2xl p-6 sm:p-7 border border-neutral-200 shadow-xs space-y-5">
+                <div className="flex items-center justify-between pb-3 border-b border-neutral-100">
+                  <div className="flex items-center gap-2">
+                    <span className="font-mono text-xs font-bold text-electric-600">05</span>
+                    <h3 className="text-sm font-bold text-neutral-900">Colaborador / Personal Asignado (Opcional)</h3>
+                  </div>
+                  <span className="text-[11px] font-semibold text-slate-500 bg-slate-100 px-2.5 py-1 rounded-full">
+                    {availableEmployees.filter(e => e.isAvailable).length} disponibles
+                  </span>
+                </div>
+
+                <div className="space-y-3">
+                  <p className="text-xs text-slate-600">
+                    Puedes elegir un profesional preferido o dejar que nuestro sistema asigne automáticamente al colaborador mejor evaluado y disponible en tus fechas seleccionadas.
+                  </p>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    {/* Opción 1: Asignación Automática Inteligente */}
+                    <button
+                      type="button"
+                      onClick={() => setSelectedCleanerId(null)}
+                      className={`p-3.5 rounded-2xl border text-left flex items-center justify-between transition-all ${
+                        selectedCleanerId === null
+                          ? "bg-electric-50/70 border-electric-500 ring-2 ring-electric-500/20 shadow-xs"
+                          : "bg-white border-neutral-200 hover:bg-neutral-50 hover:border-neutral-300"
+                      }`}
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className={`w-10 h-10 rounded-xl flex items-center justify-center font-bold text-sm ${
+                          selectedCleanerId === null ? "bg-electric-600 text-white shadow-electric-sm" : "bg-slate-100 text-slate-700"
+                        }`}>
+                          <Sparkles className="w-5 h-5" />
+                        </div>
+                        <div>
+                          <p className="text-xs font-bold text-neutral-900 flex items-center gap-1.5">
+                            <span>Asignación Inteligente</span>
+                            <span className="text-[9px] font-black uppercase bg-electric-100 text-electric-800 px-1.5 py-0.2 rounded-full">
+                              Recomendada
+                            </span>
+                          </p>
+                          <p className="text-[11px] text-neutral-500">Asignaremos al profesional ideal para tu zona</p>
+                        </div>
+                      </div>
+                      <div className={`w-4 h-4 rounded-full border flex items-center justify-center shrink-0 ${
+                        selectedCleanerId === null ? "border-electric-600 bg-electric-600 text-white" : "border-neutral-300"
+                      }`}>
+                        {selectedCleanerId === null && <Check className="w-2.5 h-2.5" />}
+                      </div>
+                    </button>
+
+                    {/* Lista de Colaboradores Reales */}
+                    {availableEmployees.map((emp) => {
+                      const isSelected = selectedCleanerId === emp.id;
+                      return (
+                        <button
+                          key={emp.id}
+                          type="button"
+                          disabled={!emp.isAvailable}
+                          onClick={() => emp.isAvailable && setSelectedCleanerId(emp.id)}
+                          className={`p-3.5 rounded-2xl border text-left flex items-start justify-between transition-all relative ${
+                            !emp.isAvailable
+                              ? "bg-slate-50/70 border-slate-200 opacity-60 cursor-not-allowed"
+                              : isSelected
+                              ? "bg-electric-50/70 border-electric-500 ring-2 ring-electric-500/20 shadow-xs"
+                              : "bg-white border-neutral-200 hover:bg-neutral-50 hover:border-neutral-300"
+                          }`}
+                        >
+                          <div className="flex items-start gap-3 min-w-0">
+                            {/* Foto o Avatar */}
+                            <div className="relative w-10 h-10 rounded-xl overflow-hidden bg-slate-100 shrink-0 border border-slate-200 flex items-center justify-center">
+                              {emp.image ? (
+                                <Image
+                                  src={emp.image}
+                                  alt={emp.name}
+                                  fill
+                                  className="object-cover"
+                                />
+                              ) : (
+                                <span className="font-extrabold text-xs text-slate-700">
+                                  {emp.name.slice(0, 2).toUpperCase()}
+                                </span>
+                              )}
+                            </div>
+
+                            <div className="min-w-0 space-y-0.5">
+                              <p className="text-xs font-bold text-neutral-900 truncate">
+                                {emp.name}
+                              </p>
+                              
+                              {/* Rating y Reseñas */}
+                              <div className="flex items-center gap-1 text-[11px] text-amber-500 font-bold">
+                                <Star className="w-3 h-3 fill-amber-400 text-amber-400 shrink-0" />
+                                <span>{emp.rating.toFixed(1)}</span>
+                                <span className="text-slate-400 font-normal text-[10px]">
+                                  ({emp.reviewCount || 0} reseñas)
+                                </span>
+                              </div>
+
+                              {/* Servicios concluidos & IPS */}
+                              <div className="flex items-center gap-1.5 flex-wrap pt-0.5">
+                                <span className="text-[9.5px] font-bold text-slate-600 bg-slate-100 px-1.5 py-0.2 rounded">
+                                  ✓ {emp.completedBookingsCount} servicios
+                                </span>
+                                {emp.ipsVerified && (
+                                  <span className="text-[9.5px] font-black text-emerald-800 bg-emerald-100 px-1.5 py-0.2 rounded">
+                                    IPS Activo
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+
+                          <div className="shrink-0 flex flex-col items-end gap-1">
+                            <div className={`w-4 h-4 rounded-full border flex items-center justify-center ${
+                              isSelected ? "border-electric-600 bg-electric-600 text-white" : "border-neutral-300"
+                            }`}>
+                              {isSelected && <Check className="w-2.5 h-2.5" />}
+                            </div>
+                            {!emp.isAvailable && (
+                              <span className="text-[9px] font-bold text-rose-600 bg-rose-50 px-1 py-0.5 rounded border border-rose-200">
+                                Ocupado
+                              </span>
+                            )}
+                          </div>
+                        </button>
+                      );
+                    })}
                   </div>
                 </div>
               </div>

@@ -15,7 +15,7 @@ export const SERVICE_PACKAGES: Record<
   4: {
     name: "Express",
     hours: 4,
-    basePrice: 145000,
+    basePrice: 155000,
     tagline: "Ideal para departamentos pequeños",
     description: "Mantenimiento rápido de áreas específicas como baños, cocina y pisos.",
     features: [
@@ -28,7 +28,7 @@ export const SERVICE_PACKAGES: Record<
   6: {
     name: "Integral",
     hours: 6,
-    basePrice: 185000,
+    basePrice: 195000,
     tagline: "Nuestra opción más equilibrada",
     description: "Perfecta para una limpieza detallada de un hogar promedio de 2 a 3 habitaciones.",
     popular: true,
@@ -42,7 +42,7 @@ export const SERVICE_PACKAGES: Record<
   8: {
     name: "Full Day",
     hours: 8,
-    basePrice: 245000,
+    basePrice: 255000,
     tagline: "Jornada completa y exhaustiva",
     description: "Para hogares grandes, limpiezas de mudanza o reseteo profundo.",
     features: [
