@@ -28,7 +28,7 @@ export const SERVICE_PACKAGES: Record<
   6: {
     name: "Integral",
     hours: 6,
-    basePrice: 195000,
+    basePrice: 210000,
     tagline: "Nuestra opción más equilibrada",
     description: "Perfecta para una limpieza detallada de un hogar promedio de 2 a 3 habitaciones.",
     popular: true,

@@ -4758,13 +4758,13 @@ export default function AdminDashboardPage() {
                       const h = Number(e.target.value);
                       setNewBookingHours(h);
                       if (h === 4) setNewBookingPrice(155000);
-                      else if (h === 6) setNewBookingPrice(195000);
+                      else if (h === 6) setNewBookingPrice(210000);
                       else if (h === 8) setNewBookingPrice(255000);
                     }}
                     className="w-full px-2.5 py-2 border border-slate-200 rounded-xl text-xs focus:ring-2 focus:ring-electric-600 focus:outline-none"
                   >
                     <option value={4}>4 Horas (155.000 Gs.)</option>
-                    <option value={6}>6 Horas (195.000 Gs.)</option>
+                    <option value={6}>6 Horas (210.000 Gs.)</option>
                     <option value={8}>8 Horas (255.000 Gs.)</option>
                   </select>
                 </div>
