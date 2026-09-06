@@ -16,9 +16,8 @@ export default function Hero() {
           playsInline
           className="w-full h-full object-cover scale-105"
         />
-        {/* Capas de Fondo Blanco para Máxima Legibilidad sobre el Video */}
-        <div className="absolute inset-0 bg-white/60" />
-        <div className="absolute inset-0 bg-gradient-to-r from-white/85 via-white/70 to-white/40 backdrop-blur-[0.5px]" />
+        {/* Capa de Fondo Blanco al 30% de Opacidad */}
+        <div className="absolute inset-0 bg-white/30" />
       </div>
 
       {/* Contenido Hero Superpuesto */}
