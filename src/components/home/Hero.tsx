@@ -1,22 +1,20 @@
 import React from "react";
 import Link from "next/link";
-import Image from "next/image";
 import { Star, ArrowRight, Sparkles, ShieldCheck } from "lucide-react";
 
 export default function Hero() {
   return (
     <section className="relative w-full min-h-[620px] sm:min-h-[700px] lg:min-h-[800px] flex items-center justify-center overflow-hidden bg-white text-neutral-900 border-b border-neutral-200">
       
-      {/* Background Image Full-Width */}
+      {/* Video Background Full-Width */}
       <div className="absolute inset-0 w-full h-full overflow-hidden">
-        <Image
-          src="/images/hero-bathroom.jpg"
-          alt="Servicios de limpieza profesional de casas, departamentos y baños modernos en Asunción y Gran Asunción - Personal verificado IPS - Aquí Estamos Paraguay"
-          title="Aquí Estamos: Empresa líder en servicios de limpieza profesional por horas en Asunción"
-          fill
-          priority
-          sizes="100vw"
-          className="object-cover object-[82%_center] sm:object-center"
+        <video
+          src="/videos/hero-flow.mp4"
+          autoPlay
+          loop
+          muted
+          playsInline
+          className="w-full h-full object-cover scale-105"
         />
       </div>
 
@@ -91,27 +89,6 @@ export default function Hero() {
 
         </div>
       </div>
-
-      {/* Schema.org Structured Data para Google SEO de Imágenes */}
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{
-          __html: JSON.stringify({
-            "@context": "https://schema.org",
-            "@type": "ImageObject",
-            "name": "Servicios Profesionales de Limpieza de Baños y Hogares en Asunción - Aquí Estamos",
-            "caption": "Limpieza profunda y mantenimiento impecable de baños modernos y departamentos en Paraguay.",
-            "description": "Servicios de limpieza por horas en Asunción y Gran Asunción con personal contratado legalmente bajo IPS y garantía de satisfacción 200%.",
-            "contentUrl": "https://aqui-estamos-v3.vercel.app/images/hero-bathroom.jpg",
-            "representativeOfPage": true,
-            "creator": {
-              "@type": "Organization",
-              "name": "Aquí Estamos Limpieza",
-              "url": "https://aqui-estamos-v3.vercel.app"
-            }
-          }),
-        }}
-      />
     </section>
   );
 }
