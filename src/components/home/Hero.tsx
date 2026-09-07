@@ -5,32 +5,19 @@ import { Star, ArrowRight, Sparkles, ShieldCheck } from "lucide-react";
 
 export default function Hero() {
   return (
-    <section className="relative w-full min-h-[620px] sm:min-h-[700px] lg:min-h-[800px] flex items-center justify-center overflow-hidden bg-neutral-900 text-white border-b border-neutral-200">
+    <section className="relative w-full min-h-[620px] sm:min-h-[700px] lg:min-h-[800px] flex items-center justify-center overflow-hidden bg-white text-neutral-900 border-b border-neutral-200">
       
-      {/* Background Image Full-Width con SEO Especializado y Fondo Negro al 5% */}
-      <div className="absolute inset-0 w-full h-full overflow-hidden" itemScope itemType="https://schema.org/ImageObject">
+      {/* Background Image Full-Width */}
+      <div className="absolute inset-0 w-full h-full overflow-hidden">
         <Image
-          src="/images/hero-bathroom-render.jpg"
-          alt="Servicios profesionales de limpieza de casas, departamentos y baños modernos en Asunción y Gran Asunción con personal IPS - Empresa líder Aquí Estamos Paraguay"
-          title="Aquí Estamos Paraguay: Servicios Profesionales de Limpieza por Horas para Hogares y Empresas en Asunción"
+          src="/images/hero-bathroom.jpg"
+          alt="Servicios de limpieza profesional de casas, departamentos y baños modernos en Asunción y Gran Asunción - Personal verificado IPS - Aquí Estamos Paraguay"
+          title="Aquí Estamos: Empresa líder en servicios de limpieza profesional por horas en Asunción"
           fill
           priority
-          quality={90}
           sizes="100vw"
-          className="object-cover object-center"
-          itemProp="contentUrl"
+          className="object-cover object-[82%_center] sm:object-center"
         />
-        
-        {/* Overlay fondo negro al 5% */}
-        <div className="absolute inset-0 bg-black/5 pointer-events-none" />
-        
-        <meta itemProp="name" content="Servicios Profesionales de Limpieza por Horas en Asunción y Gran Asunción - Aquí Estamos Paraguay" />
-        <meta itemProp="description" content="Personal rigurosamente seleccionado, verificado y asegurado con IPS para servicios de limpieza de casas, departamentos y oficinas en Asunción." />
-        <meta itemProp="caption" content="Limpieza profesional y profunda de hogares, departamentos y baños modernos en Asunción con garantía total 200%." />
-        <meta itemProp="inLanguage" content="es-PY" />
-        <meta itemProp="encodingFormat" content="image/jpeg" />
-        <meta itemProp="width" content="1600" />
-        <meta itemProp="height" content="1067" />
       </div>
 
       {/* Contenido Hero Superpuesto */}
@@ -38,21 +25,18 @@ export default function Hero() {
         <div className="max-w-3xl space-y-6 sm:space-y-8 animate-in fade-in duration-500">
           
           {/* Tagline con toque de azul eléctrico y fondo blur */}
-          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-neutral-900/80 backdrop-blur-md text-white text-xs font-bold border border-white/20 shadow-sm">
-            <span className="w-2.5 h-2.5 rounded-full bg-electric-400 animate-pulse shadow-[0_0_8px_rgba(59,130,246,0.8)]"></span>
+          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white/90 backdrop-blur-md text-neutral-950 text-xs font-bold border border-neutral-300 shadow-sm">
+            <span className="w-2.5 h-2.5 rounded-full bg-electric-600 animate-pulse"></span>
             <span>Servicio profesional en Asunción y Gran Asunción</span>
           </div>
 
           {/* Titular */}
-          <h1 className="text-4xl sm:text-5xl lg:text-6xl xl:text-7xl font-extrabold text-white tracking-tight leading-[1.12] drop-shadow-md">
-            Cuidado profesional y confiable para tu{" "}
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-electric-400 via-sky-300 to-electric-500 font-black drop-shadow-sm">
-              hogar.
-            </span>
+          <h1 className="text-4xl sm:text-5xl lg:text-6xl xl:text-7xl font-extrabold text-neutral-950 tracking-tight leading-[1.12]">
+            Cuidado profesional y confiable para tu <span className="text-electric-600 drop-shadow-xs">hogar.</span>
           </h1>
 
-          {/* Bajada en Color Blanco */}
-          <p className="text-base sm:text-lg lg:text-xl text-white leading-relaxed font-semibold sm:font-medium max-w-2xl drop-shadow-sm">
+          {/* Bajada */}
+          <p className="text-base sm:text-lg lg:text-xl text-neutral-900 leading-relaxed font-semibold sm:font-medium max-w-2xl">
             Servicios de limpieza por horas con personal rigurosamente verificado y contratado formalmente bajo normativas de IPS. Reserva online en 60 segundos con tarifa plana en Guaraníes y garantía total.
           </p>
 
@@ -60,7 +44,7 @@ export default function Hero() {
           <div className="pt-2 flex flex-col sm:flex-row items-stretch sm:items-center gap-3.5">
             <Link
               href="/reservar"
-              className="inline-flex items-center justify-center gap-2.5 px-7 py-4 bg-electric-600 hover:bg-electric-500 text-white font-bold text-sm sm:text-base rounded-2xl shadow-electric transition-all active:scale-[0.98] hover:shadow-lg hover:shadow-electric-600/40"
+              className="inline-flex items-center justify-center gap-2.5 px-7 py-4 bg-electric-600 hover:bg-electric-500 text-white font-bold text-sm sm:text-base rounded-2xl shadow-electric transition-all active:scale-[0.98] hover:shadow-lg hover:shadow-electric-600/30"
             >
               <span>Reservar Limpieza</span>
               <ArrowRight className="w-4 h-4 text-white/90" />
@@ -74,8 +58,8 @@ export default function Hero() {
             </Link>
           </div>
 
-          {/* Indicadores de Confianza en Color Blanco */}
-          <div className="pt-6 sm:pt-8 border-t border-white/20 grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6 text-left">
+          {/* Indicadores de Confianza */}
+          <div className="pt-6 sm:pt-8 border-t border-white/30 grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6 text-left">
             <div className="flex items-center sm:block gap-3">
               <div className="flex items-center gap-1.5 text-amber-400 text-sm font-bold">
                 <svg className="w-4 h-4 shrink-0 drop-shadow-xs" viewBox="0 0 24 24" aria-label="Google logo">
@@ -84,7 +68,7 @@ export default function Hero() {
                   <path fill="#FBBC05" d="M5.28 14.27c-.25-.72-.38-1.49-.38-2.27s.13-1.55.38-2.27V6.58H1.25C.45 8.16 0 9.98 0 12s.45 3.84 1.25 5.42l4.03-3.15z" />
                   <path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.34 0 3.26 2.64 1.25 6.58l4.03 3.15c.95-2.83 3.6-4.98 6.72-4.98z" />
                 </svg>
-                <Star className="w-4 h-4 fill-amber-400 text-amber-400 drop-shadow-xs" />
+                <Star className="w-4 h-4 fill-amber-400 text-amber-400" />
                 <span className="text-white font-black drop-shadow-sm">4.9 / 5.0</span>
               </div>
               <p className="text-xs text-white font-semibold mt-0.5 drop-shadow-sm">Google Reviews (+1.5k servicios)</p>
@@ -108,46 +92,23 @@ export default function Hero() {
         </div>
       </div>
 
-      {/* Schema.org Structured Data para Google SEO de Imágenes Especializado */}
+      {/* Schema.org Structured Data para Google SEO de Imágenes */}
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{
           __html: JSON.stringify({
             "@context": "https://schema.org",
             "@type": "ImageObject",
-            "name": "Servicios Profesionales de Limpieza por Horas en Asunción - Aquí Estamos Paraguay",
-            "caption": "Personal calificado y contratado formalmente con IPS para limpieza de hogares, departamentos y baños modernos en Asunción y Gran Asunción.",
-            "description": "Servicios de limpieza por horas en Asunción y Gran Asunción con personal rigurosamente verificado y contratado formalmente bajo IPS con garantía total 200%.",
-            "contentUrl": "https://aqui-estamos-v3.vercel.app/images/hero-bathroom-render.jpg",
-            "url": "https://aqui-estamos-v3.vercel.app/images/hero-bathroom-render.jpg",
-            "thumbnailUrl": "https://aqui-estamos-v3.vercel.app/images/hero-bathroom-render.jpg",
-            "width": 1600,
-            "height": 1067,
-            "encodingFormat": "image/jpeg",
+            "name": "Servicios Profesionales de Limpieza de Baños y Hogares en Asunción - Aquí Estamos",
+            "caption": "Limpieza profunda y mantenimiento impecable de baños modernos y departamentos en Paraguay.",
+            "description": "Servicios de limpieza por horas en Asunción y Gran Asunción con personal contratado legalmente bajo IPS y garantía de satisfacción 200%.",
+            "contentUrl": "https://aqui-estamos-v3.vercel.app/images/hero-bathroom.jpg",
             "representativeOfPage": true,
-            "inLanguage": "es-PY",
-            "keywords": [
-              "limpieza por horas Asunción",
-              "limpieza de casas Paraguay",
-              "limpieza de departamentos Asunción",
-              "limpieza profunda de baños modernos",
-              "limpieza de oficinas Gran Asunción",
-              "personal de limpieza IPS Paraguay",
-              "servicio doméstico verificado Asunción",
-              "Aquí Estamos Paraguay"
-            ],
             "creator": {
               "@type": "Organization",
               "name": "Aquí Estamos Limpieza",
               "url": "https://aqui-estamos-v3.vercel.app"
-            },
-            "copyrightHolder": {
-              "@type": "Organization",
-              "name": "Aquí Estamos Limpieza",
-              "url": "https://aqui-estamos-v3.vercel.app"
-            },
-            "acquireLicensePage": "https://aqui-estamos-v3.vercel.app",
-            "license": "https://aqui-estamos-v3.vercel.app"
+            }
           }),
         }}
       />

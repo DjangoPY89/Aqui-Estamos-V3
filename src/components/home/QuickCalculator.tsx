@@ -88,7 +88,7 @@ export default function QuickCalculator() {
                 </label>
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
                   
-                  {/* 1. Servicio Único (0% OFF) */}
+                  {/* 1. Servicio Único */}
                   <button
                     type="button"
                     onClick={() => setFrequency("once")}

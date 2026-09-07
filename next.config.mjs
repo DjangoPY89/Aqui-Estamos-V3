@@ -27,10 +27,6 @@ const nextConfig = {
         protocol: 'https',
         hostname: 'cdn.decorabano.com',
       },
-      {
-        protocol: 'https',
-        hostname: 'planner5d.com',
-      },
     ],
   },
 };
