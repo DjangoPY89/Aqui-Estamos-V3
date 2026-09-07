@@ -2,7 +2,7 @@ import nodemailer from "nodemailer";
 import { Booking } from "@/types";
 import { formatGs } from "./pricing";
 
-const ADMIN_EMAIL = process.env.ADMIN_NOTIFICATION_EMAIL || "juanas89@gmail.com";
+const ADMIN_EMAIL = process.env.ADMIN_NOTIFICATION_EMAIL || "Mgoldmanl@outlook.com, Arielgoldman33@gmail.com";
 const SITE_URL = process.env.NEXTAUTH_URL || "https://aqui-estamos-v3.vercel.app";
 const WHATSAPP_SUPPORT_URL = "https://wa.me/595984320528";
 
@@ -486,7 +486,7 @@ export async function sendNewBookingAdminNotification(booking: Booking): Promise
     </div>
     
     <div class="content">
-      <p style="font-size: 14px; margin-top: 0;">Hola <strong>Juan</strong>, se ha registrado una nueva solicitud de servicio en <strong>Aquí Estamos</strong>:</p>
+      <p style="font-size: 14px; margin-top: 0;">Hola <strong>Equipo de Administración</strong>, se ha registrado una nueva solicitud de servicio en <strong>Aquí Estamos</strong>:</p>
 
       <div class="price-box">
         <span style="font-size: 11px; font-weight: 700; text-transform: uppercase; color: #15803d;">Monto Total Liquidado</span>
