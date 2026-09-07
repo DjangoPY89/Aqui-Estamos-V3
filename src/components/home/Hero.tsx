@@ -10,13 +10,13 @@ export default function Hero() {
       {/* Background Image Full-Width */}
       <div className="absolute inset-0 w-full h-full overflow-hidden">
         <Image
-          src="/images/hero-bathroom.jpg"
-          alt="Servicios de limpieza profesional de casas, departamentos y baños modernos en Asunción y Gran Asunción - Personal verificado IPS - Aquí Estamos Paraguay"
+          src="/images/hero-bg.jpg"
+          alt="Servicios de limpieza profesional de casas, departamentos y hogares en Asunción y Gran Asunción - Personal verificado IPS - Aquí Estamos Paraguay"
           title="Aquí Estamos: Empresa líder en servicios de limpieza profesional por horas en Asunción"
           fill
           priority
           sizes="100vw"
-          className="object-cover object-[82%_center] sm:object-center"
+          className="object-cover object-center"
         />
       </div>
 
@@ -102,7 +102,7 @@ export default function Hero() {
             "name": "Servicios Profesionales de Limpieza de Baños y Hogares en Asunción - Aquí Estamos",
             "caption": "Limpieza profunda y mantenimiento impecable de baños modernos y departamentos en Paraguay.",
             "description": "Servicios de limpieza por horas en Asunción y Gran Asunción con personal contratado legalmente bajo IPS y garantía de satisfacción 200%.",
-            "contentUrl": "https://aqui-estamos-v3.vercel.app/images/hero-bathroom.jpg",
+            "contentUrl": "https://aqui-estamos-v3.vercel.app/images/hero-bg.jpg",
             "representativeOfPage": true,
             "creator": {
               "@type": "Organization",

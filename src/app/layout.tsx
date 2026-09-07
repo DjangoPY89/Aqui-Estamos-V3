@@ -30,10 +30,10 @@ export const metadata: Metadata = {
     siteName: "Aquí Estamos Limpieza",
     images: [
       {
-        url: "/images/hero-bathroom.jpg",
-        width: 1920,
-        height: 1080,
-        alt: "Servicios Profesionales de Limpieza de Hogar y Baños en Asunción - Aquí Estamos",
+        url: "/images/hero-bg.jpg",
+        width: 1376,
+        height: 768,
+        alt: "Servicios Profesionales de Limpieza de Hogar en Asunción - Aquí Estamos",
       },
       {
         url: "/images/logo.png",
@@ -49,7 +49,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "Aquí Estamos | Limpieza Profesional en Asunción",
     description: "Servicios de limpieza por horas con personal verificado en Asunción y Gran Asunción.",
-    images: ["/images/hero-bathroom.jpg"],
+    images: ["/images/hero-bg.jpg"],
   },
 };
 
