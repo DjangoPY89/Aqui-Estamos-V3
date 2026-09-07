@@ -1,20 +1,21 @@
 import React from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { Star, ArrowRight, Sparkles, ShieldCheck } from "lucide-react";
 
 export default function Hero() {
   return (
     <section className="relative w-full min-h-[620px] sm:min-h-[700px] lg:min-h-[800px] flex items-center justify-center overflow-hidden bg-white text-neutral-900 border-b border-neutral-200">
       
-      {/* Video Background Full-Width */}
+      {/* Background Image Full-Width */}
       <div className="absolute inset-0 w-full h-full overflow-hidden">
-        <video
-          src="/videos/hero-flow.mp4"
-          autoPlay
-          loop
-          muted
-          playsInline
-          className="w-full h-full object-cover scale-105"
+        <Image
+          src="/images/hero-flow.jpg"
+          alt="Hogar impecable y limpio - Aquí Estamos Limpieza"
+          fill
+          priority
+          sizes="100vw"
+          className="object-cover object-center"
         />
       </div>
 
