@@ -38,3 +38,29 @@ body {
 ::-webkit-scrollbar-thumb:hover {
   background: #cbd5e1;
 }
+
+@keyframes sweep-light-ltr {
+  0% {
+    background-position: 250% center;
+  }
+  100% {
+    background-position: -250% center;
+  }
+}
+
+.animate-sweep-light {
+  background: linear-gradient(
+    90deg,
+    #0052FF 0%,
+    #0052FF 30%,
+    #38BDF8 42%,
+    #FFFFFF 50%,
+    #38BDF8 58%,
+    #0052FF 70%,
+    #0052FF 100%
+  );
+  background-size: 250% 100%;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: sweep-light-ltr 7.5s ease-in-out infinite;
+}

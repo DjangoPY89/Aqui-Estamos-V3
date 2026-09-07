@@ -40,10 +40,10 @@ export default function Hero() {
             <span>Servicio profesional en Asunción y Gran Asunción</span>
           </div>
 
-          {/* Titular con letras blancas y efecto resplandeciente en 'hogar.' */}
+          {/* Titular con letras blancas y 'hogar.' en degradado Azul Eléctrico */}
           <h1 className="text-4xl sm:text-5xl lg:text-6xl xl:text-7xl font-extrabold text-white tracking-tight leading-[1.12] drop-shadow-md">
             Cuidado profesional y confiable para tu{" "}
-            <span className="relative inline-block text-transparent bg-clip-text bg-gradient-to-r from-[#3b7af7] via-[#7bb0ff] to-[#3b7af7] font-black filter drop-shadow-[0_2px_22px_rgba(59,122,247,0.85)]">
+            <span className="text-transparent bg-clip-text bg-gradient-to-r from-electric-400 via-sky-300 to-electric-500 font-black drop-shadow-sm">
               hogar.
             </span>
           </h1>
