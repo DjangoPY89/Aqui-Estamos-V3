@@ -10,7 +10,7 @@ export default function Hero() {
       {/* Background Image Full-Width con SEO y Fondo Negro al 10% */}
       <div className="absolute inset-0 w-full h-full overflow-hidden" itemScope itemType="https://schema.org/ImageObject">
         <Image
-          src="/images/hero-bg.jpg"
+          src="/images/hero-bathroom-render.jpg"
           alt="Servicios profesionales de limpieza de casas, departamentos y oficinas en Asunción y Gran Asunción con personal IPS - Aquí Estamos Paraguay"
           title="Aquí Estamos Paraguay - Limpieza profesional de casas y oficinas por horas en Asunción"
           fill
@@ -115,9 +115,9 @@ export default function Hero() {
             "name": "Servicios Profesionales de Limpieza por Horas en Asunción - Aquí Estamos Paraguay",
             "caption": "Personal calificado y contratado formalmente con IPS para limpieza de hogares, departamentos y empresas en Asunción y Gran Asunción.",
             "description": "Servicios de limpieza por horas en Asunción y Gran Asunción con personal rigurosamente verificado y contratado formalmente bajo IPS con garantía total 200%.",
-            "contentUrl": "https://aquiestamos.com.py/images/hero-bg.jpg",
-            "url": "https://aquiestamos.com.py/images/hero-bg.jpg",
-            "thumbnailUrl": "https://aquiestamos.com.py/images/hero-bg.jpg",
+            "contentUrl": "https://aquiestamos.com.py/images/hero-bathroom-render.jpg",
+            "url": "https://aquiestamos.com.py/images/hero-bathroom-render.jpg",
+            "thumbnailUrl": "https://aquiestamos.com.py/images/hero-bathroom-render.jpg",
             "encodingFormat": "image/jpeg",
             "representativeOfPage": true,
             "inLanguage": "es-PY",
