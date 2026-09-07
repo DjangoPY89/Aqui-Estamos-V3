@@ -73,7 +73,7 @@ export default function Navbar() {
           <div className="hidden lg:flex items-center gap-3.5">
             {/* WhatsApp con Icono Destacado */}
             <a
-              href="https://wa.me/595984320528"
+              href="https://wa.me/595984320528?text=Hola%20quiero%20m%C3%A1s%20informaci%C3%B3n%20sobre%20sus%20servicios%20de%20limpieza"
               target="_blank"
               rel="noopener noreferrer"
               className="flex items-center gap-2 text-xs font-bold text-neutral-700 hover:text-emerald-600 transition-all px-3 py-1.5 rounded-xl hover:bg-emerald-50/70 border border-neutral-200/80 hover:border-emerald-200 shadow-2xs hover:shadow-xs group"
@@ -272,7 +272,7 @@ export default function Navbar() {
 
           {/* Botón Directo WhatsApp */}
           <a
-            href="https://wa.me/595984320528"
+            href="https://wa.me/595984320528?text=Hola%20quiero%20m%C3%A1s%20informaci%C3%B3n%20sobre%20sus%20servicios%20de%20limpieza"
             target="_blank"
             rel="noopener noreferrer"
             className="flex items-center justify-between p-3 bg-emerald-50/80 hover:bg-emerald-100/70 text-emerald-900 rounded-2xl text-xs font-bold border border-emerald-200 shadow-2xs transition-all"

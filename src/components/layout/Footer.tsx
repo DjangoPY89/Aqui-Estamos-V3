@@ -33,7 +33,7 @@ export default function Footer() {
                 <Instagram className="w-4 h-4" />
               </a>
               <a
-                href="https://wa.me/595984320528"
+                href="https://wa.me/595984320528?text=Hola%20quiero%20m%C3%A1s%20informaci%C3%B3n%20sobre%20sus%20servicios%20de%20limpieza"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="w-8 h-8 rounded-lg bg-white/10 hover:bg-electric-600 flex items-center justify-center text-white transition-colors"
@@ -103,7 +103,7 @@ export default function Footer() {
             <h4 className="text-white font-semibold text-xs uppercase tracking-wider text-electric-400">Contacto</h4>
             <div className="space-y-2 text-xs">
               <a
-                href="https://wa.me/595984320528"
+                href="https://wa.me/595984320528?text=Hola%20quiero%20m%C3%A1s%20informaci%C3%B3n%20sobre%20sus%20servicios%20de%20limpieza"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="block text-white font-semibold hover:text-electric-300 transition-colors"
