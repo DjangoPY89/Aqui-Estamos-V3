@@ -1,23 +1,24 @@
 import React from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { Star, ArrowRight, Sparkles, ShieldCheck } from "lucide-react";
 
 export default function Hero() {
   return (
     <section className="relative w-full min-h-[620px] sm:min-h-[700px] lg:min-h-[800px] flex items-center justify-center overflow-hidden bg-white text-neutral-900 border-b border-neutral-200">
       
-      {/* Video Background Full-Width (100% de ancho de pantalla) */}
+      {/* Background Image Full-Width */}
       <div className="absolute inset-0 w-full h-full overflow-hidden">
-        <video
-          src="/videos/hero-video.mp4"
-          autoPlay
-          loop
-          muted
-          playsInline
-          className="w-full h-full object-cover scale-105"
+        <Image
+          src="/images/hero-bathroom.jpg"
+          alt="Baño moderno impecable y limpio - Aquí Estamos Limpieza"
+          fill
+          priority
+          sizes="100vw"
+          className="object-cover object-center"
         />
-        {/* Capa de Fondo Blanco al 30% de Opacidad */}
-        <div className="absolute inset-0 bg-white/30" />
+        {/* Capa de degradado blanco para máxima legibilidad */}
+        <div className="absolute inset-0 bg-gradient-to-r from-white/90 via-white/70 to-white/40 sm:from-white/85 sm:via-white/60 sm:to-white/30 backdrop-blur-[0.5px]" />
       </div>
 
       {/* Contenido Hero Superpuesto */}
