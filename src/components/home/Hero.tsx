@@ -17,8 +17,6 @@ export default function Hero() {
           sizes="100vw"
           className="object-cover object-center"
         />
-        {/* Capa de degradado blanco para máxima legibilidad */}
-        <div className="absolute inset-0 bg-gradient-to-r from-white/90 via-white/70 to-white/40 sm:from-white/85 sm:via-white/60 sm:to-white/30 backdrop-blur-[0.5px]" />
       </div>
 
       {/* Contenido Hero Superpuesto */}
