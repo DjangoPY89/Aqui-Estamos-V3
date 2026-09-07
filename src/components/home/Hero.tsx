@@ -5,7 +5,7 @@ import { Star, ArrowRight, Sparkles, ShieldCheck } from "lucide-react";
 
 export default function Hero() {
   return (
-    <section className="relative w-full min-h-[620px] sm:min-h-[700px] lg:min-h-[800px] flex items-center justify-center overflow-hidden bg-white text-neutral-900 border-b border-neutral-200">
+    <section className="relative w-full min-h-[620px] sm:min-h-[700px] lg:min-h-[800px] flex items-center justify-center overflow-hidden bg-neutral-950 text-white border-b border-neutral-800">
       
       {/* Background Image Full-Width */}
       <div className="absolute inset-0 w-full h-full overflow-hidden">
@@ -17,6 +17,8 @@ export default function Hero() {
           sizes="100vw"
           className="object-cover object-center"
         />
+        {/* Capa de contraste para lectura óptima de textos blancos */}
+        <div className="absolute inset-0 bg-gradient-to-r from-neutral-950/85 via-neutral-950/50 to-neutral-950/20 sm:from-neutral-950/80 sm:via-neutral-950/45 sm:to-transparent" />
       </div>
 
       {/* Contenido Hero Superpuesto */}
@@ -24,18 +26,18 @@ export default function Hero() {
         <div className="max-w-3xl space-y-6 sm:space-y-8 animate-in fade-in duration-500">
           
           {/* Tagline con toque de azul eléctrico y fondo blur */}
-          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white/90 backdrop-blur-md text-neutral-950 text-xs font-bold border border-neutral-300 shadow-sm">
-            <span className="w-2.5 h-2.5 rounded-full bg-electric-600 animate-pulse"></span>
-            <span>Servicio profesional en Asunción y Gran Asunción</span>
+          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white/15 backdrop-blur-md text-white text-xs font-bold border border-white/20 shadow-sm">
+            <span className="w-2.5 h-2.5 rounded-full bg-electric-400 animate-pulse"></span>
+            <span className="text-white">Servicio profesional en Asunción y Gran Asunción</span>
           </div>
 
           {/* Titular */}
-          <h1 className="text-4xl sm:text-5xl lg:text-6xl xl:text-7xl font-extrabold text-neutral-950 tracking-tight leading-[1.12]">
-            Cuidado profesional y confiable para tu <span className="text-electric-600 drop-shadow-xs">hogar.</span>
+          <h1 className="text-4xl sm:text-5xl lg:text-6xl xl:text-7xl font-extrabold text-white tracking-tight leading-[1.12] drop-shadow-sm">
+            Cuidado profesional y confiable para tu <span className="text-white">hogar.</span>
           </h1>
 
           {/* Bajada */}
-          <p className="text-base sm:text-lg lg:text-xl text-neutral-900 leading-relaxed font-semibold sm:font-medium max-w-2xl">
+          <p className="text-base sm:text-lg lg:text-xl text-white/95 leading-relaxed font-semibold sm:font-medium max-w-2xl drop-shadow-sm">
             Servicios de limpieza por horas con personal rigurosamente verificado y contratado formalmente bajo normativas de IPS. Reserva online en 60 segundos con tarifa plana en Guaraníes y garantía total.
           </p>
 
@@ -51,7 +53,7 @@ export default function Hero() {
 
             <Link
               href="/corporativo"
-              className="inline-flex items-center justify-center gap-2 px-6 py-4 bg-white/90 hover:bg-white backdrop-blur-md text-neutral-950 font-bold text-sm sm:text-base rounded-2xl border border-neutral-300 shadow-sm transition-all"
+              className="inline-flex items-center justify-center gap-2 px-6 py-4 bg-white/15 hover:bg-white/25 backdrop-blur-md text-white font-bold text-sm sm:text-base rounded-2xl border border-white/30 shadow-sm transition-all"
             >
               <span>Soluciones para Empresas</span>
             </Link>
