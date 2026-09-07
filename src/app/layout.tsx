@@ -6,17 +6,50 @@ import WhatsAppFloat from "@/components/layout/WhatsAppFloat";
 import AuthProvider from "@/components/providers/AuthProvider";
 
 export const metadata: Metadata = {
+  metadataBase: new URL("https://aqui-estamos-v3.vercel.app"),
   title: "Aquí Estamos | Servicios Profesionales de Limpieza en Asunción",
-  description: "Limpieza profesional de casas y oficinas en Asunción y Gran Asunción. Reserva tu limpieza estándar, profunda o de mudanza en 60 segundos con personal verificado y garantía 200%.",
+  description: "Limpieza profesional de casas, departamentos y oficinas en Asunción y Gran Asunción. Reserva tu servicio por horas en 60 segundos con personal verificado bajo IPS y garantía 200%.",
+  keywords: [
+    "limpieza en asuncion",
+    "servicios de limpieza paraguay",
+    "limpieza de casas por hora",
+    "limpieza de departamentos",
+    "limpieza profunda de baños",
+    "personal de limpieza ips paraguay",
+    "aqui estamos limpieza",
+  ],
   icons: {
     icon: "/images/favicon.png",
     shortcut: "/images/favicon.png",
     apple: "/images/favicon.png",
   },
   openGraph: {
+    title: "Aquí Estamos | Servicios Profesionales de Limpieza en Asunción",
+    description: "Reserva tu limpieza de hogar en 60 segundos con personal contratado bajo IPS. Garantía de satisfacción total en Asunción y Gran Asunción.",
+    url: "https://aqui-estamos-v3.vercel.app",
+    siteName: "Aquí Estamos Limpieza",
+    images: [
+      {
+        url: "/images/hero-bathroom.jpg",
+        width: 1920,
+        height: 1080,
+        alt: "Servicios Profesionales de Limpieza de Hogar y Baños en Asunción - Aquí Estamos",
+      },
+      {
+        url: "/images/logo.png",
+        width: 800,
+        height: 600,
+        alt: "Logo Aquí Estamos Limpieza Paraguay",
+      },
+    ],
+    locale: "es_PY",
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
     title: "Aquí Estamos | Limpieza Profesional en Asunción",
-    description: "Reserva tu limpieza de hogar en 60 segundos. Garantía de satisfacción total en Asunción y Gran Asunción.",
-    images: ["/images/logo.png"],
+    description: "Servicios de limpieza por horas con personal verificado en Asunción y Gran Asunción.",
+    images: ["/images/hero-bathroom.jpg"],
   },
 };
 
