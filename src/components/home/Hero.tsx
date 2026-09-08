@@ -48,7 +48,7 @@ export default function Hero() {
           </h1>
 
           {/* Bajada en color negro */}
-          <p className="text-base sm:text-lg lg:text-xl text-neutral-900 leading-relaxed font-semibold sm:font-medium max-w-2xl">
+          <p className="text-base sm:text-lg lg:text-xl text-neutral-950 leading-relaxed font-semibold max-w-2xl">
             Servicios de limpieza por horas con personal rigurosamente verificado y contratado formalmente bajo normativas de IPS. Reserva online en 60 segundos con tarifa plana en Guaraníes y garantía total.
           </p>
 
