@@ -2,7 +2,7 @@
 
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Check, ArrowRight, ShieldCheck } from "lucide-react";
+import { Check, ArrowRight, ShieldCheck, Sparkles } from "lucide-react";
 import { AVAILABLE_EXTRAS, calculatePricing, formatGs, SERVICE_PACKAGES } from "@/lib/pricing";
 import { FrequencyType, ServiceHour } from "@/types";
 
@@ -32,22 +32,27 @@ export default function QuickCalculator() {
   };
 
   return (
-    <section id="precios" className="py-20 bg-neutral-50 border-b border-neutral-200/80">
+    <section id="precios" className="py-20 sm:py-24 bg-gradient-to-b from-white via-neutral-50 to-white border-b border-neutral-200/80 relative overflow-hidden">
+      
+      {/* Glow suave */}
+      <div className="absolute top-1/2 left-10 w-80 h-80 bg-blue-100/30 rounded-full blur-3xl pointer-events-none -z-10" />
+
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         
-        <div className="max-w-2xl mb-12">
-          <p className="text-xs font-semibold uppercase tracking-wider text-electric-600 mb-2">
-            Cotizador en Vivo
-          </p>
-          <h2 className="text-3xl sm:text-4xl font-bold text-neutral-900 tracking-tight">
-            Calculadora de Presupuesto
+        <div className="text-center max-w-3xl mx-auto mb-16">
+          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-blue-50 border border-blue-200 text-electric-700 text-xs font-bold mb-4 shadow-2xs">
+            <Sparkles className="w-3.5 h-3.5 text-electric-600" />
+            <span>Cotizador Interactivo en Vivo</span>
+          </div>
+          <h2 className="text-3xl sm:text-4xl lg:text-5xl font-black text-neutral-900 tracking-tight leading-tight">
+            Calcula tu presupuesto al instante 💰
           </h2>
-          <p className="mt-3 text-neutral-600 text-sm sm:text-base">
-            Configura las horas, frecuencia y extras para calcular tu inversión exacta en Guaraníes.
+          <p className="mt-4 text-neutral-600 text-base sm:text-lg leading-relaxed max-w-2xl mx-auto font-normal">
+            Configura las horas, frecuencia y extras para ver tu inversión exacta en Guaraníes. ¡Sin pagos por adelantado!
           </p>
         </div>
 
-        <div className="bg-white border border-neutral-200 rounded-2xl p-6 sm:p-8 max-w-5xl shadow-clean">
+        <div className="bg-white border border-neutral-200 rounded-3xl p-6 sm:p-10 max-w-5xl mx-auto shadow-md">
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
             
             {/* Opciones */}
@@ -218,7 +223,7 @@ export default function QuickCalculator() {
             </div>
 
             {/* Recibo */}
-            <div className="lg:col-span-5 bg-neutral-50 rounded-2xl p-6 border border-neutral-200 flex flex-col justify-between h-full space-y-6">
+            <div className="lg:col-span-5 bg-neutral-50/90 rounded-3xl p-6 sm:p-7 border border-neutral-200 flex flex-col justify-between h-full space-y-6">
               <div>
                 <div className="flex items-center justify-between pb-3 border-b border-neutral-200 mb-4 text-xs font-semibold text-neutral-700">
                   <span className="uppercase tracking-wider text-electric-600 font-bold">Resumen de Reserva</span>

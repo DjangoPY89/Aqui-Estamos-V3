@@ -1,47 +1,69 @@
 import React from "react";
-import { MapPin } from "lucide-react";
+import { MapPin, Sparkles, Navigation } from "lucide-react";
 
 export default function CoverageMap() {
   const zones = [
-    { city: "Asunción", neighborhoods: "Villa Morra, Ykua Satî, Carmelitas, Mcal. López, Centro, Sajonia, Los Laureles, Mburucuyá, Las Lomas" },
-    { city: "Luque", neighborhoods: "Centro, Aeropuerto, Rincón, Zárate Isla, Tarumandy" },
-    { city: "San Lorenzo", neighborhoods: "Centro, Reducto, Barcequillo, Villa Amelia" },
-    { city: "Lambaré", neighborhoods: "Centro, Valle Ybaté, Mbachió, Villa Virginia" },
-    { city: "Fernando de la Mora", neighborhoods: "Zona Norte, Zona Sur, Tres Bocas" },
-    { city: "Mariano Roque Alonso", neighborhoods: "Centro, Universo, San Jorge" },
+    { city: "Asunción", emoji: "🏙️", badge: "Cobertura Total", neighborhoods: "Villa Morra, Ykua Satî, Carmelitas, Mcal. López, Centro, Sajonia, Los Laureles, Mburucuyá, Las Lomas" },
+    { city: "Luque", emoji: "✈️", badge: "Sin costo extra", neighborhoods: "Centro, Aeropuerto, Rincón, Zárate Isla, Conmebol, Tarumandy" },
+    { city: "San Lorenzo", emoji: "🎓", badge: "Sin costo extra", neighborhoods: "Centro, Campus UNA, Reducto, Barcequillo, Villa Amelia" },
+    { city: "Lambaré", emoji: "⛵", badge: "Sin costo extra", neighborhoods: "Centro, Yacht y Golf Club, Valle Ybaté, Mbachió, Villa Virginia" },
+    { city: "Fernando de la Mora", emoji: "🌳", badge: "Sin costo extra", neighborhoods: "Zona Norte, Zona Sur, Tres Bocas, Santa Teresa" },
+    { city: "Mariano Roque Alonso", emoji: "🛍️", badge: "Sin costo extra", neighborhoods: "Centro, Shopping Mariano, Universo, San Jorge" },
   ];
 
   return (
-    <section className="py-20 bg-neutral-50 border-b border-neutral-200/80">
+    <section className="py-20 sm:py-24 bg-neutral-50/70 border-b border-neutral-200/80 relative overflow-hidden">
+      
+      {/* Glow suave */}
+      <div className="absolute bottom-0 right-10 w-80 h-80 bg-blue-100/40 rounded-full blur-3xl pointer-events-none -z-10" />
+
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         
-        <div className="max-w-2xl mb-12">
-          <p className="text-xs font-semibold uppercase tracking-wider text-electric-600 mb-2">
-            Cobertura
-          </p>
-          <h2 className="text-3xl sm:text-4xl font-bold text-neutral-900 tracking-tight">
-            Zonas de Atención
+        {/* Encabezado Cálido */}
+        <div className="text-center max-w-3xl mx-auto mb-16">
+          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-blue-50 border border-blue-200 text-electric-700 text-xs font-bold mb-4 shadow-2xs">
+            <Navigation className="w-3.5 h-3.5 text-electric-600" />
+            <span>Siempre cerca de vos</span>
+          </div>
+
+          <h2 className="text-3xl sm:text-4xl lg:text-5xl font-black text-neutral-900 tracking-tight leading-tight">
+            ¡Llegamos directo a tu puerta! 📍
           </h2>
-          <p className="mt-3 text-neutral-600 text-sm sm:text-base">
-            Servicio a domicilio sin costo de traslado adicional en las principales zonas de Gran Asunción.
+
+          <p className="mt-4 text-neutral-600 text-base sm:text-lg leading-relaxed max-w-2xl mx-auto font-normal">
+            Servicio a domicilio sin recargos sorpresa de traslado en las principales zonas de Asunción y Gran Asunción.
           </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {zones.map((z, idx) => (
             <div
               key={idx}
-              className="bg-white rounded-2xl p-5 border border-neutral-200 hover:border-electric-200 shadow-xs transition-all"
+              className="bg-white rounded-3xl p-6 sm:p-7 border border-neutral-200/90 hover:border-electric-300 hover:shadow-xl hover:-translate-y-1.5 transition-all duration-300 flex flex-col justify-between group"
             >
-              <div className="flex items-center gap-2 mb-2">
-                <div className="w-7 h-7 rounded-lg bg-electric-50 flex items-center justify-center">
-                  <MapPin className="w-4 h-4 text-electric-600" />
+              <div>
+                <div className="flex items-center justify-between gap-2 mb-4">
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-10 h-10 rounded-2xl bg-blue-50 text-electric-600 border border-blue-100 flex items-center justify-center text-lg group-hover:scale-110 transition-transform">
+                      <span>{z.emoji}</span>
+                    </div>
+                    <h3 className="text-base font-extrabold text-neutral-900">{z.city}</h3>
+                  </div>
+
+                  <span className="text-[10px] font-bold px-2.5 py-1 bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-full">
+                    {z.badge}
+                  </span>
                 </div>
-                <h3 className="text-sm font-bold text-neutral-900">{z.city}</h3>
+
+                <p className="text-xs sm:text-sm text-neutral-600 leading-relaxed font-normal">
+                  {z.neighborhoods}
+                </p>
               </div>
-              <p className="text-xs text-neutral-500 leading-relaxed pl-9">
-                {z.neighborhoods}
-              </p>
+
+              <div className="pt-4 mt-4 border-t border-neutral-100 flex items-center gap-1.5 text-xs font-semibold text-electric-600">
+                <MapPin className="w-3.5 h-3.5" />
+                <span>Disponible de Lunes a Sábado</span>
+              </div>
             </div>
           ))}
         </div>

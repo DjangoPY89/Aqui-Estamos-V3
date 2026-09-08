@@ -1,67 +1,82 @@
 import React from "react";
 import Link from "next/link";
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, Sparkles, Building2, CheckCircle2 } from "lucide-react";
 
 export default function CorporateTeaser() {
   return (
-    <section className="py-20 bg-navy-950 text-white border-b border-neutral-800">
+    <section className="py-20 sm:py-24 bg-navy-950 text-white border-b border-navy-900 relative overflow-hidden">
+      
+      {/* Glow suave */}
+      <div className="absolute top-0 right-10 w-96 h-96 bg-electric-600/15 rounded-full blur-3xl pointer-events-none -z-10" />
+
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 items-center">
           
-          <div className="lg:col-span-7 space-y-5">
-            <p className="text-xs font-semibold uppercase tracking-wider text-electric-400">
-              Corporativo B2B
-            </p>
+          <div className="lg:col-span-7 space-y-6">
+            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/10 backdrop-blur-md border border-white/20 text-electric-300 text-xs font-bold shadow-2xs">
+              <Building2 className="w-3.5 h-3.5 text-electric-400" />
+              <span>Soluciones para Oficinas y Negocios</span>
+            </div>
 
-            <h2 className="text-3xl sm:text-4xl font-bold text-white tracking-tight leading-tight">
-              Limpieza Profesional para Empresas y Oficinas
+            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-black text-white tracking-tight leading-tight">
+              Limpieza profesional para <br className="hidden sm:inline" />
+              tu empresa o local 🏢
             </h2>
 
-            <p className="text-neutral-300 text-sm sm:text-base leading-relaxed">
-              Mantenimiento integral para oficinas, showrooms y locales comerciales en Asunción. Facturación legal con RUC, personal con cobertura patronal de IPS y disponibilidad en horarios antes o después de la jornada laboral.
+            <p className="text-neutral-200 text-sm sm:text-base leading-relaxed font-normal">
+              Cuidamos la imagen y desinfección de tus oficinas, locales comerciales y showrooms en Asunción. Personal 100% inscripto en IPS, facturación con crédito fiscal (RUC) y horarios flexibles antes o después de la jornada laboral.
             </p>
 
-            <div className="pt-3 flex flex-wrap gap-3">
+            <div className="pt-2 flex flex-wrap gap-3.5">
               <Link
                 href="/corporativo"
-                className="inline-flex items-center gap-2 px-5 py-3 bg-electric-600 hover:bg-electric-500 text-white font-medium text-xs rounded-xl shadow-electric transition-all active:scale-[0.98]"
+                className="inline-flex items-center gap-2.5 px-6 py-4 bg-electric-600 hover:bg-electric-500 text-white font-bold text-xs sm:text-sm rounded-2xl shadow-electric transition-all active:scale-[0.98]"
               >
-                <span>Solicitar Propuesta Comercial</span>
-                <ArrowRight className="w-3.5 h-3.5" />
+                <span>Solicitar Propuesta a Medida</span>
+                <ArrowRight className="w-4 h-4" />
               </Link>
               <a
                 href="https://wa.me/595983463553"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center gap-2 px-5 py-3 bg-white/10 hover:bg-white/15 text-white font-medium text-xs rounded-xl border border-white/20 transition-colors"
+                className="inline-flex items-center gap-2 px-6 py-4 bg-white/10 hover:bg-white/20 backdrop-blur-md text-white font-bold text-xs sm:text-sm rounded-2xl border border-white/20 transition-all"
               >
-                <span>WhatsApp Corporativo</span>
+                <span>💬 WhatsApp Corporativo</span>
               </a>
             </div>
           </div>
 
-          <div className="lg:col-span-5 bg-white/5 backdrop-blur-sm p-6 sm:p-8 rounded-2xl border border-white/10 space-y-4">
-            <h3 className="text-sm font-bold text-white uppercase tracking-wider flex items-center gap-2">
-              <span className="w-2 h-2 rounded-full bg-electric-400"></span>
-              Ventajas Corporativas
+          <div className="lg:col-span-5 bg-white/10 backdrop-blur-md p-7 sm:p-9 rounded-3xl border border-white/20 space-y-5 shadow-xl">
+            <h3 className="text-sm font-extrabold text-white uppercase tracking-wider flex items-center gap-2">
+              <span className="w-2.5 h-2.5 rounded-full bg-electric-400 animate-pulse"></span>
+              <span>Ventajas que te dan tranquilidad:</span>
             </h3>
-            <ul className="space-y-2.5 text-xs text-neutral-300">
-              <li className="flex items-start gap-2">
-                <span className="text-electric-400 font-bold">•</span>
+            
+            <ul className="space-y-3.5 text-xs sm:text-sm text-neutral-200">
+              <li className="flex items-start gap-3">
+                <div className="w-4 h-4 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center shrink-0 mt-0.5 font-bold text-[10px]">
+                  ✓
+                </div>
                 <span>Factura crédito fiscal con RUC mensualizada.</span>
               </li>
-              <li className="flex items-start gap-2">
-                <span className="text-electric-400 font-bold">•</span>
-                <span>100% de cumplimiento en normativas laborales IPS y MTESS.</span>
+              <li className="flex items-start gap-3">
+                <div className="w-4 h-4 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center shrink-0 mt-0.5 font-bold text-[10px]">
+                  ✓
+                </div>
+                <span>100% cumplimiento laboral y cobertura de IPS.</span>
               </li>
-              <li className="flex items-start gap-2">
-                <span className="text-electric-400 font-bold">•</span>
-                <span>Reemplazo garantizado de personal en caso de eventualidad.</span>
+              <li className="flex items-start gap-3">
+                <div className="w-4 h-4 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center shrink-0 mt-0.5 font-bold text-[10px]">
+                  ✓
+                </div>
+                <span>Reemplazo garantizado ante cualquier eventualidad.</span>
               </li>
-              <li className="flex items-start gap-2">
-                <span className="text-electric-400 font-bold">•</span>
-                <span>Relevamiento técnico inicial sin costo.</span>
+              <li className="flex items-start gap-3">
+                <div className="w-4 h-4 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center shrink-0 mt-0.5 font-bold text-[10px]">
+                  ✓
+                </div>
+                <span>Relevamiento técnico inicial sin costo alguno.</span>
               </li>
             </ul>
           </div>
