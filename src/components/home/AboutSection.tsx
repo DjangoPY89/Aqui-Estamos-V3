@@ -21,20 +21,20 @@ export default function AboutSection() {
 
           {/* Texto y Propósito */}
           <div className="lg:col-span-7 space-y-6">
-            <p className="text-xs font-semibold uppercase tracking-wider text-neutral-400">
-              Nosotros
+            <p className="text-xs font-semibold uppercase tracking-wider text-electric-600">
+              Empresa de Limpieza en Paraguay
             </p>
 
             <h2 className="text-3xl sm:text-4xl font-bold text-neutral-900 tracking-tight leading-tight">
-              Bienestar y tranquilidad para tu hogar y oficina.
+              Bienestar y tranquilidad con el mejor servicio de limpieza a domicilio en Asunción.
             </h2>
 
             <div className="space-y-3.5 text-neutral-600 text-sm sm:text-base leading-relaxed">
               <p>
-                En <strong>Aquí Estamos</strong> transformamos el servicio de limpieza en Paraguay combinando puntualidad, rigurosidad en la selección del personal y contratación 100% formal bajo normativas de IPS y MTESS.
+                En <strong>Aquí Estamos</strong> somos la <strong>empresa de limpieza en Paraguay</strong> de referencia para hogares, departamentos y oficinas. Ofrecemos un <strong>servicio de limpieza a domicilio</strong> profesional y por horas, combinando puntualidad, rigurosidad en la selección del personal y contratación 100% formal bajo normativas de IPS y MTESS.
               </p>
               <p>
-                Sin trámites engorrosos ni incertidumbre: reserva tu bloque de tiempo online y nuestro equipo se encarga de dejar cada ambiente impecable.
+                Si buscas <strong>empresas de limpieza en Asunción</strong> y Gran Asunción con respaldo legal y garantía de satisfacción, reserva tu bloque de tiempo online en 60 segundos y nuestro equipo se encargará de dejar cada ambiente impecable.
               </p>
             </div>
 

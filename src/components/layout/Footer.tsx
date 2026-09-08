@@ -20,7 +20,7 @@ export default function Footer() {
               />
             </div>
             <p className="text-xs text-neutral-400 leading-relaxed max-w-sm">
-              Servicios profesionales de limpieza residencial y corporativa en Asunción y Gran Asunción. Personal asegurado en IPS y garantía total de satisfacción.
+              Aquí Estamos es la <strong>empresa de limpieza en Paraguay</strong> líder en <strong>servicio de limpieza a domicilio</strong>, casas y oficinas en Asunción y Gran Asunción. Personal verificado con cobertura IPS y garantía total de satisfacción.
             </p>
             <div className="flex items-center gap-2.5 pt-1">
               <a
@@ -149,9 +149,9 @@ export default function Footer() {
 
           {/* Copyright y Ciudades */}
           <div className="flex flex-col sm:flex-row items-center justify-between gap-3 text-[11px] text-neutral-400 text-center sm:text-left">
-            <p>© {new Date().getFullYear()} Aquí Estamos. Todos los derechos reservados.</p>
+            <p>© {new Date().getFullYear()} Aquí Estamos — Empresa de Limpieza en Paraguay. Todos los derechos reservados.</p>
             <div className="flex flex-wrap gap-1.5 justify-center text-neutral-500 text-[10px]">
-              <span>Asunción</span> • <span>Luque</span> • <span>San Lorenzo</span> • <span>Lambaré</span> • <span>Villa Morra</span>
+              <span>Empresa de Limpieza Asunción</span> • <span>Servicio de Limpieza a Domicilio</span> • <span>Empresas de Limpieza en Paraguay</span>
             </div>
           </div>
 

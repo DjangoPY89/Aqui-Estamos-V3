@@ -27,7 +27,7 @@ export default function Hero() {
         <meta itemProp="caption" content="Limpieza profesional por horas en Asunción y Gran Asunción con personal calificado en IPS." />
         <meta itemProp="description" content="Servicio líder de limpieza por horas en Asunción Paraguay para casas, departamentos y oficinas. Personal verificado e inscripto formalmente en IPS." />
         <meta itemProp="contentLocation" content="Asunción, Gran Asunción, Paraguay" />
-        <meta itemProp="keywords" content="limpieza Asunción, limpieza por horas Asunción, servicio de limpieza en Asunción, empresa de limpieza en Asunción Paraguay, limpieza casas Asunción, limpieza oficinas Asunción" />
+        <meta itemProp="keywords" content="empresa de limpieza, empresas de limpieza en paraguay, servicio de limpieza a domicilio, empresa de limpieza en paraguay, servicio de limpieza, empresas de limpiezas en paraguay, empresa de limpieza asuncion, empresa de limpieza en asuncion, empresas de limpieza en asuncion, empresas de limpieza asuncion, limpieza por horas Asunción, limpieza casas Asunción, limpieza oficinas Asunción" />
         
         {/* JSON-LD de SEO Local e Imagen para Google */}
         <script
@@ -39,8 +39,8 @@ export default function Hero() {
               "name": "Servicio de Limpieza de Casas y Departamentos en Asunción - Aquí Estamos",
               "caption": "Limpieza profesional por horas para casas y oficinas en Asunción y Gran Asunción Paraguay",
               "description": "Empresa especializada en servicios de limpieza profesional por hora en Asunción, Paraguay. Cobertura completa en Asunción, Lambaré, Luque, San Lorenzo, Fernando de la Mora y Gran Asunción.",
-              "contentUrl": "https://aquiestamoslimpieza.com/images/limpieza-casas-departamentos-asuncion-paraguay.jpg",
-              "url": "https://aquiestamoslimpieza.com/images/limpieza-casas-departamentos-asuncion-paraguay.jpg",
+              "contentUrl": "https://aqui-estamos-v3.vercel.app/images/limpieza-casas-departamentos-asuncion-paraguay.jpg",
+              "url": "https://aqui-estamos-v3.vercel.app/images/limpieza-casas-departamentos-asuncion-paraguay.jpg",
               "contentLocation": {
                 "@type": "Place",
                 "name": "Asunción, Paraguay",
@@ -52,10 +52,19 @@ export default function Hero() {
                 }
               },
               "keywords": [
+                "empresa de limpieza",
+                "empresas de limpieza en paraguay",
+                "servicio de limpieza a domicilio",
+                "empresa de limpieza en paraguay",
+                "servicio de limpieza",
+                "empresas de limpiezas en paraguay",
+                "empresa de limpieza asuncion",
+                "empresa de limpieza en asuncion",
+                "empresas de limpieza en asuncion",
+                "empresas de limpieza asuncion",
                 "limpieza Asunción",
                 "limpieza por horas Asunción",
                 "servicio de limpieza Asunción",
-                "empresa de limpieza Asunción Paraguay",
                 "limpieza de casas en Asunción",
                 "limpieza de departamentos Asunción",
                 "limpieza de oficinas Asunción"

@@ -17,13 +17,13 @@ export default function CoverageMap() {
         
         <div className="max-w-2xl mb-12">
           <p className="text-xs font-semibold uppercase tracking-wider text-electric-600 mb-2">
-            Cobertura
+            Cobertura en Asunción y Paraguay
           </p>
           <h2 className="text-3xl sm:text-4xl font-bold text-neutral-900 tracking-tight">
-            Zonas de Atención
+            Servicio de Limpieza a Domicilio en Asunción y Gran Asunción
           </h2>
           <p className="mt-3 text-neutral-600 text-sm sm:text-base">
-            Servicio a domicilio sin costo de traslado adicional en las principales zonas de Gran Asunción.
+            Como empresa de limpieza líder en Paraguay, llegamos a tu hogar u oficina sin costo de traslado adicional en las principales zonas de Asunción y Gran Asunción.
           </p>
         </div>
 
