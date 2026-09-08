@@ -27,7 +27,7 @@ export default function Hero() {
         <meta itemProp="caption" content="Limpieza profesional por horas en Asunción y Gran Asunción con personal calificado en IPS." />
         <meta itemProp="description" content="Servicio líder de limpieza por horas en Asunción Paraguay para casas, departamentos y oficinas. Personal verificado e inscripto formalmente en IPS." />
         <meta itemProp="contentLocation" content="Asunción, Gran Asunción, Paraguay" />
-        <meta itemProp="keywords" content="empresa de limpieza, empresas de limpieza en paraguay, servicio de limpieza a domicilio, empresa de limpieza en paraguay, servicio de limpieza, empresas de limpiezas en paraguay, empresa de limpieza asuncion, empresa de limpieza en asuncion, empresas de limpieza en asuncion, empresas de limpieza asuncion, limpieza por horas Asunción, limpieza casas Asunción, limpieza oficinas Asunción" />
+        <meta itemProp="keywords" content="empresa de limpieza, empresas de limpieza en paraguay, servicio de limpieza a domicilio, empresa de limpieza en paraguay, servicio de limpieza, empresas de limpiezas en paraguay, empresa de limpieza asuncion, empresa de limpieza en asuncion, empresas de limpieza en asuncion, empresas de limpieza asuncion, empresa de limpieza el mejor, el mejor empresa de limpieza, la mejor empresa de limpieza, la mejor empresa de limpieza en paraguay, la mejor empresa de limpieza en asuncion, limpieza por horas Asunción, limpieza casas Asunción, limpieza oficinas Asunción" />
         
         {/* JSON-LD de SEO Local e Imagen para Google */}
         <script
@@ -62,6 +62,11 @@ export default function Hero() {
                 "empresa de limpieza en asuncion",
                 "empresas de limpieza en asuncion",
                 "empresas de limpieza asuncion",
+                "empresa de limpieza el mejor",
+                "el mejor empresa de limpieza",
+                "la mejor empresa de limpieza",
+                "la mejor empresa de limpieza en paraguay",
+                "la mejor empresa de limpieza en asuncion",
                 "limpieza Asunción",
                 "limpieza por horas Asunción",
                 "servicio de limpieza Asunción",
