@@ -7,18 +7,26 @@ export default function Hero() {
   return (
     <section className="relative w-full min-h-[620px] sm:min-h-[700px] lg:min-h-[800px] flex items-center justify-center overflow-hidden bg-white text-neutral-950 border-b border-neutral-200">
       
-      {/* Background Image Full-Width */}
-      <div className="absolute inset-0 w-full h-full overflow-hidden">
+      {/* Background Image Full-Width con SEO Especializado */}
+      <div 
+        className="absolute inset-0 w-full h-full overflow-hidden"
+        itemScope
+        itemType="https://schema.org/ImageObject"
+      >
         <Image
-          src="/images/hero-luxury-bath.jpg"
-          alt="Baño de lujo impecable y reluciente - Aquí Estamos Limpieza"
+          src="/images/hero-limpieza-hogar-asuncion.jpg"
+          alt="Servicio profesional de limpieza de casas, departamentos y oficinas por horas en Asunción y Gran Asunción Paraguay - Aquí Estamos Limpieza"
+          title="Empresa de Limpieza Profesional en Asunción - Aquí Estamos"
           fill
           priority
           sizes="100vw"
           className="object-cover object-center"
+          itemProp="contentUrl"
         />
-        {/* Capa de fondo blanco al 15% */}
-        <div className="absolute inset-0 bg-white/15" />
+        <meta itemProp="name" content="Servicio de Limpieza Profesional en Hogares - Aquí Estamos" />
+        <meta itemProp="description" content="Personal capacitado y formalmente contratado en IPS para la limpieza profunda de casas y departamentos en Asunción." />
+        {/* Capa de fondo blanco aumentada al 30% */}
+        <div className="absolute inset-0 bg-white/30" />
       </div>
 
       {/* Contenido Hero Superpuesto */}
