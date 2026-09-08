@@ -1,15 +1,15 @@
 import React from "react";
 import Link from "next/link";
 import { Check, ArrowRight } from "lucide-react";
-import { formatGs } from "@/lib/pricing";
+import { formatGs, SERVICE_PACKAGES } from "@/lib/pricing";
 
 export default function ServicesGrid() {
   const plans = [
     {
       hours: 4,
-      name: "Express (4 Horas)",
+      name: `${SERVICE_PACKAGES[4].name} (4 Horas)`,
       tagline: "Departamentos de 1-2 ambientes",
-      price: 145000,
+      price: SERVICE_PACKAGES[4].basePrice,
       description: "Ideal para mantenimiento esencial de superficies, cocina, baños y pisos.",
       features: [
         "Mantenimiento esencial y desinfección",
@@ -22,9 +22,9 @@ export default function ServicesGrid() {
     },
     {
       hours: 6,
-      name: "Integral (6 Horas)",
+      name: `${SERVICE_PACKAGES[6].name} (6 Horas)`,
       tagline: "Casas medianas (2-3 habitaciones)",
-      price: 185000,
+      price: SERVICE_PACKAGES[6].basePrice,
       description: "Nuestra opción más equilibrada para una limpieza profunda y detallada.",
       features: [
         "Todo lo incluido en el plan Express",
@@ -37,9 +37,9 @@ export default function ServicesGrid() {
     },
     {
       hours: 8,
-      name: "Full Day (8 Horas)",
+      name: `${SERVICE_PACKAGES[8].name} (8 Horas)`,
       tagline: "Residencias amplias o mudanzas",
-      price: 245000,
+      price: SERVICE_PACKAGES[8].basePrice,
       description: "Jornada completa para limpiezas profundas de fin de obra o reseteo total.",
       features: [
         "Jornada exhaustiva de 8 horas de trabajo",

@@ -193,7 +193,7 @@ export default function AdminDashboardPage() {
   const [newBookingCleaner, setNewBookingCleaner] = useState("");
   const [newBookingStatus, setNewBookingStatus] = useState<Booking["status"]>("CONFIRMED");
   const [newBookingFrequency, setNewBookingFrequency] = useState<string>("once");
-  const [newBookingPrice, setNewBookingPrice] = useState<number>(145000);
+  const [newBookingPrice, setNewBookingPrice] = useState<number>(155000);
   const [newBookingExtras, setNewBookingExtras] = useState<string[]>([]);
   const [isSubmittingNewBooking, setIsSubmittingNewBooking] = useState(false);
 
