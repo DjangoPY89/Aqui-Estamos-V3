@@ -25,8 +25,8 @@ export default function Hero() {
         />
         <meta itemProp="name" content="Servicio de Limpieza Profesional en Hogares - Aquí Estamos" />
         <meta itemProp="description" content="Personal capacitado y formalmente contratado en IPS para la limpieza profunda de casas y departamentos en Asunción." />
-        {/* Capa de fondo blanco aumentada al 40% */}
-        <div className="absolute inset-0 bg-white/40" />
+        {/* Capa de fondo blanco aumentada al 50% */}
+        <div className="absolute inset-0 bg-white/50" />
       </div>
 
       {/* Contenido Hero Superpuesto */}
