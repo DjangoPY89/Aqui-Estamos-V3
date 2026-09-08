@@ -1,5 +1,5 @@
 import React from "react";
-import { Star, Sparkles, Check } from "lucide-react";
+import { Star } from "lucide-react";
 import { getReviews } from "@/lib/db";
 
 const DEFAULT_REVIEWS = [
@@ -7,22 +7,22 @@ const DEFAULT_REVIEWS = [
     id: "rev-1",
     userName: "Carolina M. (Villa Morra)",
     rating: 5,
-    comment: "Excelente experiencia. La puntualidad y la calidez de Carmen superaron mis expectativas. El piso y la cocina quedaron con un aroma a limpio increíble.",
+    comment: "Excelente servicio. La puntualidad y la atención al detalle de Carmen superaron mis expectativas. El piso y la cocina quedaron impecables.",
     serviceType: "Integral (6 Horas)",
   },
   {
     id: "rev-2",
     userName: "Esteban R. (Ykua Satî)",
     rating: 5,
-    comment: "Súper conforme tras 8 horas de limpieza profunda de mudanza. Personal súper educado, confiable y 100% profesional.",
+    comment: "Muy conforme con el trabajo tras 8 horas de limpieza profunda. Personal confiable, educado y 100% profesional.",
     serviceType: "Full Day (8 Horas)",
   },
   {
     id: "rev-3",
     userName: "Valeria D. (Mcal. López)",
     rating: 5,
-    comment: "Contraté el plan recurrente 2 veces por semana. Me devolvió los fines de semana libres y la formalidad con IPS me da total tranquilidad.",
-    serviceType: "Plan Recurrente Semanal",
+    comment: "Contraté el plan recurrente 3 veces por semana. Me ahorra mucho tiempo y la formalidad del servicio es impecable.",
+    serviceType: "Plan Recurrente",
   },
 ];
 
@@ -38,69 +38,48 @@ export default function Testimonials() {
   }
 
   return (
-    <section className="py-20 sm:py-24 bg-white border-b border-neutral-200/80 relative overflow-hidden">
-      
-      {/* Glow suave */}
-      <div className="absolute top-1/2 left-10 w-80 h-80 bg-amber-50/50 rounded-full blur-3xl pointer-events-none -z-10" />
-
+    <section className="py-20 bg-white border-b border-neutral-200/80">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         
-        {/* Encabezado Cálido */}
-        <div className="text-center max-w-3xl mx-auto mb-16">
-          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-amber-50 border border-amber-200 text-amber-900 text-xs font-bold mb-4 shadow-2xs">
-            <Sparkles className="w-3.5 h-3.5 text-amber-600" />
-            <span>Experiencias Reales</span>
-          </div>
-
-          <h2 className="text-3xl sm:text-4xl lg:text-5xl font-black text-neutral-900 tracking-tight leading-tight flex items-center justify-center gap-3 flex-wrap">
-            <span>Lo que dicen quienes ya</span>
-            <span className="flex items-center gap-2">
-              disfrutan de su tiempo libre
-              <span className="inline-flex p-1.5 rounded-xl bg-amber-50 text-amber-500 border border-amber-200">
-                <Star className="w-6 h-6 sm:w-8 sm:h-8 fill-amber-400" />
-              </span>
-            </span>
+        <div className="max-w-2xl mb-12">
+          <p className="text-xs font-semibold uppercase tracking-wider text-electric-600 mb-2">
+            Opiniones
+          </p>
+          <h2 className="text-3xl sm:text-4xl font-bold text-neutral-900 tracking-tight">
+            Experiencias de Clientes
           </h2>
-
-          <p className="mt-4 text-neutral-600 text-base sm:text-lg leading-relaxed max-w-2xl mx-auto font-normal">
-            Valoraciones de hogares y empresas que eligen la tranquilidad de Aquí Estamos en Asunción.
+          <p className="mt-3 text-neutral-600 text-sm sm:text-base">
+            Valoraciones reales de hogares y empresas que utilizan Aquí Estamos en Asunción.
           </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {reviews.slice(0, 3).map((rev) => (
             <div
               key={rev.id}
-              className="bg-neutral-50/70 hover:bg-white rounded-3xl p-7 sm:p-8 border border-neutral-200/90 hover:border-electric-300 hover:shadow-xl hover:-translate-y-1.5 transition-all duration-300 flex flex-col justify-between group"
+              className="bg-neutral-50 rounded-2xl p-6 border border-neutral-200 hover:border-electric-200 shadow-xs transition-all flex flex-col justify-between"
             >
               <div>
-                <div className="flex items-center justify-between gap-2 mb-4">
-                  <div className="flex items-center gap-1 text-amber-400">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center gap-1 text-amber-500">
                     {[...Array(rev.rating)].map((_, i) => (
-                      <Star key={i} className="w-4 h-4 fill-amber-400 text-amber-400" />
+                      <Star key={i} className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
                     ))}
                   </div>
-                  <span className="text-[11px] font-extrabold text-electric-700 bg-electric-50 px-2.5 py-1 rounded-full border border-electric-100">
+                  <span className="text-[11px] font-medium text-electric-700 bg-electric-50 px-2 py-0.5 rounded border border-electric-100">
                     {rev.serviceType}
                   </span>
                 </div>
 
-                <p className="text-xs sm:text-sm text-neutral-700 leading-relaxed mb-6 font-normal italic">
+                <p className="text-xs sm:text-sm text-neutral-700 leading-relaxed mb-6 font-normal">
                   "{rev.comment}"
                 </p>
               </div>
 
-              <div className="pt-4 border-t border-neutral-200/70 flex items-center justify-between">
-                <div className="flex items-center gap-2.5">
-                  <div className="w-8 h-8 rounded-full bg-blue-100 text-electric-800 font-black text-xs flex items-center justify-center">
-                    {rev.userName.charAt(0)}
-                  </div>
-                  <div>
-                    <p className="text-xs font-bold text-neutral-950">{rev.userName}</p>
-                    <p className="text-[10.5px] text-emerald-700 font-bold flex items-center gap-1">
-                      <Check className="w-3 h-3 text-emerald-600" /> Cliente Verificado
-                    </p>
-                  </div>
+              <div className="pt-3 border-t border-neutral-200/60 flex items-center justify-between">
+                <div>
+                  <p className="text-xs font-bold text-neutral-900">{rev.userName}</p>
+                  <p className="text-[11px] text-electric-600 font-medium">✓ Cliente Verificado</p>
                 </div>
               </div>
             </div>
