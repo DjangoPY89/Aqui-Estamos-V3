@@ -32,7 +32,7 @@ import {
   CreditCard,
   QrCode
 } from "lucide-react";
-import { AVAILABLE_EXTRAS, calculatePricing, formatGs, SERVICE_PACKAGES } from "@/lib/pricing";
+import { calculatePricing, formatGs, SERVICE_PACKAGES } from "@/lib/pricing";
 import { FrequencyType, PaymentMethod, ServiceHour, TimeSlotConfig, DateAvailabilityCheck, AvailabilitySettings } from "@/types";
 import GoogleSignInButton from "@/components/auth/GoogleSignInButton";
 import GoogleMapPicker from "@/components/booking/GoogleMapPicker";
@@ -957,45 +957,11 @@ function BookingContent() {
                 </div>
               </div>
 
-              {/* PASO 2: Servicios Extras */}
-              <div className="bg-white rounded-2xl p-6 sm:p-7 border border-neutral-200 shadow-xs space-y-4">
-                <div className="flex items-center gap-2 pb-3 border-b border-neutral-100">
-                  <span className="font-mono text-xs font-bold text-electric-600">02</span>
-                  <h3 className="text-sm font-bold text-neutral-900">Servicios Extras (Opcionales)</h3>
-                </div>
-
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                  {AVAILABLE_EXTRAS.map((extra) => {
-                    const isChecked = selectedExtras.includes(extra.id);
-                    return (
-                      <button
-                        key={extra.id}
-                        type="button"
-                        onClick={() => toggleExtra(extra.id)}
-                        className={`p-2.5 rounded-lg border text-left flex items-center justify-between text-xs transition-all ${
-                          isChecked
-                            ? "bg-electric-50 border-electric-300 text-electric-900 font-medium"
-                            : "bg-white border-neutral-200 text-neutral-600 hover:bg-neutral-50"
-                        }`}
-                      >
-                        <div className="flex items-center gap-1.5 min-w-0">
-                          <span className="text-sm shrink-0">{extra.icon}</span>
-                          <span className="truncate">{extra.name}</span>
-                        </div>
-                        <span className="text-[10px] text-neutral-400 shrink-0 ml-1 font-semibold">
-                          {extra.price > 0 ? `+${extra.price / 1000}k` : "Inc."}
-                        </span>
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-
-              {/* PASO 3: CONTACTO Y UBICACIÓN */}
+              {/* PASO 2: CONTACTO Y UBICACIÓN */}
               <div className="bg-white rounded-2xl p-6 sm:p-7 border border-neutral-200 shadow-xs space-y-5">
                 <div className="flex items-center justify-between pb-3 border-b border-neutral-100">
                   <div className="flex items-center gap-2">
-                    <span className="font-mono text-xs font-bold text-electric-600">03</span>
+                    <span className="font-mono text-xs font-bold text-electric-600">02</span>
                     <h3 className="text-sm font-bold text-neutral-900">Datos de Contacto y Ubicación</h3>
                   </div>
                   <span className="text-[11px] font-semibold text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-200 flex items-center gap-1.5 shadow-2xs">
@@ -1415,10 +1381,10 @@ function BookingContent() {
                 </div>
               </div>
 
-              {/* PASO 4: FECHA Y TURNO */}
+              {/* PASO 3: FECHA Y TURNO */}
               <div className="bg-white rounded-2xl p-6 sm:p-7 border border-neutral-200 shadow-xs space-y-5">
                 <div className="flex items-center gap-2 pb-3 border-b border-neutral-100">
-                  <span className="font-mono text-xs font-bold text-electric-600">04</span>
+                  <span className="font-mono text-xs font-bold text-electric-600">03</span>
                   <h3 className="text-sm font-bold text-neutral-900">Fecha y Turno del Servicio</h3>
                 </div>
 
@@ -1559,11 +1525,11 @@ function BookingContent() {
                 </div>
               </div>
 
-              {/* PASO 5: SELECCIÓN DE COLABORADOR / PERSONAL */}
+              {/* PASO 4: SELECCIÓN DE COLABORADOR / PERSONAL */}
               <div className="bg-white rounded-2xl p-6 sm:p-7 border border-neutral-200 shadow-xs space-y-5">
                 <div className="flex items-center justify-between pb-3 border-b border-neutral-100">
                   <div className="flex items-center gap-2">
-                    <span className="font-mono text-xs font-bold text-electric-600">05</span>
+                    <span className="font-mono text-xs font-bold text-electric-600">04</span>
                     <h3 className="text-sm font-bold text-neutral-900">Colaborador / Personal Asignado (Opcional)</h3>
                   </div>
                   <span className="text-[11px] font-semibold text-slate-500 bg-slate-100 px-2.5 py-1 rounded-full">
@@ -1691,10 +1657,10 @@ function BookingContent() {
                 </div>
               </div>
 
-              {/* PASO 6: MÉTODO DE PAGO Y NOTAS */}
+              {/* PASO 5: MÉTODO DE PAGO Y NOTAS */}
               <div className="bg-white rounded-2xl p-6 sm:p-7 border border-neutral-200 shadow-xs space-y-5">
                 <div className="flex items-center gap-2 pb-3 border-b border-neutral-100">
-                  <span className="font-mono text-xs font-bold text-electric-600">06</span>
+                  <span className="font-mono text-xs font-bold text-electric-600">05</span>
                   <h3 className="text-sm font-bold text-neutral-900">Método de Pago y Notas</h3>
                 </div>
 

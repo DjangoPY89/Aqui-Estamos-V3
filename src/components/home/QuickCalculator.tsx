@@ -3,30 +3,22 @@
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Check, ArrowRight, ShieldCheck } from "lucide-react";
-import { AVAILABLE_EXTRAS, calculatePricing, formatGs, SERVICE_PACKAGES } from "@/lib/pricing";
+import { calculatePricing, formatGs, SERVICE_PACKAGES } from "@/lib/pricing";
 import { FrequencyType, ServiceHour } from "@/types";
 
 export default function QuickCalculator() {
   const router = useRouter();
   const [hours, setHours] = useState<ServiceHour>(6);
   const [frequency, setFrequency] = useState<FrequencyType>("once");
-  const [selectedExtras, setSelectedExtras] = useState<string[]>(["nevera"]);
   const [customDatesCount, setCustomDatesCount] = useState<number>(3);
 
   const datesCount = frequency === "custom" ? customDatesCount : 1;
-  const pricing = calculatePricing(hours, frequency, selectedExtras, datesCount);
-
-  const toggleExtra = (id: string) => {
-    setSelectedExtras((prev) =>
-      prev.includes(id) ? prev.filter((e) => e !== id) : [...prev, id]
-    );
-  };
+  const pricing = calculatePricing(hours, frequency, [], datesCount);
 
   const handleContinue = () => {
     const params = new URLSearchParams({
       hours: hours.toString(),
       freq: frequency,
-      extras: selectedExtras.join(","),
     });
     router.push(`/reservar?${params.toString()}`);
   };
@@ -43,7 +35,7 @@ export default function QuickCalculator() {
             Calculadora de Presupuesto
           </h2>
           <p className="mt-3 text-neutral-600 text-sm sm:text-base">
-            Configura las horas, frecuencia y extras para calcular tu inversión exacta en Guaraníes.
+            Configura las horas y frecuencia para calcular tu inversión exacta en Guaraníes.
           </p>
         </div>
 
@@ -183,38 +175,6 @@ export default function QuickCalculator() {
                 )}
               </div>
 
-              {/* 3. Extras Opcionales */}
-              <div>
-                <label className="block text-xs font-semibold uppercase tracking-wider text-neutral-500 mb-2.5">
-                  3. Servicios Extras (Opcionales)
-                </label>
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                  {AVAILABLE_EXTRAS.map((extra) => {
-                    const isChecked = selectedExtras.includes(extra.id);
-                    return (
-                      <button
-                        key={extra.id}
-                        type="button"
-                        onClick={() => toggleExtra(extra.id)}
-                        className={`p-2.5 rounded-lg border text-left flex items-center justify-between text-xs transition-all ${
-                          isChecked
-                            ? "bg-electric-50 border-electric-300 text-electric-900 font-medium shadow-2xs"
-                            : "bg-white border-neutral-200 text-neutral-600 hover:bg-neutral-50"
-                        }`}
-                      >
-                        <div className="flex items-center gap-1.5 min-w-0">
-                          <span className="text-sm shrink-0">{extra.icon}</span>
-                          <span className="truncate">{extra.name}</span>
-                        </div>
-                        <span className="text-[10px] text-neutral-400 shrink-0 ml-1 font-semibold">
-                          {extra.price > 0 ? `+${extra.price / 1000}k` : "Inc."}
-                        </span>
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-
             </div>
 
             {/* Recibo */}
@@ -233,12 +193,6 @@ export default function QuickCalculator() {
                     </span>
                     <span className="font-medium text-neutral-900">{formatGs(pricing.basePrice)}</span>
                   </div>
-                  {pricing.extrasTotal > 0 && (
-                    <div className="flex justify-between">
-                      <span>Extras ({selectedExtras.length}):</span>
-                      <span className="font-medium text-neutral-900">+{formatGs(pricing.extrasTotal)}</span>
-                    </div>
-                  )}
                   {pricing.discountAmount > 0 && (
                     <div className="flex justify-between text-emerald-700 font-medium">
                       <span>Descuento por Frecuencia ({pricing.discountPercentage}%):</span>
