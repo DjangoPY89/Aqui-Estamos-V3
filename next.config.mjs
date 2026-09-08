@@ -27,6 +27,10 @@ const nextConfig = {
         protocol: 'https',
         hostname: 'cdn.decorabano.com',
       },
+      {
+        protocol: 'https',
+        hostname: 'nexdom.racc.es',
+      },
     ],
   },
 };
