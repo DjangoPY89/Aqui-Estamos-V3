@@ -1,5 +1,5 @@
 import React from "react";
-import { Sparkles, Building2, Home } from "lucide-react";
+import { Check } from "lucide-react";
 
 export default function TrustBar() {
   const clients = [
@@ -16,8 +16,8 @@ export default function TrustBar() {
         <div className="flex flex-col lg:flex-row items-center justify-between gap-4">
           
           <div className="flex items-center gap-2 text-xs font-bold text-neutral-700 shrink-0">
-            <span className="w-6 h-6 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center text-xs">
-              ✓
+            <span className="w-6 h-6 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center">
+              <Check className="w-3.5 h-3.5" />
             </span>
             <span>La confianza de más de <strong className="text-neutral-950 font-black">+1.500 hogares y edificios</strong> en:</span>
           </div>

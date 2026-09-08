@@ -5,7 +5,11 @@ import {
   Sparkles, 
   HeartHandshake, 
   Coffee, 
-  ArrowRight
+  ArrowRight,
+  Zap,
+  Clock,
+  CheckCircle2,
+  Home
 } from "lucide-react";
 
 export default function HowItWorks() {
@@ -18,7 +22,8 @@ export default function HowItWorks() {
       icon: CalendarCheck,
       title: "1. Eliges tu horario ideal",
       description: "En menos de 60 segundos seleccionas el bloque de horas (4h, 6h u 8h), la fecha que mejor te quede y tus extras favoritos. ¡Fácil y sin vueltas!",
-      friendlyTip: "⚡ Reserva lista en 1 minuto",
+      tipIcon: Zap,
+      friendlyTip: "Reserva lista en 1 minuto",
     },
     {
       number: "2",
@@ -28,7 +33,8 @@ export default function HowItWorks() {
       icon: HeartHandshake,
       title: "2. Llegamos puntual a tu puerta",
       description: "Tu colaboradora asignada llega puntualmente en el turno acordado. Todo nuestro equipo cuenta con verificación rigurosa y cobertura laboral IPS.",
-      friendlyTip: "🚪 Puntualidad y buena energía",
+      tipIcon: Clock,
+      friendlyTip: "Puntualidad y buena energía",
     },
     {
       number: "3",
@@ -38,7 +44,8 @@ export default function HowItWorks() {
       icon: Coffee,
       title: "3. Disfrutas tu hogar reluciente",
       description: "Te relajas mientras dejamos tu casa como nueva. Revisas el servicio y recién ahí abonas por transferencia bancaria (SIPAP) o tarjeta.",
-      friendlyTip: "✨ Pagas recién al finalizar",
+      tipIcon: CheckCircle2,
+      friendlyTip: "Pagas recién al finalizar",
     },
   ];
 
@@ -60,7 +67,7 @@ export default function HowItWorks() {
           
           <h2 className="text-3xl sm:text-4xl lg:text-5xl font-black text-neutral-900 tracking-tight leading-tight">
             ¿Cómo funciona? <br className="hidden sm:inline" />
-            <span className="text-electric-600">En 3 simples pasos</span> tienes tu casa impecable 🏡
+            <span className="text-electric-600">En 3 simples pasos</span> tienes tu casa impecable
           </h2>
           
           <p className="mt-4 text-neutral-600 text-base sm:text-lg leading-relaxed max-w-2xl mx-auto font-normal">
@@ -76,6 +83,7 @@ export default function HowItWorks() {
 
           {steps.map((s, idx) => {
             const Icon = s.icon;
+            const TipIcon = s.tipIcon;
             return (
               <div
                 key={idx}
@@ -112,6 +120,7 @@ export default function HowItWorks() {
 
                 {/* Tip amigable al pie de cada tarjeta */}
                 <div className="pt-6 mt-6 border-t border-neutral-100 flex items-center gap-2 text-xs font-semibold text-neutral-700">
+                  <TipIcon className="w-3.5 h-3.5 text-electric-600" />
                   <span>{s.friendlyTip}</span>
                 </div>
               </div>
@@ -123,8 +132,8 @@ export default function HowItWorks() {
         <div className="mt-14 bg-gradient-to-r from-electric-600 to-electric-700 rounded-3xl p-6 sm:p-8 text-white shadow-electric flex flex-col sm:flex-row items-center justify-between gap-6">
           <div className="space-y-1 text-center sm:text-left">
             <h4 className="text-lg sm:text-xl font-extrabold flex items-center justify-center sm:justify-start gap-2">
+              <Sparkles className="w-5 h-5 text-electric-200" />
               <span>¿Listo para dejar tu casa en las mejores manos?</span>
-              <span>✨</span>
             </h4>
             <p className="text-xs sm:text-sm text-blue-100 font-medium">
               Agenda hoy mismo en menos de 1 minuto sin pagos anticipados.

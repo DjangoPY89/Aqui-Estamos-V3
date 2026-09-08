@@ -1,6 +1,6 @@
 import React from "react";
 import Link from "next/link";
-import { ArrowRight, Sparkles, Building2, CheckCircle2 } from "lucide-react";
+import { ArrowRight, Building2, MessageSquare, Check } from "lucide-react";
 
 export default function CorporateTeaser() {
   return (
@@ -19,9 +19,11 @@ export default function CorporateTeaser() {
               <span>Soluciones para Oficinas y Negocios</span>
             </div>
 
-            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-black text-white tracking-tight leading-tight">
-              Limpieza profesional para <br className="hidden sm:inline" />
-              tu empresa o local 🏢
+            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-black text-white tracking-tight leading-tight flex items-center flex-wrap gap-3">
+              <span>Limpieza profesional para tu empresa o local</span>
+              <span className="inline-flex p-1.5 rounded-xl bg-white/10 text-electric-300 border border-white/20">
+                <Building2 className="w-6 h-6 sm:w-8 sm:h-8" />
+              </span>
             </h2>
 
             <p className="text-neutral-200 text-sm sm:text-base leading-relaxed font-normal">
@@ -42,7 +44,8 @@ export default function CorporateTeaser() {
                 rel="noopener noreferrer"
                 className="inline-flex items-center gap-2 px-6 py-4 bg-white/10 hover:bg-white/20 backdrop-blur-md text-white font-bold text-xs sm:text-sm rounded-2xl border border-white/20 transition-all"
               >
-                <span>💬 WhatsApp Corporativo</span>
+                <MessageSquare className="w-4 h-4 text-electric-300" />
+                <span>WhatsApp Corporativo</span>
               </a>
             </div>
           </div>
@@ -55,26 +58,26 @@ export default function CorporateTeaser() {
             
             <ul className="space-y-3.5 text-xs sm:text-sm text-neutral-200">
               <li className="flex items-start gap-3">
-                <div className="w-4 h-4 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center shrink-0 mt-0.5 font-bold text-[10px]">
-                  ✓
+                <div className="w-5 h-5 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center shrink-0 mt-0.5 font-bold">
+                  <Check className="w-3.5 h-3.5" />
                 </div>
                 <span>Factura crédito fiscal con RUC mensualizada.</span>
               </li>
               <li className="flex items-start gap-3">
-                <div className="w-4 h-4 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center shrink-0 mt-0.5 font-bold text-[10px]">
-                  ✓
+                <div className="w-5 h-5 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center shrink-0 mt-0.5 font-bold">
+                  <Check className="w-3.5 h-3.5" />
                 </div>
                 <span>100% cumplimiento laboral y cobertura de IPS.</span>
               </li>
               <li className="flex items-start gap-3">
-                <div className="w-4 h-4 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center shrink-0 mt-0.5 font-bold text-[10px]">
-                  ✓
+                <div className="w-5 h-5 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center shrink-0 mt-0.5 font-bold">
+                  <Check className="w-3.5 h-3.5" />
                 </div>
                 <span>Reemplazo garantizado ante cualquier eventualidad.</span>
               </li>
               <li className="flex items-start gap-3">
-                <div className="w-4 h-4 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center shrink-0 mt-0.5 font-bold text-[10px]">
-                  ✓
+                <div className="w-5 h-5 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center shrink-0 mt-0.5 font-bold">
+                  <Check className="w-3.5 h-3.5" />
                 </div>
                 <span>Relevamiento técnico inicial sin costo alguno.</span>
               </li>

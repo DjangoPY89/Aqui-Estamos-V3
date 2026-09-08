@@ -19,8 +19,11 @@ export default function GuaranteeBanner() {
               <span>Garantía de Satisfacción 200%</span>
             </div>
 
-            <h3 className="text-2xl sm:text-3xl lg:text-4xl font-black text-white tracking-tight">
-              Tu tranquilidad y alegría están 100% aseguradas 🛡️
+            <h3 className="text-2xl sm:text-3xl lg:text-4xl font-black text-white tracking-tight flex items-center justify-center md:justify-start gap-3 flex-wrap">
+              <span>Tu tranquilidad y alegría están 100% aseguradas</span>
+              <span className="inline-flex p-1.5 rounded-xl bg-white/10 text-electric-300 border border-white/20">
+                <ShieldCheck className="w-6 h-6 sm:w-7 sm:h-7" />
+              </span>
             </h3>
 
             <p className="text-xs sm:text-sm text-neutral-200 leading-relaxed font-normal">

@@ -1,7 +1,7 @@
 import React from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { Star, ArrowRight, Sparkles, ShieldCheck } from "lucide-react";
+import { Star, ArrowRight, Sparkles, ShieldCheck, Check } from "lucide-react";
 
 export default function Hero() {
   return (
@@ -127,14 +127,14 @@ export default function Hero() {
 
             <div className="flex items-center sm:block gap-3">
               <p className="text-sm font-black text-white flex items-center gap-1.5">
-                <span className="text-electric-400 font-black">✓</span> 100% Legal
+                <Check className="w-4 h-4 text-electric-400 shrink-0" /> 100% Legal
               </p>
               <p className="text-xs text-neutral-300 font-medium mt-0.5">Inscripción formal en IPS</p>
             </div>
 
             <div className="flex items-center sm:block gap-3">
               <p className="text-sm font-black text-white flex items-center gap-1.5">
-                <span className="text-electric-400 font-black">✓</span> Garantía 200%
+                <Check className="w-4 h-4 text-electric-400 shrink-0" /> Garantía 200%
               </p>
               <p className="text-xs text-neutral-300 font-medium mt-0.5">Satisfacción asegurada</p>
             </div>

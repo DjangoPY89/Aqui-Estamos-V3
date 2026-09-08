@@ -1,5 +1,5 @@
 import React from "react";
-import { ShieldCheck, Star, Sparkles, Heart } from "lucide-react";
+import { ShieldCheck, Star, Sparkles, Heart, Check, HeartHandshake } from "lucide-react";
 
 export default function CleanersTrust() {
   const cleaners = [
@@ -9,7 +9,7 @@ export default function CleanersTrust() {
       exp: "4 años alegrando hogares",
       rating: "5.0",
       servicesCount: "+420 servicios realizados",
-      badges: ["Antecedentes Verificados", "IPS al Día", "Top Calificada ⭐"],
+      badges: ["Antecedentes Verificados", "IPS al Día", "Top Calificada 5 Estrellas"],
     },
     {
       name: "María González",
@@ -17,7 +17,7 @@ export default function CleanersTrust() {
       exp: "3 años en el equipo",
       rating: "4.9",
       servicesCount: "+380 servicios realizados",
-      badges: ["Antecedentes Verificados", "IPS al Día", "Puntualidad 100% ⏰"],
+      badges: ["Antecedentes Verificados", "IPS al Día", "Puntualidad 100% Garantizada"],
     },
     {
       name: "Estela Ramírez",
@@ -25,7 +25,7 @@ export default function CleanersTrust() {
       exp: "4 años en el equipo",
       rating: "5.0",
       servicesCount: "+460 servicios realizados",
-      badges: ["Antecedentes Verificados", "IPS al Día", "Detalle Premium ✨"],
+      badges: ["Antecedentes Verificados", "IPS al Día", "Detalle Premium Minucioso"],
     },
   ];
 
@@ -44,9 +44,14 @@ export default function CleanersTrust() {
             <span>Gente de confianza que te cuida</span>
           </div>
 
-          <h2 className="text-3xl sm:text-4xl lg:text-5xl font-black text-neutral-900 tracking-tight leading-tight">
-            Conoce a las profesionales que <br className="hidden sm:inline" />
-            cuidarán tu hogar 🤝
+          <h2 className="text-3xl sm:text-4xl lg:text-5xl font-black text-neutral-900 tracking-tight leading-tight flex items-center justify-center gap-3 flex-wrap">
+            <span>Conoce a las profesionales que</span>
+            <span className="flex items-center gap-2">
+              cuidarán tu hogar
+              <span className="inline-flex p-1.5 rounded-xl bg-amber-50 text-amber-600 border border-amber-200">
+                <HeartHandshake className="w-6 h-6 sm:w-8 sm:h-8" />
+              </span>
+            </span>
           </h2>
 
           <p className="mt-4 text-neutral-600 text-base sm:text-lg leading-relaxed max-w-2xl mx-auto font-normal">
@@ -62,7 +67,7 @@ export default function CleanersTrust() {
             >
               <div>
                 <div className="flex items-center gap-3.5 mb-5">
-                  <div className="w-13 h-13 w-12 h-12 rounded-2xl bg-gradient-to-tr from-electric-600 to-electric-500 text-white font-black text-base flex items-center justify-center shadow-electric-sm">
+                  <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-electric-600 to-electric-500 text-white font-black text-base flex items-center justify-center shadow-electric-sm">
                     {c.name.charAt(0)}
                   </div>
                   <div>
@@ -82,8 +87,8 @@ export default function CleanersTrust() {
                 <div className="space-y-2">
                   {c.badges.map((b, bIdx) => (
                     <div key={bIdx} className="flex items-center gap-2 text-xs text-neutral-700 font-medium">
-                      <div className="w-4 h-4 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center text-[10px] font-bold">
-                        ✓
+                      <div className="w-4 h-4 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center text-[10px]">
+                        <Check className="w-3 h-3" />
                       </div>
                       <span>{b}</span>
                     </div>

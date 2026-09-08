@@ -1,13 +1,14 @@
 import React from "react";
 import Link from "next/link";
-import { Check, ArrowRight, Sparkles, Clock, Star } from "lucide-react";
+import { Check, ArrowRight, Sparkles, Clock, Star, Zap, Home, Tag } from "lucide-react";
 import { formatGs, SERVICE_PACKAGES } from "@/lib/pricing";
 
 export default function ServicesGrid() {
   const plans = [
     {
       hours: 4,
-      emoji: "🧹",
+      icon: Zap,
+      iconBg: "bg-blue-100 text-electric-600",
       name: `${SERVICE_PACKAGES[4].name} (4 Horas)`,
       badge: "Ideal departamentos",
       tagline: "Para 1 o 2 ambientes que necesitan mantenimiento",
@@ -24,9 +25,10 @@ export default function ServicesGrid() {
     },
     {
       hours: 6,
-      emoji: "✨",
+      icon: Sparkles,
+      iconBg: "bg-amber-100 text-amber-700",
       name: `${SERVICE_PACKAGES[6].name} (6 Horas)`,
-      badge: "¡El favorito de las familias!",
+      badge: "El favorito de las familias",
       tagline: "Casas medianas de 2 a 3 habitaciones",
       price: SERVICE_PACKAGES[6].basePrice,
       description: "El equilibrio perfecto para una limpieza profunda y con mucha atención a los detalles.",
@@ -41,7 +43,8 @@ export default function ServicesGrid() {
     },
     {
       hours: 8,
-      emoji: "🏡",
+      icon: Home,
+      iconBg: "bg-emerald-100 text-emerald-700",
       name: `${SERVICE_PACKAGES[8].name} (8 Horas)`,
       badge: "Reseteo total",
       tagline: "Casas grandes, mudanzas o post-evento",
@@ -74,7 +77,7 @@ export default function ServicesGrid() {
           </div>
 
           <h2 className="text-3xl sm:text-4xl lg:text-5xl font-black text-neutral-900 tracking-tight leading-tight">
-            Elige el plan perfecto para tu hogar 🧼
+            Elige el plan perfecto para tu hogar
           </h2>
 
           <p className="mt-4 text-neutral-600 text-base sm:text-lg leading-relaxed max-w-2xl mx-auto font-normal">
@@ -84,88 +87,94 @@ export default function ServicesGrid() {
 
         {/* Grid de Planes */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-stretch">
-          {plans.map((plan) => (
-            <div
-              key={plan.hours}
-              className={`rounded-3xl p-7 sm:p-8 flex flex-col justify-between transition-all duration-300 relative group ${
-                plan.popular
-                  ? "bg-navy-950 text-white border-2 border-electric-500 shadow-xl lg:-translate-y-2"
-                  : "bg-white text-neutral-900 border border-neutral-200 hover:border-electric-300 hover:shadow-lg hover:-translate-y-1"
-              }`}
-            >
-              <div>
-                {/* Header Card con Emoji y Badge */}
-                <div className="flex items-center justify-between gap-2 mb-4">
-                  <div className="flex items-center gap-2.5">
-                    <span className="text-2xl">{plan.emoji}</span>
-                    <h3 className={`text-lg font-black ${plan.popular ? "text-white" : "text-neutral-900"}`}>
-                      {plan.name}
-                    </h3>
-                  </div>
-
-                  {plan.popular ? (
-                    <span className="text-[11px] font-extrabold px-3 py-1 bg-electric-600 text-white rounded-full shadow-electric-sm">
-                      ⭐ Más Elegido
-                    </span>
-                  ) : (
-                    <span className="text-[11px] font-bold px-2.5 py-1 bg-neutral-100 text-neutral-600 rounded-full">
-                      {plan.badge}
-                    </span>
-                  )}
-                </div>
-
-                <p className={`text-xs mb-6 font-medium ${plan.popular ? "text-neutral-300" : "text-neutral-500"}`}>
-                  {plan.tagline}
-                </p>
-
-                {/* Precio */}
-                <div className={`mb-6 pb-6 border-b ${plan.popular ? "border-neutral-800" : "border-neutral-100"}`}>
-                  <div className="flex items-baseline gap-1">
-                    <span className={`text-3xl sm:text-4xl font-black tracking-tight ${plan.popular ? "text-white" : "text-neutral-950"}`}>
-                      {formatGs(plan.price)}
-                    </span>
-                  </div>
-                  <p className={`text-xs mt-2 font-bold flex items-center gap-1.5 ${plan.popular ? "text-emerald-400" : "text-emerald-600"}`}>
-                    <span>💚</span>
-                    <span>10% OFF en servicios semanales o recurrentes</span>
-                  </p>
-                </div>
-
-                <p className={`text-xs sm:text-sm leading-relaxed mb-6 ${plan.popular ? "text-neutral-300" : "text-neutral-600"}`}>
-                  {plan.description}
-                </p>
-
-                {/* Features */}
-                <div className="space-y-3 mb-8">
-                  {plan.features.map((feat, idx) => (
-                    <div key={idx} className="flex items-start gap-2.5 text-xs sm:text-sm">
-                      <div className={`w-4 h-4 rounded-full flex items-center justify-center shrink-0 mt-0.5 ${
-                        plan.popular ? "bg-electric-500/20 text-electric-400" : "bg-electric-50 text-electric-600"
-                      }`}>
-                        <Check className="w-3 h-3" />
-                      </div>
-                      <span className={plan.popular ? "text-neutral-200" : "text-neutral-700"}>
-                        {feat}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* Botón */}
-              <Link
-                href={`/reservar?hours=${plan.hours}`}
-                className={`w-full py-3.5 px-4 rounded-2xl font-bold text-xs sm:text-sm flex items-center justify-center gap-2 transition-all active:scale-[0.98] ${
+          {plans.map((plan) => {
+            const Icon = plan.icon;
+            return (
+              <div
+                key={plan.hours}
+                className={`rounded-3xl p-7 sm:p-8 flex flex-col justify-between transition-all duration-300 relative group ${
                   plan.popular
-                    ? "bg-electric-600 hover:bg-electric-500 text-white shadow-electric"
-                    : "bg-neutral-900 hover:bg-electric-600 text-white shadow-sm"
+                    ? "bg-navy-950 text-white border-2 border-electric-500 shadow-xl lg:-translate-y-2"
+                    : "bg-white text-neutral-900 border border-neutral-200 hover:border-electric-300 hover:shadow-lg hover:-translate-y-1"
                 }`}
               >
-                <span>Reservar este plan ({plan.hours} Horas)</span>
-                <ArrowRight className="w-4 h-4" />
-              </Link>
-            </div>
-          ))}
+                <div>
+                  {/* Header Card con Icono y Badge */}
+                  <div className="flex items-center justify-between gap-2 mb-4">
+                    <div className="flex items-center gap-2.5">
+                      <div className={`w-9 h-9 rounded-xl ${plan.iconBg} flex items-center justify-center font-bold`}>
+                        <Icon className="w-4 h-4" />
+                      </div>
+                      <h3 className={`text-lg font-black ${plan.popular ? "text-white" : "text-neutral-900"}`}>
+                        {plan.name}
+                      </h3>
+                    </div>
+
+                    {plan.popular ? (
+                      <span className="text-[11px] font-extrabold px-3 py-1 bg-electric-600 text-white rounded-full shadow-electric-sm flex items-center gap-1">
+                        <Star className="w-3 h-3 fill-white" />
+                        <span>Más Elegido</span>
+                      </span>
+                    ) : (
+                      <span className="text-[11px] font-bold px-2.5 py-1 bg-neutral-100 text-neutral-600 rounded-full">
+                        {plan.badge}
+                      </span>
+                    )}
+                  </div>
+
+                  <p className={`text-xs mb-6 font-medium ${plan.popular ? "text-neutral-300" : "text-neutral-500"}`}>
+                    {plan.tagline}
+                  </p>
+
+                  {/* Precio */}
+                  <div className={`mb-6 pb-6 border-b ${plan.popular ? "border-neutral-800" : "border-neutral-100"}`}>
+                    <div className="flex items-baseline gap-1">
+                      <span className={`text-3xl sm:text-4xl font-black tracking-tight ${plan.popular ? "text-white" : "text-neutral-950"}`}>
+                        {formatGs(plan.price)}
+                      </span>
+                    </div>
+                    <p className={`text-xs mt-2 font-bold flex items-center gap-1.5 ${plan.popular ? "text-emerald-400" : "text-emerald-600"}`}>
+                      <Tag className="w-3.5 h-3.5 shrink-0" />
+                      <span>10% OFF en servicios semanales o recurrentes</span>
+                    </p>
+                  </div>
+
+                  <p className={`text-xs sm:text-sm leading-relaxed mb-6 ${plan.popular ? "text-neutral-300" : "text-neutral-600"}`}>
+                    {plan.description}
+                  </p>
+
+                  {/* Features */}
+                  <div className="space-y-3 mb-8">
+                    {plan.features.map((feat, idx) => (
+                      <div key={idx} className="flex items-start gap-2.5 text-xs sm:text-sm">
+                        <div className={`w-4 h-4 rounded-full flex items-center justify-center shrink-0 mt-0.5 ${
+                          plan.popular ? "bg-electric-500/20 text-electric-400" : "bg-electric-50 text-electric-600"
+                        }`}>
+                          <Check className="w-3 h-3" />
+                        </div>
+                        <span className={plan.popular ? "text-neutral-200" : "text-neutral-700"}>
+                          {feat}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Botón */}
+                <Link
+                  href={`/reservar?hours=${plan.hours}`}
+                  className={`w-full py-3.5 px-4 rounded-2xl font-bold text-xs sm:text-sm flex items-center justify-center gap-2 transition-all active:scale-[0.98] ${
+                    plan.popular
+                      ? "bg-electric-600 hover:bg-electric-500 text-white shadow-electric"
+                      : "bg-neutral-900 hover:bg-electric-600 text-white shadow-sm"
+                  }`}
+                >
+                  <span>Reservar este plan ({plan.hours} Horas)</span>
+                  <ArrowRight className="w-4 h-4" />
+                </Link>
+              </div>
+            );
+          })}
         </div>
 
       </div>

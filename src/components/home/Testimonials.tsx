@@ -1,5 +1,5 @@
 import React from "react";
-import { Star, Sparkles, Heart, Quote } from "lucide-react";
+import { Star, Sparkles, Check } from "lucide-react";
 import { getReviews } from "@/lib/db";
 
 const DEFAULT_REVIEWS = [
@@ -52,9 +52,14 @@ export default function Testimonials() {
             <span>Experiencias Reales</span>
           </div>
 
-          <h2 className="text-3xl sm:text-4xl lg:text-5xl font-black text-neutral-900 tracking-tight leading-tight">
-            Lo que dicen quienes ya <br className="hidden sm:inline" />
-            disfrutan de su tiempo libre ⭐
+          <h2 className="text-3xl sm:text-4xl lg:text-5xl font-black text-neutral-900 tracking-tight leading-tight flex items-center justify-center gap-3 flex-wrap">
+            <span>Lo que dicen quienes ya</span>
+            <span className="flex items-center gap-2">
+              disfrutan de su tiempo libre
+              <span className="inline-flex p-1.5 rounded-xl bg-amber-50 text-amber-500 border border-amber-200">
+                <Star className="w-6 h-6 sm:w-8 sm:h-8 fill-amber-400" />
+              </span>
+            </span>
           </h2>
 
           <p className="mt-4 text-neutral-600 text-base sm:text-lg leading-relaxed max-w-2xl mx-auto font-normal">
@@ -93,7 +98,7 @@ export default function Testimonials() {
                   <div>
                     <p className="text-xs font-bold text-neutral-950">{rev.userName}</p>
                     <p className="text-[10.5px] text-emerald-700 font-bold flex items-center gap-1">
-                      <span>✓</span> Cliente Verificado
+                      <Check className="w-3 h-3 text-emerald-600" /> Cliente Verificado
                     </p>
                   </div>
                 </div>

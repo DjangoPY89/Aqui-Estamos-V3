@@ -2,7 +2,7 @@
 
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Check, ArrowRight, ShieldCheck, Sparkles } from "lucide-react";
+import { Check, ArrowRight, ShieldCheck, Sparkles, Calculator } from "lucide-react";
 import { AVAILABLE_EXTRAS, calculatePricing, formatGs, SERVICE_PACKAGES } from "@/lib/pricing";
 import { FrequencyType, ServiceHour } from "@/types";
 
@@ -44,8 +44,11 @@ export default function QuickCalculator() {
             <Sparkles className="w-3.5 h-3.5 text-electric-600" />
             <span>Cotizador Interactivo en Vivo</span>
           </div>
-          <h2 className="text-3xl sm:text-4xl lg:text-5xl font-black text-neutral-900 tracking-tight leading-tight">
-            Calcula tu presupuesto al instante 💰
+          <h2 className="text-3xl sm:text-4xl lg:text-5xl font-black text-neutral-900 tracking-tight leading-tight flex items-center justify-center gap-3 flex-wrap">
+            <span>Calcula tu presupuesto al instante</span>
+            <span className="inline-flex p-1.5 rounded-xl bg-blue-50 text-electric-600 border border-blue-100">
+              <Calculator className="w-6 h-6 sm:w-8 sm:h-8" />
+            </span>
           </h2>
           <p className="mt-4 text-neutral-600 text-base sm:text-lg leading-relaxed max-w-2xl mx-auto font-normal">
             Configura las horas, frecuencia y extras para ver tu inversión exacta en Guaraníes. ¡Sin pagos por adelantado!
@@ -259,8 +262,9 @@ export default function QuickCalculator() {
                   <div className="text-3xl font-bold text-neutral-950 mt-1">
                     {formatGs(pricing.finalPrice)}
                   </div>
-                  <p className="text-[11px] text-neutral-500 mt-1">
-                    ✓ Sin pagos por adelantado. Abonarás al finalizar el servicio.
+                  <p className="text-[11px] text-neutral-500 mt-1.5 flex items-center gap-1.5">
+                    <Check className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                    <span>Sin pagos por adelantado. Abonarás al finalizar el servicio.</span>
                   </p>
                 </div>
               </div>

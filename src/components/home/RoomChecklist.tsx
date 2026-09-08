@@ -1,15 +1,16 @@
 "use client";
 
 import React, { useState } from "react";
-import { Check, Sparkles } from "lucide-react";
+import { Check, Sparkles, Bath, Utensils, Bed, Sparkle } from "lucide-react";
 
 export default function RoomChecklist() {
   const [activeTab, setActiveTab] = useState<"BATH" | "KITCHEN" | "BEDROOM" | "FLOORS">("BATH");
 
   const checklist = {
     BATH: {
-      emoji: "🛁",
+      icon: Bath,
       title: "Baños y Sanitarios",
+      shortTitle: "Baños",
       badge: "Desinfección profunda",
       items: [
         "Desinfección profunda y sarricida de inodoro, bidet y lavatorio",
@@ -20,8 +21,9 @@ export default function RoomChecklist() {
       ],
     },
     KITCHEN: {
-      emoji: "🍳",
+      icon: Utensils,
       title: "Cocina y Comedor",
+      shortTitle: "Cocina",
       badge: "Cero grasa y desinfección",
       items: [
         "Desengrase profundo de hornallas, extractor y mesadas",
@@ -32,8 +34,9 @@ export default function RoomChecklist() {
       ],
     },
     BEDROOM: {
-      emoji: "🛏️",
+      icon: Bed,
       title: "Dormitorios y Living",
+      shortTitle: "Dormitorios",
       badge: "Orden y frescura",
       items: [
         "Tendido y cambio de sábanas frescas a tu gusto",
@@ -44,8 +47,9 @@ export default function RoomChecklist() {
       ],
     },
     FLOORS: {
-      emoji: "🧹",
+      icon: Sparkle,
       title: "Pisos y Áreas Generales",
+      shortTitle: "Pisos",
       badge: "Brillo y rica fragancia",
       items: [
         "Aspirado y barrido profundo eliminando pelos de mascotas y pelusas",
@@ -58,6 +62,7 @@ export default function RoomChecklist() {
   };
 
   const current = checklist[activeTab];
+  const CurrentIcon = current.icon;
 
   return (
     <section className="py-20 sm:py-24 bg-gradient-to-b from-white via-neutral-50/70 to-white border-b border-neutral-200/80 relative overflow-hidden">
@@ -74,9 +79,12 @@ export default function RoomChecklist() {
             <span>Cuidamos cada rincón de tu hogar</span>
           </div>
 
-          <h2 className="text-3xl sm:text-4xl lg:text-5xl font-black text-neutral-900 tracking-tight leading-tight">
-            ¿Qué incluye tu limpieza? <br className="hidden sm:inline" />
-            ¡Dejamos todo reluciente! ✨
+          <h2 className="text-3xl sm:text-4xl lg:text-5xl font-black text-neutral-900 tracking-tight leading-tight flex items-center justify-center gap-3 flex-wrap">
+            <span>¿Qué incluye tu limpieza?</span>
+            <span className="flex items-center gap-2 text-emerald-700">
+              ¡Dejamos todo reluciente!
+              <Sparkles className="w-7 h-7 sm:w-8 sm:h-8 text-emerald-500 fill-emerald-100" />
+            </span>
           </h2>
 
           <p className="mt-4 text-neutral-600 text-base sm:text-lg leading-relaxed max-w-2xl mx-auto font-normal">
@@ -86,10 +94,11 @@ export default function RoomChecklist() {
 
         <div className="max-w-4xl mx-auto bg-white rounded-3xl p-6 sm:p-10 border border-neutral-200 shadow-md">
           
-          {/* Segmented Control con Emojis */}
+          {/* Segmented Control con Iconos */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 mb-8 bg-neutral-100 p-1.5 rounded-2xl">
             {(Object.keys(checklist) as (keyof typeof checklist)[]).map((key) => {
               const item = checklist[key];
+              const TabIcon = item.icon;
               const isSelected = activeTab === key;
               return (
                 <button
@@ -102,8 +111,8 @@ export default function RoomChecklist() {
                       : "text-neutral-600 hover:text-neutral-900 hover:bg-white/50"
                   }`}
                 >
-                  <span className="text-base">{item.emoji}</span>
-                  <span>{item.title.split(" ")[0]}</span>
+                  <TabIcon className="w-4 h-4" />
+                  <span>{item.shortTitle}</span>
                 </button>
               );
             })}
@@ -113,7 +122,9 @@ export default function RoomChecklist() {
           <div>
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-4 mb-6 border-b border-neutral-100">
               <h3 className="text-base sm:text-lg font-black text-neutral-900 flex items-center gap-2">
-                <span>{current.emoji}</span>
+                <span className="p-1.5 rounded-lg bg-electric-50 text-electric-600">
+                  <CurrentIcon className="w-5 h-5" />
+                </span>
                 <span>Tareas incluidas en <span className="text-electric-600">{current.title}</span>:</span>
               </h3>
               <span className="text-[11px] font-bold px-3 py-1 bg-emerald-100 text-emerald-800 rounded-full w-fit">
@@ -127,8 +138,8 @@ export default function RoomChecklist() {
                   key={idx}
                   className="flex items-start gap-3 p-3.5 rounded-2xl bg-neutral-50/80 hover:bg-blue-50/40 border border-neutral-200/70 hover:border-electric-200 text-xs sm:text-sm text-neutral-800 transition-all duration-200"
                 >
-                  <div className="w-5 h-5 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center shrink-0 mt-0.5 font-bold text-xs">
-                    ✓
+                  <div className="w-5 h-5 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center shrink-0 mt-0.5">
+                    <Check className="w-3.5 h-3.5" />
                   </div>
                   <span className="leading-relaxed font-medium">{item}</span>
                 </div>
