@@ -10,15 +10,15 @@ export default function Hero() {
       {/* Background Image Full-Width */}
       <div className="absolute inset-0 w-full h-full overflow-hidden">
         <Image
-          src="/images/hero-bath-white.jpg"
-          alt="Baño moderno impecable y limpio - Aquí Estamos Limpieza"
+          src="/images/hero-luxury-bath.jpg"
+          alt="Baño de lujo impecable y reluciente - Aquí Estamos Limpieza"
           fill
           priority
           sizes="100vw"
           className="object-cover object-center"
         />
-        {/* Capa de fondo negro reducida al 1% */}
-        <div className="absolute inset-0 bg-black/[0.01]" />
+        {/* Capa de fondo blanco al 15% */}
+        <div className="absolute inset-0 bg-white/15" />
       </div>
 
       {/* Contenido Hero Superpuesto */}
