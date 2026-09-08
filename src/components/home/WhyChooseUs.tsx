@@ -26,13 +26,13 @@ export default function WhyChooseUs() {
         
         <div className="max-w-2xl mb-12">
           <p className="text-xs font-semibold uppercase tracking-wider text-electric-600 mb-2">
-            La Mejor Empresa de Limpieza en Paraguay
+            Valores
           </p>
           <h2 className="text-3xl sm:text-4xl font-bold text-neutral-900 tracking-tight">
-            Por qué elegir Aquí Estamos para tu Servicio de Limpieza
+            Por qué elegir Aquí Estamos
           </h2>
           <p className="mt-3 text-neutral-600 text-sm sm:text-base">
-            Descubre por qué somos valorados como la mejor empresa de limpieza a domicilio en Asunción y Gran Asunción.
+            Estándares de calidad y legalidad diseñados para tu total tranquilidad.
           </p>
         </div>
 
