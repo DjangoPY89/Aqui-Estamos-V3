@@ -7,24 +7,63 @@ export default function Hero() {
   return (
     <section className="relative w-full min-h-[620px] sm:min-h-[700px] lg:min-h-[800px] flex items-center justify-center overflow-hidden bg-white text-neutral-950 border-b border-neutral-200">
       
-      {/* Background Image Full-Width con SEO Especializado */}
+      {/* Background Image Full-Width con SEO Especializado enfocado en Asunción */}
       <div 
         className="absolute inset-0 w-full h-full overflow-hidden"
         itemScope
         itemType="https://schema.org/ImageObject"
       >
         <Image
-          src="/images/hero-limpieza-hogar-asuncion.jpg"
-          alt="Servicio profesional de limpieza de casas, departamentos y oficinas por horas en Asunción y Gran Asunción Paraguay - Aquí Estamos Limpieza"
-          title="Empresa de Limpieza Profesional en Asunción - Aquí Estamos"
+          src="/images/limpieza-casas-departamentos-asuncion-paraguay.jpg"
+          alt="Servicio profesional de limpieza de casas, departamentos y oficinas por horas en Asunción y Gran Asunción Paraguay - Aquí Estamos Limpieza Asunción"
+          title="Empresa de Limpieza Profesional en Asunción Paraguay - Aquí Estamos"
           fill
           priority
           sizes="100vw"
           className="object-cover object-center"
           itemProp="contentUrl"
         />
-        <meta itemProp="name" content="Servicio de Limpieza Profesional en Hogares - Aquí Estamos" />
-        <meta itemProp="description" content="Personal capacitado y formalmente contratado en IPS para la limpieza profunda de casas y departamentos en Asunción." />
+        <meta itemProp="name" content="Servicio de Limpieza Profesional en Asunción - Casas, Departamentos y Oficinas" />
+        <meta itemProp="caption" content="Limpieza profesional por horas en Asunción y Gran Asunción con personal calificado en IPS." />
+        <meta itemProp="description" content="Servicio líder de limpieza por horas en Asunción Paraguay para casas, departamentos y oficinas. Personal verificado e inscripto formalmente en IPS." />
+        <meta itemProp="contentLocation" content="Asunción, Gran Asunción, Paraguay" />
+        <meta itemProp="keywords" content="limpieza Asunción, limpieza por horas Asunción, servicio de limpieza en Asunción, empresa de limpieza en Asunción Paraguay, limpieza casas Asunción, limpieza oficinas Asunción" />
+        
+        {/* JSON-LD de SEO Local e Imagen para Google */}
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              "@context": "https://schema.org",
+              "@type": "ImageObject",
+              "name": "Servicio de Limpieza de Casas y Departamentos en Asunción - Aquí Estamos",
+              "caption": "Limpieza profesional por horas para casas y oficinas en Asunción y Gran Asunción Paraguay",
+              "description": "Empresa especializada en servicios de limpieza profesional por hora en Asunción, Paraguay. Cobertura completa en Asunción, Lambaré, Luque, San Lorenzo, Fernando de la Mora y Gran Asunción.",
+              "contentUrl": "https://aquiestamoslimpieza.com/images/limpieza-casas-departamentos-asuncion-paraguay.jpg",
+              "url": "https://aquiestamoslimpieza.com/images/limpieza-casas-departamentos-asuncion-paraguay.jpg",
+              "contentLocation": {
+                "@type": "Place",
+                "name": "Asunción, Paraguay",
+                "address": {
+                  "@type": "PostalAddress",
+                  "addressLocality": "Asunción",
+                  "addressRegion": "Central",
+                  "addressCountry": "PY"
+                }
+              },
+              "keywords": [
+                "limpieza Asunción",
+                "limpieza por horas Asunción",
+                "servicio de limpieza Asunción",
+                "empresa de limpieza Asunción Paraguay",
+                "limpieza de casas en Asunción",
+                "limpieza de departamentos Asunción",
+                "limpieza de oficinas Asunción"
+              ]
+            })
+          }}
+        />
+
         {/* Capa de fondo blanco aumentada al 70% */}
         <div className="absolute inset-0 bg-white/70" />
       </div>
