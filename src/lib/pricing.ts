@@ -58,16 +58,16 @@ export const AVAILABLE_EXTRAS: ExtraService[] = [
   {
     id: "nevera",
     name: "Limpieza de Heladera",
-    price: 10000,
+    price: 0,
     icon: "❄️",
-    description: "Desinfección y limpieza interna profunda",
+    description: "Incluido en tiempo contratado",
   },
   {
     id: "horno",
     name: "Limpieza de Horno",
-    price: 10000,
+    price: 0,
     icon: "🔥",
-    description: "Eliminación de grasa acumulada",
+    description: "Incluido en tiempo contratado",
   },
   {
     id: "lavanderia",

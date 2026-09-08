@@ -978,8 +978,11 @@ function BookingContent() {
                             : "bg-white border-neutral-200 text-neutral-600 hover:bg-neutral-50"
                         }`}
                       >
-                        <span className="truncate">{extra.name}</span>
-                        <span className="text-[10px] text-neutral-400 shrink-0 ml-1">
+                        <div className="flex items-center gap-1.5 min-w-0">
+                          <span className="text-sm shrink-0">{extra.icon}</span>
+                          <span className="truncate">{extra.name}</span>
+                        </div>
+                        <span className="text-[10px] text-neutral-400 shrink-0 ml-1 font-semibold">
                           {extra.price > 0 ? `+${extra.price / 1000}k` : "Inc."}
                         </span>
                       </button>
